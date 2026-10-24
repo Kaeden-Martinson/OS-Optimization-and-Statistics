@@ -104,7 +104,14 @@ public partial class ControlCenterWindow : Window
             foreach (var r in _settings.GameRules) _rules.Add(r);
         }
         UpdateBoostTargets();
+        UpdateRestartHint();
     }
+
+    private void OnRestartApp(object sender, RoutedEventArgs e) => _app.RestartApp();
+
+    /// <summary>Rendering mode only changes on restart, so offer one when the switch differs from the running mode.</summary>
+    private void UpdateRestartHint() =>
+        RestartAppButton.Visibility = _settings.GpuRendering != _app.StartedWithGpuRendering ? Visibility.Visible : Visibility.Collapsed;
 
     // ---- refresh ----
 
@@ -142,6 +149,7 @@ public partial class ControlCenterWindow : Window
         StartupSwitch.IsChecked = startup.Enabled;
         StartupStatus.Text = startup.Describe() + (AppIdentity.IsDevBuild ? " · This is a development build; it uses its own startup entry." : "");
         UpdateBoostTargets();
+        UpdateRestartHint();
 
         var sessions = HistoryRecorder.LoadSessions(10);
         SessionList.ItemsSource = sessions.Select(DescribeSession).ToList();

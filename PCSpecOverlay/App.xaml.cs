@@ -40,7 +40,7 @@ public partial class App : Application
 
         _singleInstance = new Mutex(false, @"Local\PCSpecOverlay.SingleInstance" + AppIdentity.Suffix);
         bool owned;
-        try { owned = _singleInstance.WaitOne(TimeSpan.FromSeconds(3)); }
+        try { owned = _singleInstance.WaitOne(TimeSpan.FromSeconds(10)); } // a restarting or updating copy may still be closing
         catch (AbandonedMutexException) { owned = true; } // previous instance crashed
         if (!owned)
         {
@@ -65,12 +65,14 @@ public partial class App : Application
         ThreadPool.RegisterWaitForSingleObject(_exitRequest,
             (_, _) => Dispatcher.BeginInvoke(Shutdown), null, Timeout.Infinite, executeOnlyOnce: true);
 
-        // A small overlay renders fine on the CPU; hardware rendering would load the GPU driver into this
-        // process (~120 MB more) and keep a laptop's GPU busy compositing a layered window.
-        System.Windows.Media.RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
-
         Log.Info("App", $"Starting {Installer.Version} from {Installer.Describe(Environment.ProcessPath)}");
         _engine = new Engine();
+
+        // By default the overlay draws on the CPU: GPU rendering loads the graphics driver into this process
+        // (~100 MB more). Optional, because on some PCs it lowers CPU use. Must be set before any window exists.
+        StartedWithGpuRendering = Settings.GpuRendering;
+        if (!StartedWithGpuRendering) System.Windows.Media.RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+        Log.Info("App", $"Drawing with the {(StartedWithGpuRendering ? "graphics chip" : "CPU")}");
         _engine.Alert += a => _tray?.Notify(a.Message, a.Title, a.DriverConfirmed);
         _history = new HistoryRecorder(_engine.Settings);
 
@@ -215,6 +217,16 @@ public partial class App : Application
         SaveSettings();
         TryRegisterHotkey(Settings.Hotkey);
         Log.Info("Settings", "Settings restored to defaults");
+    }
+
+    public bool StartedWithGpuRendering { get; private set; }
+
+    /// <summary>Restarts the app (e.g. to switch rendering). The new copy waits for this one to exit.</summary>
+    public void RestartApp()
+    {
+        Log.Info("App", "Restarting at the user's request");
+        Process.Start(new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = true });
+        Shutdown();
     }
 
     public List<string> StopOptimizations() => _engine.StopOptimizations();

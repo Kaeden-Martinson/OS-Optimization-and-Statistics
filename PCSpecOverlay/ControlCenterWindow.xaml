@@ -583,7 +583,7 @@
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock Text="FPS refresh" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="How often the FPS numbers update." />
+                                    <TextBlock Style="{StaticResource Small}" Text="How often the overlay redraws. Once a second uses the least CPU." />
                                 </StackPanel>
                                 <ComboBox x:Name="FpsRefreshBox" Grid.Column="1" SelectedValuePath="Tag"
                                           SelectedValue="{Binding FpsRefreshMs}" VerticalAlignment="Center" />
@@ -596,6 +596,15 @@
                                 </StackPanel>
                                 <ComboBox x:Name="StatsRefreshBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding StatsRefreshMs}" VerticalAlignment="Center" />
                             </Grid>
+                            <Border Height="1" Background="{StaticResource CardBorder}" Margin="0,14" />
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GpuRendering}">
+                                <StackPanel>
+                                    <TextBlock Text="Draw the overlay with the graphics chip" FontSize="13" />
+                                    <TextBlock Style="{StaticResource Body}" Text="Off by default. Measured on this laptop: about 0.3% of one CPU core less, but about 145 MB more memory, because the graphics driver loads into the app. Takes effect after the app restarts." />
+                                </StackPanel>
+                            </CheckBox>
+                            <Button x:Name="RestartAppButton" Content="Restart the app now" Style="{StaticResource Btn}" Tag="Primary"
+                                    HorizontalAlignment="Left" Margin="0,10,0,0" Visibility="Collapsed" Click="OnRestartApp" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -661,7 +670,7 @@
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock Text="At most once every" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="Per kind of alert." />
+                                    <TextBlock Style="{StaticResource Small}" Text="Per kind of alert. If the same problem keeps going, reminders slow to hourly after the third." />
                                 </StackPanel>
                                 <Slider x:Name="CooldownSlider" Grid.Column="1" Minimum="1" Maximum="120" TickFrequency="1" Value="{Binding AlertCooldownMinutes}" />
                                 <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=CooldownSlider, StringFormat='{}{0:0} min'}" />

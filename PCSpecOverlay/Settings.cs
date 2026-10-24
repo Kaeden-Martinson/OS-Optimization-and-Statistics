@@ -56,6 +56,8 @@ public sealed class Settings
     public bool ShowCpu { get; set; } = true;
     public bool ShowRam { get; set; } = true;
     public bool ShowSlowdowns { get; set; } = true;
+    /// <summary>Draw with the graphics chip instead of the CPU (applies after the app restarts).</summary>
+    public bool GpuRendering { get; set; }
     public int FpsRefreshMs { get; set; } = 500;
     public int StatsRefreshMs { get; set; } = 1000;
 

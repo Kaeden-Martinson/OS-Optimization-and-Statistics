@@ -47,7 +47,7 @@ internal sealed class Engine : IDisposable
 
     private readonly LimitTracker _limits = new();
     private readonly SustainedThreshold _gpuHot = new(), _cpuHot = new();
-    private readonly Dictionary<string, long> _lastAlert = new();
+    private readonly AlertThrottle _throttle = new();
 
     public Engine()
     {
@@ -210,9 +210,11 @@ internal sealed class Engine : IDisposable
 
     private void Raise(AlertMessage alert)
     {
-        var now = Environment.TickCount64;
-        if (_lastAlert.TryGetValue(alert.Key, out var last) && now - last < Settings.AlertCooldownMinutes * 60_000L) return;
-        _lastAlert[alert.Key] = now;
+        if (!_throttle.ShouldNotify(alert.Key, TimeSpan.FromMinutes(Settings.AlertCooldownMinutes), out var shown)) return;
+        if (shown == AlertThrottle.RepeatsBeforeBackoff)
+            alert = alert with { Message = alert.Message + " Since this keeps happening, further reminders will come at most hourly while it continues." };
+        else if (shown > AlertThrottle.RepeatsBeforeBackoff)
+            alert = alert with { Title = alert.Title + " (still)" };
         Log.Warn("Alert", $"{alert.Title}. {alert.Message}");
         Alert?.Invoke(alert);
     }

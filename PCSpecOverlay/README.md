@@ -47,7 +47,9 @@ always removed.
   Alt+Tab grace period), your games list with per-game options, recently seen games.
 - **Overlay** — layout (expanded or one-line compact), display, corner, opacity, text size, which
   metrics to show, refresh rates, click-through.
-- **Temperatures & alerts** — warning and hot levels for GPU and CPU, notification rules.
+- **Temperatures & alerts** — warning and hot levels for GPU and CPU, notification rules. A problem that keeps
+  going (e.g. a GPU throttling all night under an AI workload) notifies at your cooldown three times, then at most
+  hourly until it has been gone for 30 minutes.
 - **General** — Start with Windows, the overlay shortcut, GPU sleep, history, restore defaults.
 - **Diagnostics** — what works on this PC and why, every Windows change the app currently owns,
   recent events, a copyable report (personal paths replaced), and *Undo every change the app made*.
