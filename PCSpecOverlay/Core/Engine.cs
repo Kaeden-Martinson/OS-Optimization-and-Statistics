@@ -168,11 +168,14 @@ internal sealed class Engine : IDisposable
         Log.Info("Gaming", "Optimizations resumed");
     }
 
+    private readonly BoostTarget _boostTarget = new(TimeProvider.System);
+
     public void TickGaming()
     {
         var game = RecoveryMode || OptimizationsPaused ? null : Game;
         Gaming.Tick(game);
-        Boost.Tick(game is { Optimize: true } ? game.Process : null, Settings.BoostTargets);
+        if (game is null && (RecoveryMode || OptimizationsPaused)) _boostTarget.Reset();
+        Boost.Tick(_boostTarget.Update(game, TimeSpan.FromSeconds(Settings.GamingExitSeconds)), Settings.BoostTargets);
     }
 
     // ---- alerts ----

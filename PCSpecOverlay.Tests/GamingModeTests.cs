@@ -135,6 +135,26 @@ public class GamingModeTests : TempDataTest
     }
 
     [Fact]
+    public void Boost_target_survives_short_dips_and_ends_after_the_grace_period()
+    {
+        var target = new BoostTarget(_time);
+        var grace = TimeSpan.FromSeconds(20);
+        Assert.Equal("msedge", target.Update(Starve, grace));
+        _time.Advance(TimeSpan.FromSeconds(2));
+        Assert.Equal("msedge", target.Update(null, grace));          // menu / death screen: FPS dipped
+        _time.Advance(TimeSpan.FromSeconds(10));
+        Assert.Equal("msedge", target.Update(Starve, grace));        // back in the game
+        _time.Advance(TimeSpan.FromSeconds(19));
+        Assert.Equal("msedge", target.Update(null, grace));
+        _time.Advance(TimeSpan.FromSeconds(2));
+        Assert.Null(target.Update(null, grace));                     // gone for the full grace period
+    }
+
+    [Fact]
+    public void Boost_target_ignores_detect_only_games() =>
+        Assert.Null(new BoostTarget(_time).Update(Starve with { Optimize = false }, TimeSpan.FromSeconds(20)));
+
+    [Fact]
     public void A_crash_mid_game_is_recovered_on_the_next_start()
     {
         Play(Starve, 10);
