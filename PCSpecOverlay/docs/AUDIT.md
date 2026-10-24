@@ -79,6 +79,29 @@ Legend: ✅ verified working · 🟡 partially working / works with caveats · �
 - Scratch files only in the session scratchpad (outside the project) ✅
 - Chrome GPU preference set to NVIDIA while Chrome is broken — harmless, left for the user to decide
 
+## After the upgrade (version 2.0.6, same PC)
+
+| Area | State | How it was verified |
+|---|---|---|
+| Version control and tests | ✅ | git history from the baseline; 66 unit tests (journal, gaming mode with a simulated clock, frame math, detection, restart tracking, settings, history, hotkeys, startup-task parsing) |
+| Crash recovery mid-game | ✅ | Simulated on the real system: power mode left on Best performance and a process at Below normal with "still owned" records → next start restored both and cleared the records |
+| Never overwriting a newer choice | ✅ | Real system: record said "restore Balanced" but the mode had since been changed → left as changed, logged why |
+| Optimizer Fix/Undo through the journal | ✅ | UI Automation: Fix set Best performance and recorded the original; Undo restored Balanced and cleared the record |
+| Installer: install / update / uninstall / reinstall | ✅ | Real system, 2.0.0 → 2.0.6: running copy closed cleanly via its exit signal; previous version kept; settings and undo records survived; uninstall removed folder, shortcut, Apps entry, startup task and monitoring session; reinstall restored all |
+| Startup entry points at the installed app | ✅ | Task `\PCSpecOverlay` → `%LocalAppData%\Programs\PCSpecOverlay\PCSpecOverlay.exe`; one task only. Fixed two bugs found on the way (output encoding without a console; XML unescaping on .NET 8) |
+| Startup after a real reboot (installed copy) | ⬜ | Needs a sign-out/restart by the user. The same task definition started the app after the earlier reboot |
+| FPS on the standard account | ✅ | Installed copy logs "Frame monitoring started" without elevation |
+| Global hotkey, conflicts | ✅ | Installed copy toggles; a second copy (dev build) correctly reports the key is taken and keeps working without it |
+| Overlay window behavior | ✅ | Extended styles read back: click-through, tool window (no Alt+Tab), no-activate, topmost |
+| Accessibility | ✅ | Fixed: page content wasn't exposed to screen readers (15 → 133 automation elements); every control has a name |
+| Dev/installed separation | ✅ | Dev build used `%AppData%\PCSpecOverlay-Dev`, `\PCSpecOverlay-Dev` task and `-Dev` ETW session; removed after testing |
+| Startup time | ✅ | UI-thread startup ~0.3 s (CPU counters, which took 0.9–5 s, now open in the background) |
+| Resource use | ✅ | Measured against the baseline build alternately under the same load: within noise (baseline 0.8–2.1 %, new 1.5–2.3 % of one core; ~100–113 MB both). Drawing is ~2 points of that; monitoring alone is ~0.6 % |
+| Automatic gaming mode on the installed copy with Starve.io | ⬜ | Logic covered by tests and verified live on the previous version; the rebuilt version needs a short play session |
+| Laptop GPU sleep path | 🟡 | Power-state read verified (reports D0 while the GPU is in use). The asleep (D3) branch couldn't be observed because the AI workload kept the GPU awake |
+| Browser restart with several Edge profiles open | 🟡 | Not tested; the confirmation warns when windows from more than one profile are open |
+| Code signing, online updates | ❌ | No certificate or release server available; documented in the README |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
