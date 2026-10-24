@@ -12,21 +12,24 @@ public enum Limit
 }
 
 /// <summary>
-/// Smooths per-second limit readings. Throttling flickers on and off between samples, so a limit
+/// Smooths per-sample limit readings. Throttling flickers on and off between samples, so a limit
 /// stays visible for a few seconds after it was last seen, and we track how long it has been going
 /// on (with short gaps bridged) to decide when it's worth an alert.
 /// </summary>
-internal sealed class LimitTracker
+public sealed class LimitTracker(TimeProvider? time = null)
 {
     private const long HoldMs = 4_000;
 
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly Dictionary<Limit, long> _lastSeen = new();
     private readonly Dictionary<Limit, long> _since = new();
+
+    private long Now => _time.GetTimestamp() * 1000 / _time.TimestampFrequency;
 
     /// <returns>Limits seen within the last few seconds.</returns>
     public Limit Update(Limit current)
     {
-        var now = Environment.TickCount64;
+        var now = Now;
         var visible = Limit.None;
         foreach (var flag in Enum.GetValues<Limit>().Where(f => f != Limit.None))
         {
@@ -43,5 +46,25 @@ internal sealed class LimitTracker
 
     /// <summary>How long a limit has been going on without a long break.</summary>
     public TimeSpan ActiveFor(Limit flag) =>
-        _since.TryGetValue(flag, out var since) ? TimeSpan.FromMilliseconds(Environment.TickCount64 - since) : TimeSpan.Zero;
+        _since.TryGetValue(flag, out var since) ? TimeSpan.FromMilliseconds(Now - since) : TimeSpan.Zero;
+}
+
+/// <summary>
+/// Tracks how long a value has stayed at or above a threshold, bridging single missing samples.
+/// Used for "running hot" warnings, which are based on your thresholds rather than driver reports.
+/// </summary>
+public sealed class SustainedThreshold(TimeProvider? time = null)
+{
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
+    private long? _since;
+
+    public TimeSpan Update(double? value, double threshold)
+    {
+        if (value is null) return Duration; // a missed reading doesn't reset it
+        if (value < threshold) { _since = null; return TimeSpan.Zero; }
+        _since ??= _time.GetTimestamp();
+        return Duration;
+    }
+
+    public TimeSpan Duration => _since is { } s ? _time.GetElapsedTime(s) : TimeSpan.Zero;
 }

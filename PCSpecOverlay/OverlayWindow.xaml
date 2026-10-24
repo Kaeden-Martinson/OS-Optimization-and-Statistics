@@ -4,12 +4,11 @@
         Title="PC Spec Overlay"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize"
-        SizeToContent="WidthAndHeight" Focusable="False" IsHitTestVisible="False"
+        SizeToContent="WidthAndHeight" Focusable="False"
         UseLayoutRounding="True" SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale">
 
     <Window.Resources>
-        <SolidColorBrush x:Key="Accent" Color="#76B900" />
         <SolidColorBrush x:Key="LabelBrush" Color="#8C959E" />
         <SolidColorBrush x:Key="ValueBrush" Color="#F3F5F6" />
         <SolidColorBrush x:Key="UnitBrush" Color="#69727B" />
@@ -20,8 +19,9 @@
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="10.5" />
             <Setter Property="Foreground" Value="{StaticResource LabelBrush}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="0,0,16,0" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,2,14,0" />
+            <Setter Property="Width" Value="34" />
         </Style>
         <Style x:Key="Value" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
@@ -39,11 +39,18 @@
             <Setter Property="Margin" Value="2,0,10,1" />
             <Setter Property="VerticalAlignment" Value="Bottom" />
         </Style>
+        <Style x:Key="State" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="FontStyle" Value="Italic" />
+            <Setter Property="Foreground" Value="{StaticResource UnitBrush}" />
+            <Setter Property="Visibility" Value="Collapsed" />
+        </Style>
         <Style x:Key="BarTrack" TargetType="Border">
             <Setter Property="Height" Value="2" />
             <Setter Property="Background" Value="{StaticResource TrackBrush}" />
             <Setter Property="CornerRadius" Value="1" />
-            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="Margin" Value="0,4,0,0" />
         </Style>
         <Style x:Key="BarFill" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource Accent}" />
@@ -52,8 +59,7 @@
         </Style>
     </Window.Resources>
 
-    <Border x:Name="Panel" Margin="0" CornerRadius="8" Background="#E80B0D10"
-            BorderBrush="#24FFFFFF" BorderThickness="1">
+    <Border x:Name="Panel" CornerRadius="8" Background="#EB0B0D10" BorderBrush="#24FFFFFF" BorderThickness="1">
         <Border.LayoutTransform>
             <ScaleTransform x:Name="PanelScale" ScaleX="1" ScaleY="1" />
         </Border.LayoutTransform>
@@ -62,90 +68,81 @@
                 <ColumnDefinition Width="3" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-
             <Border Grid.Column="0" Background="{StaticResource Accent}" CornerRadius="7,0,0,7" />
 
-            <StackPanel Grid.Column="1" Margin="13,9,14,11">
-                <!-- Header -->
-                <DockPanel Margin="0,0,0,6">
+            <!-- ============ Expanded layout ============ -->
+            <StackPanel x:Name="ExpandedLayout" Grid.Column="1" Margin="13,9,14,11" MinWidth="232">
+                <DockPanel Margin="0,0,0,5">
                     <TextBlock Text="PERFORMANCE" FontFamily="Segoe UI" FontWeight="Bold" FontSize="9.5"
                                Foreground="{StaticResource Accent}" VerticalAlignment="Center" />
-                    <Border x:Name="BoostBadge" Visibility="Collapsed" Background="{StaticResource Accent}"
+                    <Border x:Name="Badge" Visibility="Collapsed" Background="{StaticResource Accent}"
                             CornerRadius="3" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                        <TextBlock x:Name="BoostBadgeText" Text="BOOST" FontFamily="Segoe UI" FontWeight="Bold" FontSize="8.5" Foreground="#0B0D10" />
+                        <TextBlock x:Name="BadgeText" FontFamily="Segoe UI" FontWeight="Bold" FontSize="8.5" Foreground="#0B0D10" />
                     </Border>
-                    <TextBlock x:Name="GpuName" DockPanel.Dock="Right" HorizontalAlignment="Right" Margin="18,0,0,0"
-                               FontFamily="Segoe UI" FontSize="9.5" Foreground="{StaticResource UnitBrush}"
-                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="GpuName" DockPanel.Dock="Right" HorizontalAlignment="Right" Margin="14,0,0,0"
+                               FontFamily="Segoe UI" FontSize="9.5" Foreground="{StaticResource UnitBrush}" VerticalAlignment="Center" />
                 </DockPanel>
 
-                <!-- FPS -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock x:Name="FpsValue" Style="{StaticResource Value}" FontSize="28" FontWeight="Bold"
-                                   MinWidth="46" />
-                        <TextBlock Text="FPS" Style="{StaticResource Unit}" FontWeight="SemiBold" Margin="4,0,0,5" />
+                        <TextBlock x:Name="FpsValue" Style="{StaticResource Value}" FontSize="30" FontWeight="Bold" MinWidth="50" />
+                        <TextBlock Text="FPS" Style="{StaticResource Unit}" FontWeight="SemiBold" Margin="5,0,0,6" />
                     </StackPanel>
-                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="16,0,0,0">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <TextBlock x:Name="FrameTime" Style="{StaticResource Value}" FontSize="11.5" />
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="14,0,0,0">
+                        <StackPanel x:Name="FrameTimeRow" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock x:Name="FrameTime" Style="{StaticResource Value}" FontSize="12" />
                             <TextBlock Text="ms" Style="{StaticResource Unit}" Margin="2,0,0,0" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <StackPanel x:Name="LowRow" Orientation="Horizontal" HorizontalAlignment="Right">
                             <TextBlock Text="1% LOW " Style="{StaticResource Unit}" Margin="0" />
-                            <TextBlock x:Name="LowFps" Style="{StaticResource Value}" FontSize="11.5" />
+                            <TextBlock x:Name="LowFps" Style="{StaticResource Value}" FontSize="12" />
                         </StackPanel>
                     </StackPanel>
                 </Grid>
                 <TextBlock x:Name="FpsHint" Visibility="Collapsed" FontFamily="Segoe UI" FontSize="9.5"
                            Foreground="{StaticResource UnitBrush}" Margin="0,1,0,0" />
 
-                <Border Height="1" Background="#1CFFFFFF" Margin="0,8,0,7" />
+                <Border x:Name="Divider" Height="1" Background="#1CFFFFFF" Margin="0,8,0,7" />
 
-                <!-- Stats -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Row="0" Text="GPU" Style="{StaticResource Label}" VerticalAlignment="Top" Margin="0,2,16,0" />
-                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,6">
-                        <StackPanel Orientation="Horizontal">
+                <!-- GPU -->
+                <DockPanel x:Name="GpuRow" Margin="0,0,0,6">
+                    <TextBlock Text="GPU" Style="{StaticResource Label}" />
+                    <StackPanel>
+                        <StackPanel x:Name="GpuValues" Orientation="Horizontal">
                             <TextBlock x:Name="GpuLoad" Style="{StaticResource Value}" MinWidth="24" />
                             <TextBlock Text="%" Style="{StaticResource Unit}" />
                             <TextBlock x:Name="GpuTemp" Style="{StaticResource Value}" MinWidth="20" />
                             <TextBlock Text="°C" Style="{StaticResource Unit}" />
                             <TextBlock x:Name="GpuClock" Style="{StaticResource Value}" MinWidth="34" />
                             <TextBlock Text="MHz" Style="{StaticResource Unit}" />
-                            <TextBlock x:Name="GpuPower" Style="{StaticResource Value}" MinWidth="20" />
+                            <TextBlock x:Name="GpuPower" Style="{StaticResource Value}" MinWidth="18" />
                             <TextBlock Text="W" Style="{StaticResource Unit}" Margin="2,0,0,1" />
                         </StackPanel>
-                        <Border Style="{StaticResource BarTrack}">
+                        <TextBlock x:Name="GpuState" Style="{StaticResource State}" />
+                        <Border x:Name="GpuTrack" Style="{StaticResource BarTrack}">
                             <Border x:Name="GpuBar" Style="{StaticResource BarFill}">
                                 <Border.RenderTransform><ScaleTransform ScaleX="0" /></Border.RenderTransform>
                             </Border>
                         </Border>
                     </StackPanel>
+                </DockPanel>
 
-                    <TextBlock Grid.Row="1" Text="VRAM" Style="{StaticResource Label}" />
-                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,6">
+                <DockPanel x:Name="VramRow" Margin="0,0,0,6">
+                    <TextBlock Text="VRAM" Style="{StaticResource Label}" Margin="0,0,14,0" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="VramUsed" Style="{StaticResource Value}" MinWidth="24" />
                         <TextBlock x:Name="VramTotal" Style="{StaticResource Unit}" Text="/ — GB" Margin="4,0,0,1" />
                     </StackPanel>
+                </DockPanel>
 
-                    <TextBlock Grid.Row="2" Text="CPU" Style="{StaticResource Label}" VerticalAlignment="Top" Margin="0,2,16,0" />
-                    <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,0,6">
+                <!-- CPU -->
+                <DockPanel x:Name="CpuRow" Margin="0,0,0,6">
+                    <TextBlock Text="CPU" Style="{StaticResource Label}" />
+                    <StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock x:Name="CpuLoad" Style="{StaticResource Value}" MinWidth="24" />
                             <TextBlock Text="%" Style="{StaticResource Unit}" />
@@ -160,16 +157,43 @@
                             </Border>
                         </Border>
                     </StackPanel>
+                </DockPanel>
 
-                    <TextBlock Grid.Row="3" Text="RAM" Style="{StaticResource Label}" />
-                    <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal">
+                <DockPanel x:Name="RamRow">
+                    <TextBlock Text="RAM" Style="{StaticResource Label}" Margin="0,0,14,0" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="RamUsed" Style="{StaticResource Value}" MinWidth="24" />
                         <TextBlock x:Name="RamTotal" Style="{StaticResource Unit}" Text="/ — GB" Margin="4,0,0,1" />
                     </StackPanel>
-                </Grid>
+                </DockPanel>
 
                 <!-- Why the hardware is slowing down; only shown while it is -->
-                <WrapPanel x:Name="LimitsRow" Visibility="Collapsed" Margin="0,9,0,0" />
+                <WrapPanel x:Name="LimitsRow" Visibility="Collapsed" Margin="0,9,0,-4" />
+            </StackPanel>
+
+            <!-- ============ Compact layout: one line ============ -->
+            <StackPanel x:Name="CompactLayout" Grid.Column="1" Orientation="Horizontal" Margin="10,5,12,6" Visibility="Collapsed">
+                <TextBlock x:Name="CFps" Style="{StaticResource Value}" FontSize="16" FontWeight="Bold" MinWidth="30" VerticalAlignment="Center" />
+                <TextBlock Text="FPS" Style="{StaticResource Unit}" FontWeight="SemiBold" Margin="3,0,0,2" />
+                <StackPanel x:Name="CFrameTimeBox" Orientation="Horizontal">
+                    <TextBlock x:Name="CFrameTime" Style="{StaticResource Value}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center" />
+                    <TextBlock Text="ms" Style="{StaticResource Unit}" Margin="2,0,0,2" />
+                </StackPanel>
+                <StackPanel x:Name="CGpuBox" Orientation="Horizontal" Margin="12,0,0,0">
+                    <TextBlock Text="GPU" Style="{StaticResource Label}" Width="Auto" Margin="0,0,5,0" VerticalAlignment="Center" />
+                    <TextBlock x:Name="CGpu" Style="{StaticResource Value}" FontSize="12.5" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel x:Name="CCpuBox" Orientation="Horizontal" Margin="12,0,0,0">
+                    <TextBlock Text="CPU" Style="{StaticResource Label}" Width="Auto" Margin="0,0,5,0" VerticalAlignment="Center" />
+                    <TextBlock x:Name="CCpu" Style="{StaticResource Value}" FontSize="12.5" VerticalAlignment="Center" />
+                </StackPanel>
+                <Border x:Name="CLimit" Visibility="Collapsed" CornerRadius="3" Padding="5,0,5,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="CLimitText" FontFamily="Segoe UI" FontWeight="Bold" FontSize="9" />
+                </Border>
+                <Border x:Name="CBadge" Visibility="Collapsed" Background="{StaticResource Accent}" CornerRadius="3"
+                        Padding="5,0,5,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="CBadgeText" FontFamily="Segoe UI" FontWeight="Bold" FontSize="8.5" Foreground="#0B0D10" />
+                </Border>
             </StackPanel>
         </Grid>
     </Border>

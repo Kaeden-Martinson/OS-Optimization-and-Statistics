@@ -1,17 +1,20 @@
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
+using PCSpecOverlay.Core;
 
 namespace PCSpecOverlay.Monitors;
-
-public readonly record struct FpsSample(double Fps, double FrameTimeMs, double OnePercentLow);
 
 /// <summary>
 /// Counts presents per swap chain via ETW, the same signal PresentMon / vendor overlays use.
 /// Counting per swap chain rather than per process matters for browsers: one GPU process presents
 /// every window, tab and video, and adding those together would inflate the game's FPS.
-/// Covers DXGI (DirectX 10/11/12, most Vulkan/OpenGL games on modern drivers) and Direct3D 9.
+/// Covers DXGI (DirectX 10/11/12 and browsers) and Direct3D 9. Vulkan and OpenGL games are covered only
+/// when their driver presents through DXGI; otherwise FPS shows as unavailable for them.
 /// Opening a real-time ETW session needs administrator rights or membership in the
-/// "Performance Log Users" group.
+/// "Performance Log Users" group. See <see cref="FrameStats"/> for the calculations; an app that
+/// hasn't presented for 2 s (paused, minimized) reads as unavailable rather than 0.
+/// Memory is bounded: 10 s of timestamps per swap chain; swap chains silent for 30 s are dropped.
 /// </summary>
 internal sealed class FpsMonitor : IDisposable
 {
@@ -20,8 +23,7 @@ internal sealed class FpsMonitor : IDisposable
     private const int DxgiPresentStart = 42, DxgiPresentMpoStart = 55, D3D9PresentStart = 1;
     private const ulong EventsKeyword = 0x2;
 
-    private const string SessionName = "PCSpecOverlay-Presents";
-    private const double LowWindowMs = 10_000; // window for the 1% low figure
+    public static string SessionName => "PCSpecOverlay-Presents" + AppIdentity.Suffix;
     private const long StaleAfterMs = 2_000;   // stop showing FPS once an app stops presenting
 
     private sealed class History(int pid)
@@ -34,6 +36,7 @@ internal sealed class FpsMonitor : IDisposable
     private readonly Dictionary<(int Pid, ulong SwapChain), History> _bySwapChain = new();
     private readonly Dictionary<int, string?> _names = new(); // pid -> process name cache
     private readonly object _lock = new();
+    private readonly List<double> _scratch = new(4096);
     private TraceEventSession? _session;
 
     public bool IsRunning => _session != null;
@@ -55,11 +58,15 @@ internal sealed class FpsMonitor : IDisposable
                 try { session.Source.Process(); }
                 catch { /* session stopped */ }
             }) { IsBackground = true, Name = "ETW presents" }.Start();
+            Log.Info("FPS", "Frame monitoring started");
             return true;
         }
         catch (Exception e)
         {
             LastError = e;
+            Log.Warn("FPS", e is UnauthorizedAccessException
+                ? "Frame monitoring needs administrator rights or the Performance Log Users group; FPS unavailable"
+                : $"Frame monitoring couldn't start: {e.Message}");
             _session?.Dispose();
             _session = null;
             return false;
@@ -73,10 +80,9 @@ internal sealed class FpsMonitor : IDisposable
                       : e.ProviderGuid == D3D9Provider && id == D3D9PresentStart;
         if (!isPresent) return;
 
-        // Every present-start event begins with the swap chain pointer
-        var data = e.EventData();
-        if (data.Length < e.PointerSize) return;
-        var swapChain = e.PointerSize == 8 ? BitConverter.ToUInt64(data, 0) : BitConverter.ToUInt32(data, 0);
+        // Every present-start event begins with the swap chain pointer (read in place, no copy)
+        if (e.EventDataLength < e.PointerSize) return;
+        var swapChain = e.PointerSize == 8 ? (ulong)Marshal.ReadInt64(e.DataStart) : (uint)Marshal.ReadInt32(e.DataStart);
 
         var t = e.TimeStampRelativeMSec;
         lock (_lock)
@@ -90,7 +96,7 @@ internal sealed class FpsMonitor : IDisposable
 
             // Trim history outside the 1% low window
             var cut = 0;
-            while (cut < h.Presents.Count && t - h.Presents[cut] > LowWindowMs) cut++;
+            while (cut < h.Presents.Count && t - h.Presents[cut] > FrameStats.LowWindowMs) cut++;
             if (cut > 256) h.Presents.RemoveRange(0, cut);
         }
     }
@@ -107,7 +113,7 @@ internal sealed class FpsMonitor : IDisposable
             var h = Busiest(c => c.Pid == processId, now);
             if (h is null && ProcessName(processId) is { } name)
                 h = Busiest(c => ProcessName(c.Pid) == name, now);
-            return h is null ? null : Compute(h.Presents);
+            return h is null ? null : FrameStats.Compute(h.Presents, _scratch);
         }
     }
 
@@ -119,18 +125,10 @@ internal sealed class FpsMonitor : IDisposable
         foreach (var h in _bySwapChain.Values)
         {
             if (h.Presents.Count < 3 || now - h.LastSeenTick > StaleAfterMs || !match(h)) continue;
-            var count = RecentCount(h.Presents);
+            var count = FrameStats.RecentCount(h.Presents);
             if (count > bestCount) (best, bestCount) = (h, count);
         }
         return best;
-    }
-
-    private static int RecentCount(List<double> p)
-    {
-        var end = p[^1];
-        var i = p.Count - 1;
-        while (i > 0 && end - p[i - 1] <= 1000) i--;
-        return p.Count - i;
     }
 
     private string? ProcessName(int pid)
@@ -150,29 +148,6 @@ internal sealed class FpsMonitor : IDisposable
             _bySwapChain.Remove(key);
         foreach (var pid in _names.Keys.Where(pid => !_bySwapChain.Keys.Any(k => k.Pid == pid)).ToList())
             _names.Remove(pid);
-    }
-
-    private static FpsSample? Compute(List<double> p)
-    {
-        var end = p[^1];
-
-        // Average FPS over the most recent second of presents
-        var first = p.Count - 1;
-        while (first > 0 && end - p[first - 1] <= 1000) first--;
-        var frames = p.Count - 1 - first;
-        var span = end - p[first];
-        if (frames < 1 || span <= 0) return null;
-        var fps = frames * 1000.0 / span;
-
-        // 1% low = FPS equivalent of the 99th percentile frame time over the window
-        var frameTimes = new List<double>(p.Count);
-        for (var i = 1; i < p.Count; i++)
-            if (end - p[i - 1] <= LowWindowMs) frameTimes.Add(p[i] - p[i - 1]);
-        frameTimes.Sort();
-        var p99 = frameTimes[Math.Min(frameTimes.Count - 1, (int)(frameTimes.Count * 0.99))];
-        var low = p99 > 0 ? Math.Min(1000.0 / p99, fps) : fps;
-
-        return new FpsSample(fps, span / frames, low);
     }
 
     public void Dispose()

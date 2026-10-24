@@ -3,118 +3,167 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using PCSpecOverlay.Core;
 using PCSpecOverlay.Monitors;
-using PCSpecOverlay.Optimizer;
 
 namespace PCSpecOverlay;
 
 public partial class App : Application
 {
     private const int HotkeyId = 0x5043;
-    private const string OpenOptimizerEvent = @"Local\PCSpecOverlay.OpenOptimizer";
+    private const string OpenControlCenterEvent = @"Local\PCSpecOverlay.OpenOptimizer";
 
     private Mutex? _singleInstance;
-    private EventWaitHandle? _openOptimizer;
-    private Settings _settings = new();
+    private EventWaitHandle? _openControlCenter, _exitRequest;
+    private Engine _engine = null!;
     private OverlayWindow _overlay = null!;
     private TrayIcon _tray = null!;
-
-    private NvidiaGpu? _gpu;
-    private SystemStats _system = null!;
-    private readonly FpsMonitor _fps = new();
-    private readonly GameBoost _boost = new();
-    private GamingMode _gaming = null!;
+    private ControlCenterWindow? _controlCenter;
+    private HistoryRecorder _history = null!;
+    private DispatcherTimer _fpsTimer = null!, _statsTimer = null!;
     private readonly List<DispatcherTimer> _timers = [];
-    private OptimizerWindow? _optimizer;
-    private string? _gameInFront; // process name of the foreground app while it renders like a game
+    private string? _registeredHotkey;
+    private string? _layoutOverride;
 
-    private const double GameFpsThreshold = 30; // below this the foreground app is idle UI, not a game
-
-    private readonly LimitTracker _limits = new();
-    private readonly Dictionary<string, long> _lastAlert = new();
-    private static readonly TimeSpan AlertAfter = TimeSpan.FromSeconds(10); // ignore brief spikes
-    private const long AlertCooldownMs = 10 * 60_000;
+    internal Engine Engine => _engine;
+    internal HistoryRecorder History => _history;
+    public Settings Settings => _engine.Settings;
+    public bool OverlayVisible => _overlay.IsVisible;
+    public string? HotkeyInUse => _registeredHotkey;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        AppPaths.DataDirectory = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PCSpecOverlay" + AppIdentity.Suffix);
+        if (Installer.HandleCommandLine(e.Args)) { Shutdown(); return; }
 
-        _singleInstance = new Mutex(false, @"Local\PCSpecOverlay.SingleInstance");
+        _singleInstance = new Mutex(false, @"Local\PCSpecOverlay.SingleInstance" + AppIdentity.Suffix);
         bool owned;
-        try { owned = _singleInstance.WaitOne(TimeSpan.FromSeconds(3)); } // allow an elevating restart to hand over
-        catch (AbandonedMutexException) { owned = true; }
+        try { owned = _singleInstance.WaitOne(TimeSpan.FromSeconds(3)); }
+        catch (AbandonedMutexException) { owned = true; } // previous instance crashed
         if (!owned)
         {
-            // Already running: launching again opens the optimizer in the running instance
-            if (EventWaitHandle.TryOpenExisting(OpenOptimizerEvent, out var open)) using (open) open.Set();
+            // Already running: launching again opens the control center in the running instance
+            if (EventWaitHandle.TryOpenExisting(OpenControlCenterEvent + AppIdentity.Suffix, out var open)) using (open) open.Set();
             _singleInstance = null;
             Shutdown();
             return;
         }
 
-        _openOptimizer = new EventWaitHandle(false, EventResetMode.AutoReset, OpenOptimizerEvent);
-        ThreadPool.RegisterWaitForSingleObject(_openOptimizer,
-            (_, _) => Dispatcher.BeginInvoke(OpenOptimizer), null, Timeout.Infinite, executeOnlyOnce: false);
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Log.Error("App", "Unexpected error", args.Exception);
+            args.Handled = true; // keep running; the error is visible in Diagnostics
+        };
+
+        _openControlCenter = new EventWaitHandle(false, EventResetMode.AutoReset, OpenControlCenterEvent + AppIdentity.Suffix);
+        ThreadPool.RegisterWaitForSingleObject(_openControlCenter,
+            (_, _) => Dispatcher.BeginInvoke(OpenControlCenter), null, Timeout.Infinite, executeOnlyOnce: false);
+        // The installer asks a running copy to exit (cleanly, restoring what it changed) before replacing it
+        _exitRequest = new EventWaitHandle(false, EventResetMode.AutoReset, Installer.ExitEventName);
+        ThreadPool.RegisterWaitForSingleObject(_exitRequest,
+            (_, _) => Dispatcher.BeginInvoke(Shutdown), null, Timeout.Infinite, executeOnlyOnce: true);
 
         // A small overlay renders fine on the CPU; hardware rendering would load the GPU driver into this
-        // process (~200 MB) and keep the GPU busy compositing a layered window.
-        System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+        // process (~120 MB more) and keep a laptop's GPU busy compositing a layered window.
+        System.Windows.Media.RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
 
-        _settings = Settings.Load();
-        _gpu = NvidiaGpu.TryOpen();
-        _system = new SystemStats();
-        if (!_fps.Start() && _fps.LastError is { } fpsError)
-            Log($"FPS monitor failed to start: {fpsError}");
+        Log.Info("App", $"Starting {Installer.Version} from {Installer.Describe(Environment.ProcessPath)}");
+        _engine = new Engine();
+        _engine.Alert += a => _tray?.Notify(a.Message, a.Title, a.DriverConfirmed);
+        _history = new HistoryRecorder(_engine.Settings);
 
         _overlay = new OverlayWindow();
-        _overlay.SetGpuName(_gpu?.Name ?? "");
-        _overlay.ApplySettings(_settings);
+        _overlay.SetGpuName(_engine.Gpu?.Name);
+        _overlay.ApplySettings(Settings);
         _overlay.EnsureHandle();
+        _overlay.Moved += SaveSettings;
         HwndSource.FromHwnd(_overlay.Handle).AddHook(WndProc);
 
-        var hotkeyOk = RegisterHotkey(_settings.Hotkey);
-        _tray = new TrayIcon(this, hotkeyOk ? _settings.Hotkey : null);
+        var hotkeyError = TryRegisterHotkey(Settings.Hotkey);
+        _tray = new TrayIcon(this);
+        if (Settings.Visible) _overlay.Show();
 
-        if (_settings.Visible) _overlay.Show();
-
-        UpdateSystem();
-        UpdateFps();
-        StartTimer(TimeSpan.FromMilliseconds(500), UpdateFps);
-        StartTimer(TimeSpan.FromSeconds(1), UpdateSystem);
+        _fpsTimer = StartTimer(TimeSpan.FromMilliseconds(Settings.FpsRefreshMs), UpdateFps);
+        _statsTimer = StartTimer(TimeSpan.FromMilliseconds(Settings.StatsRefreshMs), UpdateStats);
+        StartTimer(TimeSpan.FromSeconds(2), UpdateGaming);
         StartTimer(TimeSpan.FromSeconds(2), _overlay.KeepOnTop);
-        _boost.SetEnabled(_settings.GameBoost);
-        _gaming = new GamingMode(_settings, _boost);
-        _gaming.RestorePowerMode(); // in case we exited mid-game last time
-        StartTimer(TimeSpan.FromSeconds(2), UpdateBoost);
-        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(_overlay.Reposition);
+        var running = StartTimer(TimeSpan.FromSeconds(60), () => _engine.MarkRunning());
+        running.Tick += (_, _) => running.Stop();
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaysChanged;
+        UpdateStats();
+        UpdateFps();
 
-        if (!hotkeyOk)
-            _tray.Notify($"The hotkey {_settings.Hotkey} is in use by another app. Change it in settings.json.");
+        if (e.Args.Contains("--startup-on", StringComparer.OrdinalIgnoreCase) && StartupTask.SetEnabled(true) is { } startupError)
+            _tray.Notify(startupError, "Start with Windows", true);
+        StartupTask.RepairIfMoved();
+        if (hotkeyError != null) _tray.Notify(hotkeyError, "Hotkey not available");
+        if (_engine.RecoveryMode)
+            _tray.Notify("The app didn't start normally several times in a row, so automatic optimizations are off. Open the control center to turn them back on.", "Recovery mode", true);
+        else if (_engine.StartupReport.Count > 0)
+            _tray.Notify(string.Join(" ", _engine.StartupReport), "Restored settings from the last run");
     }
 
-    public bool OverlayVisible => _overlay.IsVisible;
-    public string Position => _settings.Position;
-    public bool FpsAvailable => _fps.IsRunning;
-    public bool GameBoostEnabled => _boost.Enabled;
+    private void OnDisplaysChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(_overlay.Reposition);
 
-    public void SetGameBoost(bool enabled)
+    // ---- periodic work ----
+
+    private void UpdateFps()
     {
-        _boost.SetEnabled(enabled);
-        _settings.GameBoost = enabled;
-        _settings.Save();
-        UpdateBoost();
+        _engine.SampleFps(); // also when hidden: gaming mode needs to know when a game is in front
+        if (_overlay.IsVisible) _overlay.ShowFps(_engine.Latest);
     }
 
-    public void OpenOptimizer()
+    private void UpdateStats()
     {
-        if (_optimizer is null)
+        // Sensors are only read when something uses them, so a hidden overlay costs nothing
+        var needed = _overlay.IsVisible || Settings.Alerts || _controlCenter != null || _engine.Gaming.Active;
+        if (!needed) return;
+        _engine.SampleStats();
+        _history.Record(_engine.Latest, _engine.Gaming.Active ? _engine.Gaming.ActiveGames.FirstOrDefault() : null);
+        if (_overlay.IsVisible) _overlay.ShowStats(_engine.Latest);
+    }
+
+    private void UpdateGaming()
+    {
+        _engine.TickGaming();
+        _overlay.ShowStatus(new OverlayStatus(_engine.Gaming.Active, _engine.Boost.Active, _engine.OptimizationsPaused));
+
+        // Per-game overlay layout
+        var layout = _engine.Game?.Rule?.Layout;
+        if (layout != _layoutOverride)
         {
-            _optimizer = new OptimizerWindow(this, _settings);
-            _optimizer.Closed += (_, _) => _optimizer = null;
-            _optimizer.Show();
+            _layoutOverride = layout;
+            _overlay.ApplySettings(Settings, layout);
         }
-        if (_optimizer.WindowState == WindowState.Minimized) _optimizer.WindowState = WindowState.Normal;
-        _optimizer.Activate();
+    }
+
+    private DispatcherTimer StartTimer(TimeSpan interval, Action tick)
+    {
+        var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = interval };
+        timer.Tick += (_, _) =>
+        {
+            try { tick(); }
+            catch (Exception ex) { Log.Error("App", "Periodic update failed", ex); }
+        };
+        timer.Start();
+        _timers.Add(timer);
+        return timer;
+    }
+
+    // ---- actions used by the tray and control center ----
+
+    public void OpenControlCenter()
+    {
+        if (_controlCenter is null)
+        {
+            _controlCenter = new ControlCenterWindow(this);
+            _controlCenter.Closed += (_, _) => _controlCenter = null;
+            _controlCenter.Show();
+        }
+        if (_controlCenter.WindowState == WindowState.Minimized) _controlCenter.WindowState = WindowState.Normal;
+        _controlCenter.Activate();
     }
 
     public void ToggleOverlay()
@@ -123,180 +172,65 @@ public partial class App : Application
         else
         {
             _overlay.Show();
+            _overlay.ShowFps(_engine.Latest);
+            _overlay.ShowStats(_engine.Latest);
             _overlay.KeepOnTop();
         }
-        _settings.Visible = _overlay.IsVisible;
-        _settings.Save();
+        Settings.Visible = _overlay.IsVisible;
+        Settings.Save();
     }
 
-    public void SetPosition(string corner)
+    /// <summary>Validates, saves and applies settings after any change in the control center.</summary>
+    public void SaveSettings()
     {
-        _settings.Position = corner;
-        _settings.Save();
-        _overlay.ApplySettings(_settings);
+        Settings.Validate();
+        Settings.Save();
+        _overlay.ApplySettings(Settings, _layoutOverride);
+        _fpsTimer.Interval = TimeSpan.FromMilliseconds(Settings.FpsRefreshMs);
+        _statsTimer.Interval = TimeSpan.FromMilliseconds(Settings.StatsRefreshMs);
+        if (_engine.Gpu != null) _engine.Gpu.LetSleep = Settings.LetGpuSleep;
+        if (!_engine.OptimizationsPaused && !_engine.RecoveryMode && !_engine.Gaming.Active)
+            _engine.Boost.SetEnabled(Settings.GameBoost);
     }
 
-    public void OpenSettingsFile()
+    /// <summary>Restores default preferences. Your games list and lowered-apps list are kept.</summary>
+    public void ResetSettings()
     {
-        _settings.Save();
-        Process.Start(new ProcessStartInfo(Settings.FilePath) { UseShellExecute = true });
+        var fresh = new Settings { Visible = Settings.Visible, GameRules = Settings.GameRules, BoostTargets = Settings.BoostTargets };
+        foreach (var p in typeof(Settings).GetProperties().Where(p => p.CanWrite && p.GetIndexParameters().Length == 0))
+            p.SetValue(Settings, p.GetValue(fresh));
+        SaveSettings();
+        TryRegisterHotkey(Settings.Hotkey);
+        Log.Info("Settings", "Settings restored to defaults");
     }
 
-    public void RestartElevated()
+    public List<string> StopOptimizations() => _engine.StopOptimizations();
+    public void ResumeOptimizations() => _engine.ResumeOptimizations();
+
+    // ---- hotkey ----
+
+    /// <returns>Null on success, otherwise why it couldn't be registered (the previous hotkey stays active).</returns>
+    public string? TryRegisterHotkey(string text)
     {
-        try
+        if (!Hotkeys.TryParse(text, out var mods, out var key))
+            return $"\"{text}\" isn't a valid shortcut. Use something like Alt+Shift+O.";
+
+        var previous = _registeredHotkey;
+        if (previous != null) Native.UnregisterHotKey(_overlay.Handle, HotkeyId);
+        if (Native.RegisterHotKey(_overlay.Handle, HotkeyId, mods | Native.MOD_NOREPEAT, (uint)KeyInterop.VirtualKeyFromKey(key)))
         {
-            Process.Start(new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = true, Verb = "runas" });
-            Shutdown();
+            _registeredHotkey = Hotkeys.Format(mods, key);
+            Settings.Hotkey = _registeredHotkey;
+            Settings.Save();
+            Log.Info("Hotkey", $"Using {_registeredHotkey}");
+            return null;
         }
-        catch { /* UAC declined */ }
-    }
 
-    private void UpdateFps()
-    {
-        if (!_fps.IsRunning)
-        {
-            _gameInFront = null;
-            if (_overlay.IsVisible) _overlay.ShowFps(null, "FPS needs admin or Performance Log Users");
-            return;
-        }
-        // Sampled even while the overlay is hidden: Game Boost and gaming mode need to know when a game is in front
-        var hwnd = Native.GetForegroundWindow();
-        var pid = Native.ForegroundProcessId();
-        var sample = pid == Environment.ProcessId ? null : _fps.Sample(pid);
-        _gameInFront = sample?.Fps >= GameFpsThreshold && ProcessName(pid) is { } name ? GameName(hwnd, name) : null;
-        if (_overlay.IsVisible) _overlay.ShowFps(sample, null);
-    }
-
-    /// <summary>
-    /// A window rendering steadily is only a game if it's fullscreen or on the user's games list;
-    /// otherwise animated apps (chat apps, videos, browsers) would count too.
-    /// </summary>
-    /// <returns>The process name (what Game Boost raises), or null when it isn't a game.</returns>
-    private string? GameName(IntPtr hwnd, string process)
-    {
-        if (process.Equals("explorer", StringComparison.OrdinalIgnoreCase)) return null;
-
-        var title = Native.WindowTitle(hwnd);
-        var listed = _settings.Games.FirstOrDefault(g => g.Equals(process, StringComparison.OrdinalIgnoreCase) ||
-                                                         title.Contains(g, StringComparison.OrdinalIgnoreCase));
-        if (listed is null && !Native.IsFullscreen(hwnd)) return null;
-        _gameLabel = listed ?? process;
-        return process;
-    }
-
-    private string? _gameLabel; // what to call the game in the UI, e.g. "Starve.io" rather than "msedge"
-
-    private void UpdateBoost()
-    {
-        _gaming.Tick(_gameInFront is null ? null : _gameLabel);
-        _boost.Tick(_gameInFront, _settings.BoostTargets);
-        _overlay.ShowBoost(_boost.Active, _gaming.Active);
-    }
-
-    public bool GamingModeActive => _gaming.Active;
-    public bool AutoGamingModeEnabled => _settings.AutoGamingMode;
-    public string? GamingGame => _gaming.Active ? _gaming.Game : null;
-
-    public void SetAutoGamingMode(bool enabled)
-    {
-        _settings.AutoGamingMode = enabled;
-        _settings.Save();
-        UpdateBoost();
-    }
-
-    private static string? ProcessName(int pid)
-    {
-        try
-        {
-            using var p = Process.GetProcessById(pid);
-            return p.ProcessName;
-        }
-        catch { return null; }
-    }
-
-    private void UpdateSystem()
-    {
-        var cpuLoad = _system.CpuLoad(); // sample even while hidden so the next delta is short
-        if (!_overlay.IsVisible && !_settings.Alerts) return;
-
-        var gpu = _gpu?.Read();
-        var cpuTemp = _system.CpuTempC();
-        var limits = _limits.Update((gpu?.Limits ?? Limit.None) | _system.CpuLimits(cpuTemp));
-        if (_settings.Alerts) CheckAlerts(gpu, cpuTemp);
-
-        if (!_overlay.IsVisible) return;
-        _overlay.ShowGpu(gpu);
-        _overlay.ShowCpu(cpuLoad, cpuTemp, _system.CpuClockGhz(), _system.Ram());
-        _overlay.ShowLimits(limits);
-    }
-
-    private void CheckAlerts(GpuSample? gpu, double? cpuTemp)
-    {
-        const string fixes = "Set NitroSense fans to Max, raise the back of the laptop for airflow, or pause heavy jobs like AI training.";
-
-        if (_limits.ActiveFor(Limit.GpuThermal) >= AlertAfter)
-            Alert("gpu-hot", "GPU is overheating",
-                $"Your GPU{(gpu?.TempC is { } t ? $" is at {t} °C and" : " is")} slowing itself down to cool off, so FPS will drop. {fixes}");
-
-        if (_limits.ActiveFor(Limit.CpuThermal) >= AlertAfter)
-            Alert("cpu-hot", "CPU is overheating",
-                $"Your CPU{(cpuTemp is { } c ? $" is at {c:0} °C and" : " is")} slowing itself down to cool off, which causes stutter. {fixes}");
-    }
-
-    private void Alert(string key, string title, string message)
-    {
-        var now = Environment.TickCount64;
-        if (_lastAlert.TryGetValue(key, out var last) && now - last < AlertCooldownMs) return;
-        _lastAlert[key] = now;
-        _tray.Notify(message, title);
-        Log($"Alert: {title}. {message}");
-    }
-
-    public bool AlertsEnabled => _settings.Alerts;
-
-    public void SetAlerts(bool enabled)
-    {
-        _settings.Alerts = enabled;
-        _settings.Save();
-    }
-
-    private static void Log(string message)
-    {
-        try
-        {
-            var path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Settings.FilePath)!, "overlay.log");
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
-            System.IO.File.AppendAllText(path, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}{Environment.NewLine}");
-        }
-        catch { /* logging is best-effort */ }
-    }
-
-    private void StartTimer(TimeSpan interval, Action tick)
-    {
-        var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = interval };
-        timer.Tick += (_, _) => tick();
-        timer.Start();
-        _timers.Add(timer);
-    }
-
-    private bool RegisterHotkey(string text)
-    {
-        uint mods = Native.MOD_NOREPEAT;
-        Key key = Key.None;
-        foreach (var part in text.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
-        {
-            switch (part.ToLowerInvariant())
-            {
-                case "alt": mods |= Native.MOD_ALT; break;
-                case "ctrl" or "control": mods |= Native.MOD_CONTROL; break;
-                case "shift": mods |= Native.MOD_SHIFT; break;
-                case "win": mods |= Native.MOD_WIN; break;
-                default: Enum.TryParse(part, ignoreCase: true, out key); break;
-            }
-        }
-        return key != Key.None &&
-               Native.RegisterHotKey(_overlay.Handle, HotkeyId, mods, (uint)KeyInterop.VirtualKeyFromKey(key));
+        Log.Warn("Hotkey", $"{text} is already used by another app");
+        if (previous != null && Hotkeys.TryParse(previous, out var pm, out var pk))
+            Native.RegisterHotKey(_overlay.Handle, HotkeyId, pm | Native.MOD_NOREPEAT, (uint)KeyInterop.VirtualKeyFromKey(pk));
+        else _registeredHotkey = null;
+        return $"{text} is already used by another app" + (previous != null ? $"; still using {previous}." : ". Choose another shortcut in the control center.");
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -312,15 +246,55 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         foreach (var t in _timers) t.Stop();
-        _gaming?.Exit();
-        _boost.RestoreAll();
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplaysChanged;
+        if (_engine != null)
+        {
+            _history?.Flush();
+            _engine.Dispose(); // ends gaming mode and Game Boost, restoring what they changed
+            _engine.MarkRunning(); // a clean exit isn't a failed start
+            Log.Info("App", "Exited cleanly");
+        }
         if (_overlay?.Handle is { } h && h != IntPtr.Zero) Native.UnregisterHotKey(h, HotkeyId);
         _tray?.Dispose();
-        _fps.Dispose();
-        _gpu?.Dispose();
-        _system?.Dispose();
-        _singleInstance?.ReleaseMutex();
+        try { _singleInstance?.ReleaseMutex(); } catch { /* not owned */ }
         _singleInstance?.Dispose();
         base.OnExit(e);
+    }
+}
+
+/// <summary>Parsing and formatting of shortcuts like "Ctrl+Alt+P".</summary>
+public static class Hotkeys
+{
+    public static bool TryParse(string text, out uint mods, out Key key)
+    {
+        mods = 0;
+        key = Key.None;
+        foreach (var part in (text ?? "").Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            switch (part.ToLowerInvariant())
+            {
+                case "alt": mods |= Native.MOD_ALT; break;
+                case "ctrl" or "control": mods |= Native.MOD_CONTROL; break;
+                case "shift": mods |= Native.MOD_SHIFT; break;
+                case "win": mods |= Native.MOD_WIN; break;
+                default:
+                    if (key != Key.None || !Enum.TryParse(part, ignoreCase: true, out key)) return false;
+                    break;
+            }
+        }
+        // A bare letter would steal normal typing; require a modifier unless it's a function key
+        var functionKey = key is >= Key.F1 and <= Key.F24;
+        return key != Key.None && (mods != 0 || functionKey);
+    }
+
+    public static string Format(uint mods, Key key)
+    {
+        var parts = new List<string>();
+        if ((mods & Native.MOD_CONTROL) != 0) parts.Add("Ctrl");
+        if ((mods & Native.MOD_ALT) != 0) parts.Add("Alt");
+        if ((mods & Native.MOD_SHIFT) != 0) parts.Add("Shift");
+        if ((mods & Native.MOD_WIN) != 0) parts.Add("Win");
+        parts.Add(key.ToString());
+        return string.Join("+", parts);
     }
 }

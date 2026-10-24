@@ -36,7 +36,7 @@ internal sealed class ProcessSampler
         {
             using (p)
             {
-                if (p.Id is 0 or 4) continue; // Idle, System
+                if (p.Id is 0 or 4 || !PCSpecOverlay.Core.ProcessUtil.InCurrentSession(p)) continue; // Idle, System, other users
                 double cpuPct = 0;
                 try
                 {

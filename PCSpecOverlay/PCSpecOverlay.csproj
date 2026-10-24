@@ -11,7 +11,16 @@
     <AssemblyName>PCSpecOverlay</AssemblyName>
     <RootNamespace>PCSpecOverlay</RootNamespace>
     <Product>PC Spec Overlay</Product>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <!-- Release package: one framework-dependent exe (needs the .NET 8 Desktop Runtime) -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
   <!-- WPF and WinForms both define Application, Color, etc. Keep WinForms out of the global usings. -->
@@ -21,8 +30,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="PCSpecOverlay.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.*" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.*" />
+    <PackageReference Include="System.Management" Version="8.0.*" />
   </ItemGroup>
 
 </Project>

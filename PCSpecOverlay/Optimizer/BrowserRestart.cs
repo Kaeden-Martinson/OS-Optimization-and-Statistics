@@ -1,80 +1,87 @@
 using System.Diagnostics;
-using System.IO;
-using System.Text;
+using PCSpecOverlay.Core;
 
 namespace PCSpecOverlay.Optimizer;
+
+public sealed record RestartResult(bool Success, string Message);
 
 /// <summary>
 /// Restarts a Chromium browser (Edge, Chrome) so it picks up a new graphics preference, keeping every
 /// window and tab. Closing windows one by one would only remember the last window, so instead the
 /// browser gets the same "session ending" message Windows sends at shutdown: it saves all windows
 /// and exits, then <c>--restore-last-session</c> brings them back.
+/// <para>Only ever called after the user confirms. Only processes in the current Windows session are touched.</para>
 /// </summary>
 internal static class BrowserRestart
 {
-    private static string ProcessName(string exePath) => Path.GetFileNameWithoutExtension(exePath);
+    private const int ExitTimeoutMs = 15_000;
+    private const int RelaunchTimeoutMs = 20_000;
 
-    /// <summary>When the running browser started, or null if it isn't running.</summary>
-    public static DateTime? StartedAt(string exePath)
+    public static Task<RestartResult> RestartAsync(BrowserInfo browser, AppState state) => Task.Run(() =>
     {
-        DateTime? oldest = null;
-        foreach (var p in Process.GetProcessesByName(ProcessName(exePath)))
-        {
-            using (p)
-            {
-                try { if (oldest is null || p.StartTime < oldest) oldest = p.StartTime; }
-                catch { /* exited */ }
-            }
-        }
-        return oldest;
-    }
+        var name = browser.ProcessName;
+        var windows = Browsers.Windows(browser);
+        if (windows.Count == 0)
+            return new RestartResult(false, $"{browser.Name} has no open windows to restart; it will use the new setting next time it starts.");
 
-    public static async Task RestartAsync(string exePath)
-    {
-        var name = ProcessName(exePath);
-        await Task.Run(() =>
-        {
-            var pids = Process.GetProcessesByName(name).Select(p => { using (p) return p.Id; }).ToHashSet();
-            if (BrowserWindow(pids) is { } window)
-            {
-                Native.SendMessageTimeout(window, Native.WM_QUERYENDSESSION, IntPtr.Zero, IntPtr.Zero, Native.SMTO_ABORTIFHUNG, 5000, out _);
-                Native.SendMessageTimeout(window, Native.WM_ENDSESSION, new IntPtr(1), IntPtr.Zero, Native.SMTO_ABORTIFHUNG, 10000, out _);
-            }
+        var window = windows[0].Handle;
+        Native.SendMessageTimeout(window, Native.WM_QUERYENDSESSION, IntPtr.Zero, IntPtr.Zero, Native.SMTO_ABORTIFHUNG, 5000, out _);
+        Native.SendMessageTimeout(window, Native.WM_ENDSESSION, new IntPtr(1), IntPtr.Zero, Native.SMTO_ABORTIFHUNG, 10000, out _);
 
-            // Wait for a clean exit; whatever is left (e.g. Edge "startup boost" background processes) has no windows
-            var deadline = Environment.TickCount64 + 15_000;
-            while (Process.GetProcessesByName(name) is { Length: > 0 } left && Environment.TickCount64 < deadline)
+        // Wait for a clean exit; whatever is left (e.g. Edge "startup boost" background processes) has no windows
+        if (!WaitUntil(() => Count(name) == 0, ExitTimeoutMs))
+        {
+            if (Browsers.Windows(browser).Count > 0)
             {
-                foreach (var p in left) p.Dispose();
-                Thread.Sleep(300);
+                Log.Warn("Browser", $"{browser.Name} didn't close; left it running");
+                return new RestartResult(false, $"{browser.Name} didn't close (it may be showing a \"Leave site?\" prompt). Nothing was forced closed.");
             }
-            foreach (var p in Process.GetProcessesByName(name))
-            {
+            foreach (var p in ProcessUtil.ByName(name))
                 using (p)
-                {
                     try { p.Kill(); } catch { /* already gone */ }
-                }
-            }
+        }
 
-            Process.Start(new ProcessStartInfo(exePath, "--restore-last-session") { UseShellExecute = true });
-        });
+        try
+        {
+            Process.Start(new ProcessStartInfo(browser.ExePath, "--restore-last-session") { UseShellExecute = true });
+        }
+        catch (Exception e)
+        {
+            state.BrowserRestartFailedUtc[browser.ExePath] = DateTime.UtcNow;
+            state.Save();
+            Log.Error("Browser", $"Couldn't start {browser.Name}", e);
+            return new RestartResult(false, $"{browser.Name} closed but couldn't be started again: {e.Message}. Open it yourself; your tabs can be restored from its history.");
+        }
+
+        if (!WaitUntil(() => Browsers.Windows(browser).Count > 0, RelaunchTimeoutMs))
+        {
+            state.BrowserRestartFailedUtc[browser.ExePath] = DateTime.UtcNow;
+            state.Save();
+            Log.Error("Browser", $"{browser.Name} didn't come back after restart");
+            return new RestartResult(false, $"{browser.Name} didn't reopen. It may be crashing on start — try opening it yourself. The app won't offer this restart again until {browser.Name} is running.");
+        }
+
+        state.BrowserRestartFailedUtc.Remove(browser.ExePath);
+        state.Save();
+        Log.Info("Browser", $"Restarted {browser.Name} with {windows.Count} window(s)");
+        return new RestartResult(true, $"{browser.Name} restarted.");
+    });
+
+    private static int Count(string name)
+    {
+        var list = ProcessUtil.ByName(name);
+        foreach (var p in list) p.Dispose();
+        return list.Count;
     }
 
-    /// <summary>A visible, titled top-level browser window (not a popup bubble or helper window).</summary>
-    private static IntPtr? BrowserWindow(HashSet<int> pids)
+    private static bool WaitUntil(Func<bool> condition, int timeoutMs)
     {
-        IntPtr? found = null;
-        var cls = new StringBuilder(64);
-        Native.EnumWindows((hwnd, _) =>
+        var deadline = Environment.TickCount64 + timeoutMs;
+        while (Environment.TickCount64 < deadline)
         {
-            Native.GetWindowThreadProcessId(hwnd, out var pid);
-            if (!pids.Contains((int)pid) || !Native.IsWindowVisible(hwnd) || Native.GetWindowTextLength(hwnd) == 0) return true;
-            cls.Clear();
-            Native.GetClassName(hwnd, cls, cls.Capacity);
-            if (cls.ToString() != "Chrome_WidgetWin_1") return true;
-            found = hwnd;
-            return false;
-        }, IntPtr.Zero);
-        return found;
+            if (condition()) return true;
+            Thread.Sleep(300);
+        }
+        return condition();
     }
 }

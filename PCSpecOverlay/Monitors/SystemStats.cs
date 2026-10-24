@@ -8,6 +8,9 @@ internal sealed class SystemStats : IDisposable
     private const string ProcessorInfo = "Processor Information";
     private const double ThermalLimitC = 90; // a capped CPU this hot is cooling off, not saving power
 
+    public int ThermalZones => _thermal.Length;
+    public bool CanDetectLimits => _perfLimit != null;
+
     private long _prevIdle, _prevKernel, _prevUser;
     private readonly PerformanceCounter[] _thermal;
     private readonly PerformanceCounter? _perfLimit, _perfPercent, _baseMhz;
