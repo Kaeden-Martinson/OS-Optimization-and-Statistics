@@ -51,6 +51,54 @@ public class FrameStatsTests
         Assert.Equal(61, FrameStats.RecentCount(Steady(60, 5)));
 }
 
+public class FpsSourcePickTests
+{
+    private static FpsMonitor.Candidate C(int pid, FpsMonitor.Source source, ulong target, int frames) => new(pid, source, target, frames);
+    private static readonly Dictionary<int, string> Names = new() { [1] = "vktest", [2] = "vktest", [10] = "msedge", [11] = "msedge", [20] = "game" };
+    private static string? NameOf(int pid) => Names.GetValueOrDefault(pid);
+
+    [Fact]
+    public void Own_vulkan_frames_beat_a_same_named_process_using_directx()
+    {
+        // The bug: window 0xA of vktest (pid 1, Vulkan via kernel at 48) reported vktest pid 2's DirectX 90
+        var fresh = new[] { C(1, FpsMonitor.Source.Kernel, 0xA, 48), C(2, FpsMonitor.Source.DirectX, 0x99, 90), C(2, FpsMonitor.Source.Kernel, 0xB, 90) };
+        var pick = FpsMonitor.Pick(fresh, processId: 1, window: 0xA, NameOf);
+        Assert.Equal(1, pick!.Pid);
+        Assert.Equal(48, pick.RecentFrames);
+    }
+
+    [Fact]
+    public void Browsers_still_borrow_from_their_gpu_process()
+    {
+        // Edge's window belongs to the browser process (10); frames come from its GPU process (11)
+        var fresh = new[] { C(11, FpsMonitor.Source.DirectX, 0x1, 165), C(11, FpsMonitor.Source.DirectX, 0x2, 6), C(11, FpsMonitor.Source.Kernel, 0x5, 171) };
+        var pick = FpsMonitor.Pick(fresh, processId: 10, window: 0x5, NameOf);
+        Assert.Equal(FpsMonitor.Source.DirectX, pick!.Source);
+        Assert.Equal(165, pick.RecentFrames); // busiest swap chain, not the sum and not the kernel copy
+    }
+
+    [Fact]
+    public void Directx_wins_over_the_same_apps_kernel_copy()
+    {
+        var fresh = new[] { C(20, FpsMonitor.Source.DirectX, 0x1, 60), C(20, FpsMonitor.Source.Kernel, 0x7, 60) };
+        Assert.Equal(FpsMonitor.Source.DirectX, FpsMonitor.Pick(fresh, 20, 0x7, NameOf)!.Source);
+    }
+
+    [Fact]
+    public void The_foreground_window_wins_within_one_app()
+    {
+        var fresh = new[] { C(20, FpsMonitor.Source.Kernel, 0x7, 30), C(20, FpsMonitor.Source.Kernel, 0x8, 144) };
+        Assert.Equal(0x7ul, FpsMonitor.Pick(fresh, 20, 0x7, NameOf)!.Target);
+    }
+
+    [Fact]
+    public void Nothing_presenting_is_unavailable()
+    {
+        var fresh = new[] { C(2, FpsMonitor.Source.Kernel, 0xB, 90) }; // only another app's kernel frames
+        Assert.Null(FpsMonitor.Pick(fresh, 20, 0x7, NameOf));
+    }
+}
+
 public class GameDetectorTests
 {
     private readonly Settings _s = new() { GameRules = [new GameRule { Match = "Starve.io" }, new GameRule { Match = "Terraria", Kind = GameMatchKind.ProcessName, Optimize = false }] };

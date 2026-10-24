@@ -74,9 +74,11 @@ public class FpsMonitorTests : TempDataTest
             window = gl.Handle;
             Assert.NotNull(fps.Sample(Environment.ProcessId, window));
         }
-        // Past the 2 s staleness limit, plus the ~1 s Windows takes to deliver buffered events
+        Assert.True(fps.IsPresenting(Environment.ProcessId, (ulong)window));
+        // Past the 2 s staleness limit, plus the ~1 s Windows takes to deliver buffered events.
+        // Checked for this window specifically: other test windows share this test process.
         Thread.Sleep(4000);
-        Assert.Null(fps.Sample(Environment.ProcessId, window));
+        Assert.False(fps.IsPresenting(Environment.ProcessId, (ulong)window));
     }
 
     /// <summary>A real window that clears and SwapBuffers with OpenGL at a fixed rate, on its own UI thread.</summary>

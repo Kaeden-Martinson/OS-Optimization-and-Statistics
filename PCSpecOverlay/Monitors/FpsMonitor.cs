@@ -149,32 +149,51 @@ internal sealed class FpsMonitor : IDisposable
             var now = Environment.TickCount64;
             ForgetDeadHistories(now);
 
-            // 1. DirectX from the window's own process. 2. DirectX from a same-named helper process
-            // (browsers present from their GPU process). 3. Kernel presents (Vulkan/OpenGL), for this
-            // exact window if possible — only reached when the app sends no DirectX presents.
-            var h = Busiest(c => c.Source == Source.DirectX && c.Pid == processId, now);
-            if (h is null && ProcessName(processId) is { } name)
-                h = Busiest(c => c.Source == Source.DirectX && ProcessName(c.Pid) == name, now);
-            h ??= Busiest(c => c.Source == Source.Kernel && c.Pid == processId && c.Target == (ulong)window, now)
-                  ?? Busiest(c => c.Source == Source.Kernel && c.Pid == processId, now);
+            var fresh = _histories.Values.Where(h => h.Presents.Count >= 3 && now - h.LastSeenTick <= StaleAfterMs)
+                .Select(h => new Candidate(h.Pid, h.Source, h.Target, FrameStats.RecentCount(h.Presents), h))
+                .ToList();
+            var pick = Pick(fresh, processId, (ulong)window, ProcessName);
 
-            LastSource = h?.Source;
-            return h is null ? null : FrameStats.Compute(h.Presents, _scratch);
+            LastSource = pick?.Source;
+            return pick?.History is History chosen ? FrameStats.Compute(chosen.Presents, _scratch) : null;
         }
     }
 
-    /// <summary>The fresh source with the most presents in the last second: the game, not a video or idle window.</summary>
-    private History? Busiest(Func<History, bool> match, long now)
+    /// <summary>Whether this window (kernel) or swap chain (DirectX) of a process presented within the staleness limit.</summary>
+    internal bool IsPresenting(int processId, ulong target)
     {
-        History? best = null;
-        var bestCount = 0;
-        foreach (var h in _histories.Values)
-        {
-            if (h.Presents.Count < 3 || now - h.LastSeenTick > StaleAfterMs || !match(h)) continue;
-            var count = FrameStats.RecentCount(h.Presents);
-            if (count > bestCount) (best, bestCount) = (h, count);
-        }
-        return best;
+        lock (_lock)
+            return _histories.Values.Any(h => h.Pid == processId && h.Target == target &&
+                                              Environment.TickCount64 - h.LastSeenTick <= StaleAfterMs);
+    }
+
+    /// <summary>A recently presenting source, as seen by <see cref="Pick"/>.</summary>
+    internal sealed record Candidate(int Pid, Source Source, ulong Target, int RecentFrames, object? History = null);
+
+    /// <summary>
+    /// Chooses whose frames to report for the foreground window. The window's own process always comes
+    /// first; another process's frames are only borrowed when it has none at all.
+    /// <list type="number">
+    /// <item>DirectX from the window's own process (busiest swap chain).</item>
+    /// <item>Kernel presents (Vulkan/OpenGL) from the window's own process — this exact window if possible.</item>
+    /// <item>DirectX from a same-named helper process: browsers draw in a separate GPU process.</item>
+    /// </list>
+    /// Borrowing before checking the window's own kernel presents made a Vulkan window report the frame
+    /// rate of another, same-named process.
+    /// </summary>
+    internal static Candidate? Pick(IReadOnlyList<Candidate> fresh, int processId, ulong window, Func<int, string?> nameOf)
+    {
+        Candidate? Busiest(Func<Candidate, bool> match) =>
+            fresh.Where(match).OrderByDescending(c => c.RecentFrames).FirstOrDefault();
+
+        var own = Busiest(c => c.Source == Source.DirectX && c.Pid == processId)
+                  ?? Busiest(c => c.Source == Source.Kernel && c.Pid == processId && c.Target == window)
+                  ?? Busiest(c => c.Source == Source.Kernel && c.Pid == processId);
+        if (own != null) return own;
+
+        var name = nameOf(processId);
+        return name is null ? null
+            : Busiest(c => c.Source == Source.DirectX && c.Pid != processId && nameOf(c.Pid) == name);
     }
 
     private string? ProcessName(int pid)
