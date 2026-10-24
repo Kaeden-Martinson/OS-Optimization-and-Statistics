@@ -50,10 +50,20 @@ internal static class StartupTask
     {
         var (code, output) = RunSchtasks($"/Query /TN \"{TaskName}\" /XML");
         if (code != 0) return new StartupStatus(false, null, false);
-        var match = Regex.Match(output, "<Command>(.*?)</Command>", RegexOptions.Singleline);
-        var command = match.Success ? SecurityElement.FromString($"<x>{match.Groups[1].Value}</x>")?.Text?.Trim().Trim('"') : null;
+        var command = ParseCommand(output);
+        if (command is null)
+            Log.Warn("Startup", $"Couldn't read the startup task's target ({output.Length} chars: {AppIdentity.Redact(output[..Math.Min(80, output.Length)]).Replace("\0", "\\0")})");
         var here = command != null && string.Equals(Path.GetFullPath(command), Environment.ProcessPath, StringComparison.OrdinalIgnoreCase);
         return new StartupStatus(true, command, here);
+    }
+
+    /// <summary>The program a task XML runs, unescaped; null if there isn't one.</summary>
+    internal static string? ParseCommand(string taskXml)
+    {
+        var match = Regex.Match(taskXml, "<Command>(.*?)</Command>", RegexOptions.Singleline);
+        if (!match.Success) return null;
+        var text = System.Net.WebUtility.HtmlDecode(match.Groups[1].Value).Trim().Trim('"');
+        return text.Length == 0 ? null : text;
     }
 
     /// <returns>Null on success, otherwise what went wrong in plain words.</returns>
@@ -161,14 +171,27 @@ internal static class StartupTask
         try
         {
             using var p = Process.Start(psi)!;
-            var output = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
+            var stdout = new MemoryStream();
+            var errTask = p.StandardError.ReadToEndAsync();
+            p.StandardOutput.BaseStream.CopyTo(stdout);
             p.WaitForExit();
-            return (p.ExitCode, output);
+            return (p.ExitCode, Decode(stdout.ToArray()) + errTask.Result);
         }
         catch (Exception e)
         {
             return (-1, e.Message);
         }
+    }
+
+    /// <summary>
+    /// schtasks writes UTF-16 when the caller has no console (like this windowed app) and the console
+    /// code page otherwise, so pick by looking at the bytes.
+    /// </summary>
+    internal static string Decode(byte[] bytes)
+    {
+        if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE) return Encoding.Unicode.GetString(bytes, 2, bytes.Length - 2);
+        var zeros = bytes.Where((b, i) => i % 2 == 1 && b == 0).Count();
+        return bytes.Length > 8 && zeros > bytes.Length / 4 ? Encoding.Unicode.GetString(bytes) : Encoding.UTF8.GetString(bytes);
     }
 
     private static int RunElevated(string args)

@@ -288,6 +288,32 @@ public class HistoryTests : TempDataTest
     }
 }
 
+public class StartupTaskTests
+{
+    private const string Xml = "<?xml version=\"1.0\"?><Task><Command>C:\\Apps\\PCSpecOverlay.exe</Command></Task>";
+
+    [Fact]
+    public void Decodes_utf16_output_without_a_console() =>
+        Assert.Contains("<Command>", StartupTask.Decode(System.Text.Encoding.Unicode.GetBytes(Xml)));
+
+    [Fact]
+    public void Decodes_utf16_with_byte_order_mark() =>
+        Assert.Contains("<Command>", StartupTask.Decode([0xFF, 0xFE, .. System.Text.Encoding.Unicode.GetBytes(Xml)]));
+
+    [Fact]
+    public void Decodes_console_output() =>
+        Assert.Contains("<Command>", StartupTask.Decode(System.Text.Encoding.UTF8.GetBytes(Xml)));
+
+    [Theory]
+    [InlineData("<Exec><Command>C:\\Users\\me\\AppData\\Local\\Programs\\PCSpecOverlay\\PCSpecOverlay.exe</Command></Exec>", "C:\\Users\\me\\AppData\\Local\\Programs\\PCSpecOverlay\\PCSpecOverlay.exe")]
+    [InlineData("<Command>\"C:\\Program Files\\A &amp; B\\app.exe\"</Command>", "C:\\Program Files\\A & B\\app.exe")]
+    [InlineData("<Command>\r\n  C:\\x.exe\r\n</Command>", "C:\\x.exe")]
+    [InlineData("<Command></Command>", null)]
+    [InlineData("<Task />", null)]
+    public void Reads_the_task_target(string xml, string? expected) =>
+        Assert.Equal(expected, StartupTask.ParseCommand(xml));
+}
+
 public class HotkeyTests
 {
     [Theory]
