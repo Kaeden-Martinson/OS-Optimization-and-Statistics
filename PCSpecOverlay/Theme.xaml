@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:core="clr-namespace:PCSpecOverlay.Core">
 
     <!-- Palette: near-black surfaces, one restrained green accent, amber/red reserved for warnings -->
     <Color x:Key="AccentColor">#76B900</Color>
@@ -116,6 +117,7 @@
 
     <!-- Toggle switch; the label is the CheckBox content, so screen readers announce it -->
     <Style x:Key="Switch" TargetType="CheckBox">
+        <Setter Property="core:AccessibleName.FromContent" Value="True" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Foreground" Value="{StaticResource Text}" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />

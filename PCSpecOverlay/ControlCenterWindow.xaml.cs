@@ -105,7 +105,6 @@ public partial class ControlCenterWindow : Window
         }
         UpdateBoostTargets();
         UpdateRestartHint();
-        ShowUpdate(_app.LastUpdateCheck);
     }
 
     private void OnRestartApp(object sender, RoutedEventArgs e) => _app.RestartApp();
@@ -201,6 +200,7 @@ public partial class ControlCenterWindow : Window
         StartupStatus.Text = startup.Describe() + (AppIdentity.IsDevBuild ? " · This is a development build; it uses its own startup entry." : "");
         UpdateBoostTargets();
         UpdateRestartHint();
+        ShowUpdate(_app.LastUpdateCheck);
 
         var sessions = HistoryRecorder.LoadSessions(10);
         SessionList.ItemsSource = sessions.Select(DescribeSession).ToList();
