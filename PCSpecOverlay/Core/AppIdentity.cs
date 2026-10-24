@@ -30,6 +30,11 @@ public static class AppIdentity
     /// <summary>Appended to names that must not clash between the installed app and a dev build.</summary>
     public static string Suffix => IsDevBuild ? "-Dev" : "";
 
+    /// <summary>GitHub "owner/name" that releases are published to; set at build time (UpdateRepository property).</summary>
+    public static string UpdateRepository { get; } =
+        typeof(AppIdentity).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "UpdateRepository")?.Value ?? "";
+
     public static string Version { get; } =
         typeof(AppIdentity).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
         ?? "0.0.0";

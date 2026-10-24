@@ -41,6 +41,10 @@ public sealed class AppState
     /// <summary>Browsers whose restart failed, so the app stops offering it until the browser runs again.</summary>
     public Dictionary<string, DateTime> BrowserRestartFailedUtc { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Last automatic update check, and the newest version already announced (announced once each).</summary>
+    public DateTime LastUpdateCheckUtc { get; set; }
+    public string? AnnouncedVersion { get; set; }
+
     /// <summary>Starts that didn't reach "running normally"; several in a row turns on recovery mode.</summary>
     public int UnfinishedStarts { get; set; }
 

@@ -93,6 +93,10 @@ public partial class App : Application
         StartTimer(TimeSpan.FromSeconds(2), _overlay.KeepOnTop);
         var running = StartTimer(TimeSpan.FromSeconds(60), () => _engine.MarkRunning());
         running.Tick += (_, _) => running.Stop();
+        // Update check: shortly after start (not during sign-in), then hourly; it only contacts GitHub once a day
+        StartTimer(TimeSpan.FromHours(1), () => _ = CheckForUpdatesAsync(automatic: true));
+        var firstCheck = StartTimer(TimeSpan.FromMinutes(2), () => _ = CheckForUpdatesAsync(automatic: true));
+        firstCheck.Tick += (_, _) => firstCheck.Stop();
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaysChanged;
         UpdateStats();
         UpdateFps();
@@ -220,6 +224,33 @@ public partial class App : Application
     }
 
     public bool StartedWithGpuRendering { get; private set; }
+
+    // ---- updates ----
+
+    public UpdateResult? LastUpdateCheck { get; private set; }
+
+    /// <summary>Checks GitHub for a newer release. Automatic checks run at most once a day and announce each version once.</summary>
+    public async Task<UpdateResult> CheckForUpdatesAsync(bool automatic)
+    {
+        if (automatic && (!Settings.CheckForUpdates || string.IsNullOrEmpty(Updates.Repository) ||
+                          DateTime.UtcNow - _engine.State.LastUpdateCheckUtc < TimeSpan.FromDays(1)))
+            return LastUpdateCheck ?? new UpdateResult(UpdateState.UpToDate, null, "");
+
+        using var http = Updates.CreateClient();
+        var current = Version.Parse(AppIdentity.Version);
+        var result = await Updates.CheckAsync(http, current);
+        LastUpdateCheck = result;
+        if (result.State != UpdateState.Failed) _engine.State.LastUpdateCheckUtc = DateTime.UtcNow;
+
+        if (automatic && result is { State: UpdateState.Available, Release: { } r } && _engine.State.AnnouncedVersion != r.Version.ToString())
+        {
+            _engine.State.AnnouncedVersion = r.Version.ToString();
+            _tray.Notify($"{r.Title} is available. Open the control center (General › Updates) to install it.", "Update available");
+        }
+        _engine.State.Save();
+        Log.Info("Updates", result.Message);
+        return result;
+    }
 
     /// <summary>Restarts the app (e.g. to switch rendering). The new copy waits for this one to exit.</summary>
     public void RestartApp()

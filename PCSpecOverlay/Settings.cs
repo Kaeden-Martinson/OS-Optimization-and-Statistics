@@ -91,6 +91,8 @@ public sealed class Settings
     /// <summary>Don't wake a sleeping laptop GPU just to read its sensors.</summary>
     public bool LetGpuSleep { get; set; } = true;
     public bool HistoryEnabled { get; set; } = true;
+    /// <summary>Look for a newer release on GitHub once a day (only when a release location is built in).</summary>
+    public bool CheckForUpdates { get; set; } = true;
     public int HistoryRetentionDays { get; set; } = 14;
 
     // Legacy (version 1) fields, read once for migration and never written back

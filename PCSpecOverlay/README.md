@@ -20,7 +20,7 @@ rights, and adds a Start menu shortcut and an entry in **Settings › Apps**.
 **Requirements:** Windows 10 or 11 (64-bit) and the **.NET 8 Desktop Runtime**. If the runtime is
 missing, Windows offers to download it from Microsoft the first time you start the app.
 
-**Updating:** run the newer setup. A running copy is closed first (cleanly, restoring anything it
+**Updating:** Control Center › General › Updates checks GitHub once a day (or on demand) and can download and install a newer release; the download's SHA-256 must match the release notes before anything runs. Or run a newer setup yourself. A running copy is closed first (cleanly, restoring anything it
 changed), settings are kept, and the previous version is kept beside the new one as a fallback.
 
 **Uninstalling:** Settings › Apps › PC Spec Overlay › Uninstall. You can choose to undo the Windows
@@ -159,8 +159,8 @@ Nothing is uploaded anywhere.
 
 ## Limitations
 
-- Not code-signed (no signing certificate is available), so Windows SmartScreen may warn on first run.
-- No online update check: there is no release server. Run a newer setup to update.
+- Not code-signed until a code-signing certificate is used with `build-release.ps1`, so Windows SmartScreen may warn on first run.
+- Update checks need the GitHub repository built in (`-UpdateRepository`); builds without it say updates aren't set up.
 - FPS covers DirectX 9–12, browsers, Vulkan and OpenGL. Games on older APIs that bypass both
   DirectX and the Windows graphics kernel's present path (e.g. some DirectDraw titles) aren't counted.
 - CPU temperature is the hottest ACPI thermal zone, not per-core sensors.
@@ -177,7 +177,8 @@ dotnet test PCSpecOverlay.Tests -c Release
 dotnet publish PCSpecOverlay -c Release -p:PublishSingleFile=true -o artifacts\publish
 ```
 
-Rename the published exe to `PCSpecOverlay-Setup-<version>.exe` to make the setup program (a file
+Or run `.\build-release.ps1 -UpdateRepository owner/name [-CertificateThumbprint …]`: it tests, publishes, signs when a
+certificate is given, and writes `release-notes.md` with the SHA-256 line the updater requires. Manually: rename the published exe to `PCSpecOverlay-Setup-<version>.exe` to make the setup program (a file
 whose name contains "Setup" runs the installer). Builds running from anywhere other than the install
 folder are **development builds**: they use `%AppData%\PCSpecOverlay-Dev`, their own startup entry,
 lock and monitoring session, so they never interfere with the installed app.

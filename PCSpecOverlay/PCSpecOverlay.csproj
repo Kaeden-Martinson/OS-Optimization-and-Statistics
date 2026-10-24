@@ -33,6 +33,14 @@
     <InternalsVisibleTo Include="PCSpecOverlay.Tests" />
   </ItemGroup>
 
+  <!-- Where releases are published ("owner/name" on GitHub). Empty = update checks report "not set up". -->
+  <PropertyGroup>
+    <UpdateRepository Condition="'$(UpdateRepository)' == ''"></UpdateRepository>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="UpdateRepository" Value="$(UpdateRepository)" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.*" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.*" />

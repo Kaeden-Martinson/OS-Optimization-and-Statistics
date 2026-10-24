@@ -105,9 +105,60 @@ public partial class ControlCenterWindow : Window
         }
         UpdateBoostTargets();
         UpdateRestartHint();
+        ShowUpdate(_app.LastUpdateCheck);
     }
 
     private void OnRestartApp(object sender, RoutedEventArgs e) => _app.RestartApp();
+
+    // ---- updates ----
+
+    private void ShowUpdate(UpdateResult? r)
+    {
+        UpdateVersion.Text = $"You have version {AppIdentity.Version}" + (AppIdentity.IsDevBuild ? " (development build)" : "");
+        UpdateStatus.Text = r?.Message is { Length: > 0 } m ? m
+            : string.IsNullOrEmpty(Updates.Repository) ? "Updates aren't set up yet: this build doesn't know where releases are published."
+            : "Not checked yet.";
+        var available = r is { State: UpdateState.Available, Release: { } };
+        InstallUpdateButton.Visibility = available && r!.Release!.CanInstall ? Visibility.Visible : Visibility.Collapsed;
+        ReleasePageButton.Visibility = r?.Release?.PageUrl is { Length: > 0 } ? Visibility.Visible : Visibility.Collapsed;
+        CheckUpdatesButton.IsEnabled = !string.IsNullOrEmpty(Updates.Repository);
+        if (available && !r!.Release!.CanInstall)
+            UpdateStatus.Text += " This release has no verified setup file, so install it from its page.";
+    }
+
+    private async void OnCheckUpdates(object sender, RoutedEventArgs e)
+    {
+        CheckUpdatesButton.IsEnabled = false;
+        UpdateStatus.Text = "Checking…";
+        ShowUpdate(await _app.CheckForUpdatesAsync(automatic: false));
+    }
+
+    private async void OnInstallUpdate(object sender, RoutedEventArgs e)
+    {
+        if (_app.LastUpdateCheck?.Release is not { } release) return;
+        if (!Confirm($"Download and install {release.Title}?\n\nThe download is checked against its published SHA-256 before anything runs. The installer then asks before replacing the app, closes this copy cleanly (putting back anything it changed) and keeps the current version as a fallback.", "Install update"))
+            return;
+        InstallUpdateButton.IsEnabled = false;
+        try
+        {
+            using var http = Updates.CreateClient();
+            var progress = new Progress<double>(p => UpdateStatus.Text = $"Downloading… {p:P0}");
+            var setup = await Updates.DownloadAsync(http, release, progress);
+            UpdateStatus.Text = "Verified. Starting the installer…";
+            Process.Start(new ProcessStartInfo(setup) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus.Text = ex.Message;
+            InstallUpdateButton.IsEnabled = true;
+        }
+    }
+
+    private void OnReleasePage(object sender, RoutedEventArgs e)
+    {
+        if (_app.LastUpdateCheck?.Release?.PageUrl is { Length: > 0 } url && url.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
 
     /// <summary>Rendering mode only changes on restart, so offer one when the switch differs from the running mode.</summary>
     private void UpdateRestartHint() =>
