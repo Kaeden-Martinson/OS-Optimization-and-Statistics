@@ -109,10 +109,23 @@ public partial class App : Application
 
     // ---- periodic work ----
 
+    private bool _statsChanged;
+
+    /// <summary>
+    /// The overlay is repainted only here: once per FPS tick, including any new sensor readings.
+    /// It renders on the CPU, so every repaint costs; one combined repaint instead of one per timer
+    /// roughly halves the overlay's CPU use.
+    /// </summary>
     private void UpdateFps()
     {
         _engine.SampleFps(); // also when hidden: gaming mode needs to know when a game is in front
-        if (_overlay.IsVisible) _overlay.ShowFps(_engine.Latest);
+        if (!_overlay.IsVisible) return;
+        _overlay.ShowFps(_engine.Latest);
+        if (_statsChanged)
+        {
+            _overlay.ShowStats(_engine.Latest);
+            _statsChanged = false;
+        }
     }
 
     private void UpdateStats()
@@ -121,8 +134,8 @@ public partial class App : Application
         var needed = _overlay.IsVisible || Settings.Alerts || _controlCenter != null || _engine.Gaming.Active;
         if (!needed) return;
         _engine.SampleStats();
-        _history.Record(_engine.Latest, _engine.Gaming.Active ? _engine.Gaming.ActiveGames.FirstOrDefault() : null);
-        if (_overlay.IsVisible) _overlay.ShowStats(_engine.Latest);
+        _history.Record(_engine.Latest, _engine.Game?.Label);
+        _statsChanged = true;
     }
 
     private void UpdateGaming()

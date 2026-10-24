@@ -67,6 +67,29 @@ internal static class Native
 
     [DllImport("kernel32.dll")] public static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX status);
 
+    [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool QueryFullProcessImageName(IntPtr process, int flags, System.Text.StringBuilder name, ref int size);
+    private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+    /// <summary>
+    /// A process's name (exe without extension) by asking for that one process. Much cheaper than
+    /// Process.GetProcessById, which enumerates every process on the system.
+    /// </summary>
+    public static string? ProcessName(int pid)
+    {
+        if (pid <= 0) return null;
+        var h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (h == IntPtr.Zero) return null;
+        try
+        {
+            var buffer = new System.Text.StringBuilder(512);
+            var size = buffer.Capacity;
+            return QueryFullProcessImageName(h, 0, buffer, ref size) ? System.IO.Path.GetFileNameWithoutExtension(buffer.ToString()) : null;
+        }
+        finally { CloseHandle(h); }
+    }
+
     public static int ForegroundProcessId()
     {
         var hwnd = GetForegroundWindow();

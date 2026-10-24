@@ -242,12 +242,7 @@ internal sealed class Engine : IDisposable
         return report;
     }
 
-    private static string? ProcessName(int pid)
-    {
-        if (pid == 0) return null;
-        try { using var p = Process.GetProcessById(pid); return p.ProcessName; }
-        catch { return null; }
-    }
+    private static string? ProcessName(int pid) => Native.ProcessName(pid);
 
     public void Dispose()
     {

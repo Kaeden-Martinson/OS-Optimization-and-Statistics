@@ -252,14 +252,24 @@ public partial class OverlayWindow : Window
 
     private static void Set(TextBlock block, double? value, string format) => block.Text = Num(value, format);
 
-    /// <summary>Bars ease to their new value; low frame rate keeps the CPU cost negligible.</summary>
+    /// <summary>
+    /// Bars ease only on noticeable changes (≥10 points), briefly and at a low frame rate; small
+    /// changes jump. The overlay renders in software, so every animation frame repaints the panel.
+    /// </summary>
     private static void SetBar(FrameworkElement fill, double? percent)
     {
         var scale = (ScaleTransform)fill.RenderTransform;
         var target = Math.Clamp((percent ?? 0) / 100.0, 0, 1);
-        if (Math.Abs(scale.ScaleX - target) < 0.01) return;
-        var anim = new DoubleAnimation(target, TimeSpan.FromMilliseconds(300)) { EasingFunction = new QuadraticEase() };
-        Timeline.SetDesiredFrameRate(anim, 30);
+        var change = Math.Abs(scale.ScaleX - target);
+        if (change < 0.01) return;
+        if (change < 0.10)
+        {
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.ScaleX = target;
+            return;
+        }
+        var anim = new DoubleAnimation(target, TimeSpan.FromMilliseconds(200)) { EasingFunction = new QuadraticEase() };
+        Timeline.SetDesiredFrameRate(anim, 20);
         scale.BeginAnimation(ScaleTransform.ScaleXProperty, anim);
     }
 

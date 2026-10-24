@@ -135,8 +135,7 @@ internal sealed class FpsMonitor : IDisposable
     {
         if (!_names.TryGetValue(pid, out var name))
         {
-            try { using var p = System.Diagnostics.Process.GetProcessById(pid); name = p.ProcessName; }
-            catch { name = null; }
+            name = Native.ProcessName(pid);
             _names[pid] = name;
         }
         return name;
