@@ -100,6 +100,7 @@ Legend: ✅ verified working · 🟡 partially working / works with caveats · �
 | Automatic gaming mode on the installed copy with Starve.io | ⬜ | Logic covered by tests and verified live on the previous version; the rebuilt version needs a short play session |
 | Laptop GPU sleep path | 🟡 | Power-state read verified (reports D0 while the GPU is in use). The asleep (D3) branch couldn't be observed because the AI workload kept the GPU awake |
 | Browser restart with several Edge profiles open | 🟡 | Not tested; the confirmation warns when windows from more than one profile are open |
+| Vulkan and OpenGL FPS | ✅ | Added in 2.0.9 via the graphics kernel's present event. Automated tests render real frames: OpenGL on Intel ~60/60 (kernel path), Vulkan on Intel 48.3/48 (kernel path), Vulkan on NVIDIA 71.9/72 (driver hands frames to DXGI → DirectX path, not double-counted). End-to-end overlay check with the window in front still pending (screen was locked) |
 | Code signing, online updates | ❌ | No certificate or release server available; documented in the README |
 
 ## Priorities from this audit

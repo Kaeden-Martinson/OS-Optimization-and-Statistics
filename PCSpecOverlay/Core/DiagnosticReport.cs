@@ -32,7 +32,10 @@ internal static class DiagnosticReport
         }
 
         list.Add(engine.Fps.IsRunning
-            ? new("FPS monitoring", "Running (DirectX/DXGI and Direct3D 9 present events, per swap chain)", DiagLevel.Ok)
+            ? new("FPS monitoring", engine.Fps.KernelPresents
+                ? "Running: DirectX (per swap chain) plus Vulkan and OpenGL (graphics kernel, per window)"
+                : "Running: DirectX only (the graphics kernel provider couldn't be enabled, so Vulkan/OpenGL games show —)",
+                engine.Fps.KernelPresents ? DiagLevel.Ok : DiagLevel.Warn)
             : new("FPS monitoring", $"Not running: {engine.Fps.LastError?.Message ?? "unknown"}. Needs administrator rights or the Performance Log Users group (then sign out and in).", DiagLevel.Warn));
 
         var gpu = engine.Latest.Gpu;

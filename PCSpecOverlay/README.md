@@ -1,7 +1,7 @@
 # PC Spec Overlay
 
 A lightweight Windows performance overlay and optimizer, in the spirit of NVIDIA's in-game overlay:
-live FPS, frame time and 1% lows; GPU and CPU load, temperature, clocks and power; slowdown
+live FPS, frame time and 1% lows (DirectX, Vulkan and OpenGL); GPU and CPU load, temperature, clocks and power; slowdown
 warnings; and an automatic gaming mode that changes Windows settings only while you play — and puts
 them back afterwards.
 
@@ -75,7 +75,7 @@ the per-user power mode, and it only touches processes in your own Windows sessi
 
 | Metric | Source | Updated | Needs | Accuracy / notes | When unavailable |
 |---|---|---|---|---|---|
-| FPS | DirectX present events (ETW: DXGI + Direct3D 9), counted **per swap chain** for the foreground app | 0.25–1 s (setting) | Admin or Performance Log Users | Frames presented in the last second ÷ the time they spanned. Browsers present everything through one GPU process; per-swap-chain counting stops videos or other windows inflating the game's number | "—" when the app hasn't presented for 2 s (paused, minimized, menus that don't redraw) |
+| FPS | Present events via ETW: **DirectX** (DXGI + Direct3D 9) per swap chain, and **Vulkan/OpenGL** from the graphics kernel (DxgKrnl Present_Info) per window, used only for apps that send no DirectX presents | 0.25–1 s (setting) | Admin or Performance Log Users | Frames presented in the last second ÷ the time they spanned. Browsers present everything through one GPU process; per-swap-chain counting stops videos or other windows inflating the game's number | "—" when the app hasn't presented for 2 s (paused, minimized, menus that don't redraw); Windows delivers events in ~1 s batches, so allow up to ~3 s |
 | Frame time | Same | Same | Same | Average interval over the last second | "—" |
 | 1% low | Same | Same | Same | 1000 ÷ the 99th-percentile frame interval over the last **10 s** — the frame rate of the slowest 1% of frames | "—" |
 | GPU load, temperature, clock, power, VRAM | NVIDIA NVML (driver) | 0.5–5 s (setting) | Nothing | As reported by the driver | Hidden without an NVIDIA GPU; "Sleeping" while a laptop GPU is powered down; "Driver not responding" during driver resets (reconnects automatically) |
@@ -146,9 +146,8 @@ Nothing is uploaded anywhere.
 
 ## Troubleshooting
 
-- **FPS shows "—" in a game** — the game may be paused or minimized, or it may use Vulkan/OpenGL
-  without DXGI presentation (not covered). Exclusive-fullscreen games may also hide the overlay
-  (borderless/windowed is fine).
+- **FPS shows "—" in a game** — the game may be paused or minimized. Exclusive-fullscreen games
+  may also hide the overlay (borderless/windowed is fine).
 - **FPS unavailable everywhere** — see *Permissions*; Diagnostics shows whether frame monitoring runs.
 - **Hotkey doesn't work** — another app may own it; Control Center › General shows the active
   shortcut and lets you pick another (the old one stays active if the new one is taken).
@@ -160,7 +159,8 @@ Nothing is uploaded anywhere.
 
 - Not code-signed (no signing certificate is available), so Windows SmartScreen may warn on first run.
 - No online update check: there is no release server. Run a newer setup to update.
-- FPS covers DirectX 9–12 and browsers; Vulkan/OpenGL only when presented through DXGI.
+- FPS covers DirectX 9–12, browsers, Vulkan and OpenGL. Games on older APIs that bypass both
+  DirectX and the Windows graphics kernel's present path (e.g. some DirectDraw titles) aren't counted.
 - CPU temperature is the hottest ACPI thermal zone, not per-core sensors.
 - Browser restart was verified with one Edge profile open; with windows from several profiles,
   the confirmation warns that some may need reopening from History.

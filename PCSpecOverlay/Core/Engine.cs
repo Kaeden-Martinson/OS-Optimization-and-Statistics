@@ -122,7 +122,7 @@ internal sealed class Engine : IDisposable
         }
         var hwnd = Native.GetForegroundWindow();
         var pid = Native.ForegroundProcessId();
-        var sample = pid == Environment.ProcessId ? null : Fps.Sample(pid);
+        var sample = pid == Environment.ProcessId ? null : Fps.Sample(pid, hwnd);
         Latest = Latest with { Fps = sample, FpsUnavailable = null };
 
         Game = ProcessName(pid) is { } name
