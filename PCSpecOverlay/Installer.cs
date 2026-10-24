@@ -148,9 +148,14 @@ internal static class Installer
             catch (Exception e) { report.Add($"Couldn't delete settings: {e.Message}"); }
         }
 
-        // This exe is inside the install folder: delete the folder once we've exited
-        Process.Start(new ProcessStartInfo("cmd.exe",
-            $"/c timeout /t 3 /nobreak >nul & rmdir /s /q \"{AppIdentity.InstallDirectory}\"")
+        // This exe is inside the install folder: delete the folder once we've exited. The helper waits for
+        // this process to end (not a fixed delay: "timeout" doesn't work without a console), then retries briefly.
+        var dir = AppIdentity.InstallDirectory.Replace("'", "''");
+        var script = $"Wait-Process -Id {Environment.ProcessId} -Timeout 120 -ErrorAction SilentlyContinue; " +
+                     $"foreach ($i in 1..10) {{ Remove-Item -LiteralPath '{dir}' -Recurse -Force -ErrorAction SilentlyContinue; " +
+                     $"if (-not (Test-Path -LiteralPath '{dir}')) {{ break }}; Start-Sleep -Seconds 1 }}";
+        Process.Start(new ProcessStartInfo("powershell.exe",
+            $"-NoProfile -NonInteractive -WindowStyle Hidden -Command \"{script}\"")
         { CreateNoWindow = true, UseShellExecute = false });
         report.Add("Removed the app, its Start menu shortcut and its Apps entry.");
         return report;
