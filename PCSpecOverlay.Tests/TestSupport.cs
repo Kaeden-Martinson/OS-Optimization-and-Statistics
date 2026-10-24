@@ -16,7 +16,7 @@ public abstract class TempDataTest : IDisposable
         AppPaths.DataDirectory = Dir;
     }
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         try { Directory.Delete(Dir, recursive: true); } catch { /* best effort */ }
     }
