@@ -56,11 +56,9 @@ public partial class ControlCenterWindow : Window
         Top = area.Top + (area.Height - Height) / 2;
         SourceInitialized += (_, _) => DarkTitleBar.Apply(this);
 
-        DisplayBox.ItemsSource = Displays.All().Select(d => new KeyValuePair<string, string>(d.Primary ? "" : d.DeviceName, d.Label)).ToList();
-        FpsRefreshBox.ItemsSource = new[] { (250, "4 times a second"), (500, "Twice a second"), (1000, "Once a second") }
-            .Select(x => new KeyValuePair<int, string>(x.Item1, x.Item2)).ToList();
-        StatsRefreshBox.ItemsSource = new[] { (500, "Twice a second"), (1000, "Once a second"), (2000, "Every 2 seconds"), (5000, "Every 5 seconds") }
-            .Select(x => new KeyValuePair<int, string>(x.Item1, x.Item2)).ToList();
+        Fill(DisplayBox, Displays.All().Select(d => ((object)(d.Primary ? "" : d.DeviceName), d.Label)));
+        Fill(FpsRefreshBox, new (object, string)[] { (250, "4 times a second"), (500, "Twice a second"), (1000, "Once a second") });
+        Fill(StatsRefreshBox, new (object, string)[] { (500, "Twice a second"), (1000, "Once a second"), (2000, "Every 2 seconds"), (5000, "Every 5 seconds") });
 
         _checks = Checks.Create(_engine.Journal, _engine.State);
         CheckList.ItemsSource = _checks;
@@ -81,6 +79,11 @@ public partial class ControlCenterWindow : Window
         _refresh.Start();
         Closed += (_, _) => { _refresh.Stop(); if (_saveSoon.IsEnabled) { _saveSoon.Stop(); Save(); } };
         Loaded += (_, _) => { _loading = false; RefreshAll(); };
+    }
+
+    private static void Fill(ComboBox box, IEnumerable<(object Value, string Label)> items)
+    {
+        foreach (var (value, label) in items) box.Items.Add(new ComboBoxItem { Content = label, Tag = value });
     }
 
     private void OnEdited(object sender, RoutedEventArgs e)
@@ -221,7 +224,8 @@ public partial class ControlCenterWindow : Window
             : _settings.AutoGamingMode ? "Nothing is changed until a game from your list is in front."
             : "Turn it on from the Gaming page or the tray.";
         GamingDetails.ItemsSource = gm.Optimizations.Select(o => "• " + o).Concat(gm.Notices.Select(n => "! " + n)).ToList();
-        StopButton.Visibility = _engine.OptimizationsPaused ? Visibility.Collapsed : Visibility.Visible;
+        var somethingActive = gm.Active || _engine.Boost.Active || _engine.Journal.Entries.Any(e => e.Owners.Contains(GamingMode.Owner));
+        StopButton.Visibility = !_engine.OptimizationsPaused && somethingActive ? Visibility.Visible : Visibility.Collapsed;
         ResumeButton.Visibility = _engine.OptimizationsPaused || _engine.RecoveryMode ? Visibility.Visible : Visibility.Collapsed;
     }
 

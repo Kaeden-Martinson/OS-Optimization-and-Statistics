@@ -51,6 +51,9 @@ internal sealed class Engine : IDisposable
 
     public Engine()
     {
+        var clock = Stopwatch.StartNew();
+        void Step(string what) { Log.Info("Startup", $"{what} ({clock.ElapsedMilliseconds} ms)"); clock.Restart(); }
+
         Settings = Settings.Load();
         State = AppState.Load();
         Journal = new ChangeJournal(State, TimeProvider.System);
@@ -62,14 +65,19 @@ internal sealed class Engine : IDisposable
         RecoveryMode = State.UnfinishedStarts > RecoveryAfterFailedStarts;
         if (RecoveryMode) Log.Warn("App", $"Recovery mode: {State.UnfinishedStarts - 1} unfinished starts in a row; automatic optimizations are off");
 
+        Step("Settings and state loaded");
         Gpu = NvidiaGpu.TryCreate();
         if (Gpu != null) Gpu.LetSleep = Settings.LetGpuSleep;
+        Step("GPU monitor ready");
         System = new SystemStats();
+        Step("CPU and memory monitors ready");
         Boost = new GameBoost(State);
         Gaming = new GamingMode(Settings, Journal, Boost, SettingCatalog.Power, TimeProvider.System);
 
         RecoverFromLastRun();
+        Step("Recovery check done");
         Fps.Start();
+        Step("FPS monitor ready");
         Boost.SetEnabled(Settings.GameBoost && !RecoveryMode);
     }
 
@@ -177,20 +185,23 @@ internal sealed class Engine : IDisposable
         const string fixes = "Try fans on Max in your laptop's control app, raise the back of the laptop for airflow, or pause heavy background work.";
 
         // Reported by the driver / Windows: the hardware is actually slowing down
-        if (_limits.ActiveFor(Limit.GpuThermal) >= after)
+        var gpuThrottling = _limits.ActiveFor(Limit.GpuThermal) >= after;
+        var cpuThrottling = _limits.ActiveFor(Limit.CpuThermal) >= after;
+        if (gpuThrottling)
             Raise(new("gpu-throttle", "GPU is slowing down from heat",
                 $"The NVIDIA driver reports the GPU{Temp(t.Gpu.TempC)} is reducing its speed to cool off, so FPS will drop. {fixes}", true));
-        if (_limits.ActiveFor(Limit.CpuThermal) >= after)
+        if (cpuThrottling)
             Raise(new("cpu-throttle", "CPU is slowing down from heat",
                 $"Windows reports the CPU{Temp(t.CpuTempC)} is capped below full speed while hot, which causes stutter. {fixes}", true));
 
-        // Warnings based on your thresholds: hot, but not necessarily a problem
-        if (_gpuHot.Update(t.Gpu.TempC, Settings.GpuTempHot) >= after)
+        // Warnings based on your levels: hot, but not necessarily a problem. Skipped while the stronger,
+        // confirmed alert above covers the same part.
+        if (_gpuHot.Update(t.Gpu.TempC, Settings.GpuTempHot) >= after && !gpuThrottling)
             Raise(new("gpu-hot", "GPU running hot",
-                $"GPU{Temp(t.Gpu.TempC)} has been above your {Settings.GpuTempHot} °C warning level for a while. This is a warning, not a fault; laptop GPUs are built to run warm.", false));
-        if (_cpuHot.Update(t.CpuTempC, Settings.CpuTempHot) >= after)
+                $"GPU{Temp(t.Gpu.TempC)} has been above your {Settings.GpuTempHot} °C level for a while. This is a warning, not a fault; laptop GPUs are built to run warm.", false));
+        if (_cpuHot.Update(t.CpuTempC, Settings.CpuTempHot) >= after && !cpuThrottling)
             Raise(new("cpu-hot", "CPU running hot",
-                $"CPU{Temp(t.CpuTempC)} has been above your {Settings.CpuTempHot} °C warning level for a while. This is a warning, not a fault.", false));
+                $"CPU{Temp(t.CpuTempC)} has been above your {Settings.CpuTempHot} °C level for a while. This is a warning, not a fault.", false));
     }
 
     private static string Temp(double? c) => c is { } v ? $" ({v:0} °C)" : "";

@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:PCSpecOverlay"
-        Title="PC Spec Overlay" Width="1040" Height="760" MinWidth="820" MinHeight="520"
+        Title="PC Spec Overlay · Control Center" Width="1040" Height="760" MinWidth="820" MinHeight="520"
         WindowStartupLocation="Manual" Background="{StaticResource Window}" Foreground="{StaticResource Text}"
         FontFamily="Segoe UI" UseLayoutRounding="True" SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display">
@@ -39,7 +39,8 @@
         </Style>
     </Window.Resources>
 
-    <TabControl x:Name="Nav" Background="Transparent" BorderThickness="0" Padding="0" SelectionChanged="OnPageChanged">
+    <TabControl x:Name="Nav" Background="Transparent" BorderThickness="0" Padding="0" SelectionChanged="OnPageChanged"
+                Foreground="{StaticResource Text}">
         <TabControl.Template>
             <ControlTemplate TargetType="TabControl">
                 <Grid>
@@ -66,7 +67,8 @@
                             <StackPanel IsItemsHost="True" />
                         </DockPanel>
                     </Border>
-                    <ContentPresenter Grid.Column="1" ContentSource="SelectedContent" />
+                    <!-- This name lets screen readers (UI Automation) reach the page content -->
+                    <ContentPresenter x:Name="PART_SelectedContentHost" Grid.Column="1" ContentSource="SelectedContent" />
                 </Grid>
             </ControlTemplate>
         </TabControl.Template>
@@ -528,7 +530,7 @@
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
                                 <TextBlock Text="Display" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox x:Name="DisplayBox" Grid.Column="1" DisplayMemberPath="Value" SelectedValuePath="Key" SelectedValue="{Binding Monitor}" />
+                                <ComboBox x:Name="DisplayBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Monitor}" />
                             </Grid>
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
@@ -583,7 +585,7 @@
                                     <TextBlock Text="FPS refresh" FontSize="13" />
                                     <TextBlock Style="{StaticResource Small}" Text="How often the FPS numbers update." />
                                 </StackPanel>
-                                <ComboBox x:Name="FpsRefreshBox" Grid.Column="1" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                <ComboBox x:Name="FpsRefreshBox" Grid.Column="1" SelectedValuePath="Tag"
                                           SelectedValue="{Binding FpsRefreshMs}" VerticalAlignment="Center" />
                             </Grid>
                             <Grid Margin="0">
@@ -592,7 +594,7 @@
                                     <TextBlock Text="Sensor refresh" FontSize="13" />
                                     <TextBlock Style="{StaticResource Small}" Text="GPU, CPU and memory. Slower uses less power." />
                                 </StackPanel>
-                                <ComboBox x:Name="StatsRefreshBox" Grid.Column="1" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding StatsRefreshMs}" VerticalAlignment="Center" />
+                                <ComboBox x:Name="StatsRefreshBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding StatsRefreshMs}" VerticalAlignment="Center" />
                             </Grid>
                         </StackPanel>
                     </Border>
