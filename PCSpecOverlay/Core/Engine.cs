@@ -69,8 +69,7 @@ internal sealed class Engine : IDisposable
         Gpu = NvidiaGpu.TryCreate();
         if (Gpu != null) Gpu.LetSleep = Settings.LetGpuSleep;
         Step("GPU monitor ready");
-        System = new SystemStats();
-        Step("CPU and memory monitors ready");
+        System = new SystemStats(); // CPU counters open in the background
         Boost = new GameBoost(State);
         Gaming = new GamingMode(Settings, Journal, Boost, SettingCatalog.Power, TimeProvider.System);
 

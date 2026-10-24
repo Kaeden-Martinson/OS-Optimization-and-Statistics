@@ -1,2 +1,4 @@
 <Solution>
+  <Project Path="PCSpecOverlay.Tests/PCSpecOverlay.Tests.csproj" />
+  <Project Path="PCSpecOverlay/PCSpecOverlay.csproj" />
 </Solution>

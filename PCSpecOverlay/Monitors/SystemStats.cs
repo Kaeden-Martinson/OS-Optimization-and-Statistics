@@ -1,45 +1,67 @@
 using System.Diagnostics;
+using PCSpecOverlay.Core;
 
 namespace PCSpecOverlay.Monitors;
 
-/// <summary>CPU load, CPU/package temperature (ACPI thermal zones) and RAM usage.</summary>
+/// <summary>
+/// CPU load, CPU/package temperature (ACPI thermal zones), CPU clock and limits, and RAM usage.
+/// Windows' performance counters can take several seconds to open (longer right after sign-in), so
+/// they're opened on a background thread; until then those readings are simply unavailable.
+/// </summary>
 internal sealed class SystemStats : IDisposable
 {
     private const string ProcessorInfo = "Processor Information";
     private const double ThermalLimitC = 90; // a capped CPU this hot is cooling off, not saving power
 
-    public int ThermalZones => _thermal.Length;
-    public bool CanDetectLimits => _perfLimit != null;
+    /// <summary>Opened together, published at once so readers never see a half-built set.</summary>
+    private sealed class Counters
+    {
+        public PerformanceCounter[] Thermal = [];
+        public PerformanceCounter? PerfLimit, PerfPercent, BaseMhz;
+    }
 
+    private volatile Counters? _counters;
     private long _prevIdle, _prevKernel, _prevUser;
-    private readonly PerformanceCounter[] _thermal;
-    private readonly PerformanceCounter? _perfLimit, _perfPercent, _baseMhz;
+
+    public bool Ready => _counters != null;
+    public int ThermalZones => _counters?.Thermal.Length ?? 0;
+    public bool CanDetectLimits => _counters?.PerfLimit != null;
 
     public SystemStats()
     {
         Native.GetSystemTimes(out _prevIdle, out _prevKernel, out _prevUser);
+        Task.Run(Open);
+    }
+
+    private void Open()
+    {
+        var clock = Stopwatch.StartNew();
+        var c = new Counters();
         try
         {
-            _perfLimit = new PerformanceCounter(ProcessorInfo, "% Performance Limit", "_Total", readOnly: true);
-            _perfPercent = new PerformanceCounter(ProcessorInfo, "% Processor Performance", "_Total", readOnly: true);
-            _baseMhz = new PerformanceCounter(ProcessorInfo, "Processor Frequency", "_Total", readOnly: true);
-            _perfPercent.NextValue(); // rate counter: first read only primes it
+            c.PerfLimit = new PerformanceCounter(ProcessorInfo, "% Performance Limit", "_Total", readOnly: true);
+            c.PerfPercent = new PerformanceCounter(ProcessorInfo, "% Processor Performance", "_Total", readOnly: true);
+            c.BaseMhz = new PerformanceCounter(ProcessorInfo, "Processor Frequency", "_Total", readOnly: true);
+            c.PerfPercent.NextValue(); // rate counter: first read only primes it
         }
-        catch
+        catch (Exception e)
         {
-            _perfLimit = _perfPercent = _baseMhz = null;
+            c.PerfLimit = c.PerfPercent = c.BaseMhz = null;
+            Log.Warn("CPU", $"CPU clock and slowdown counters unavailable: {e.Message}");
         }
         try
         {
             var category = new PerformanceCounterCategory("Thermal Zone Information");
-            _thermal = category.GetInstanceNames()
+            c.Thermal = category.GetInstanceNames()
                 .Select(n => new PerformanceCounter("Thermal Zone Information", "High Precision Temperature", n, readOnly: true))
                 .ToArray();
         }
-        catch
+        catch (Exception e)
         {
-            _thermal = [];
+            Log.Warn("CPU", $"CPU temperature unavailable: {e.Message}");
         }
+        _counters = c;
+        Log.Info("Startup", $"CPU counters ready in the background ({clock.ElapsedMilliseconds} ms)");
     }
 
     /// <summary>Percent busy across all cores since the previous call.</summary>
@@ -56,7 +78,7 @@ internal sealed class SystemStats : IDisposable
     public double? CpuTempC()
     {
         double? hottest = null;
-        foreach (var counter in _thermal)
+        foreach (var counter in _counters?.Thermal ?? [])
         {
             try
             {
@@ -71,7 +93,8 @@ internal sealed class SystemStats : IDisposable
     /// <summary>Effective CPU clock (base clock × current performance, including turbo), in GHz.</summary>
     public double? CpuClockGhz()
     {
-        try { return _baseMhz is null || _perfPercent is null ? null : _baseMhz.NextValue() * _perfPercent.NextValue() / 100 / 1000; }
+        var c = _counters;
+        try { return c?.BaseMhz is null || c.PerfPercent is null ? null : c.BaseMhz.NextValue() * c.PerfPercent.NextValue() / 100 / 1000; }
         catch { return null; }
     }
 
@@ -82,7 +105,7 @@ internal sealed class SystemStats : IDisposable
     public Limit CpuLimits(double? tempC)
     {
         float limit;
-        try { limit = _perfLimit?.NextValue() ?? 100; }
+        try { limit = _counters?.PerfLimit?.NextValue() ?? 100; }
         catch { return Limit.None; }
         if (limit >= 95) return Limit.None; // small dips are normal power management
         return tempC >= ThermalLimitC ? Limit.CpuThermal : Limit.CpuPower;
@@ -98,9 +121,10 @@ internal sealed class SystemStats : IDisposable
 
     public void Dispose()
     {
-        foreach (var counter in _thermal) counter.Dispose();
-        _perfLimit?.Dispose();
-        _perfPercent?.Dispose();
-        _baseMhz?.Dispose();
+        if (_counters is not { } c) return;
+        foreach (var counter in c.Thermal) counter.Dispose();
+        c.PerfLimit?.Dispose();
+        c.PerfPercent?.Dispose();
+        c.BaseMhz?.Dispose();
     }
 }

@@ -50,10 +50,13 @@ internal static class DiagnosticReport
                 ? (engine.Settings.LetGpuSleep ? "Available; the GPU isn't woken just for readings" : "Available but turned off in General")
                 : "Unavailable on this PC; GPU readings may keep a laptop GPU awake", engine.Gpu.CanDetectSleep ? DiagLevel.Ok : DiagLevel.Warn));
 
-        list.Add(engine.System.ThermalZones > 0
+        if (!engine.System.Ready)
+            list.Add(new("CPU sensors", "Still opening Windows performance counters…", DiagLevel.Info));
+        else list.Add(engine.System.ThermalZones > 0
             ? new("CPU temperature", $"ACPI thermal zones ({engine.System.ThermalZones}); hottest zone shown", DiagLevel.Ok)
             : new("CPU temperature", "No thermal zones exposed by this PC; shown as unavailable", DiagLevel.Warn));
-        list.Add(new("CPU slowdown detection", engine.System.CanDetectLimits ? "Available (Windows performance-limit counter)" : "Unavailable", engine.System.CanDetectLimits ? DiagLevel.Ok : DiagLevel.Warn));
+        if (engine.System.Ready)
+            list.Add(new("CPU slowdown detection", engine.System.CanDetectLimits ? "Available (Windows performance-limit counter)" : "Unavailable", engine.System.CanDetectLimits ? DiagLevel.Ok : DiagLevel.Warn));
 
         var mode = PowerMode.Current();
         list.Add(mode is null
