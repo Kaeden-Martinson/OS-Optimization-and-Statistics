@@ -150,6 +150,19 @@ Top tab bar and the new Overview. 190 automated tests pass; these were checked o
 | Name, logo and move-and-pin | ✅ | The user ran the check on the PC (tray icon and name, Move overlay, drag, Pin, Custom position, corner presets, restart) and reported it looks right |
 | Note | — | An earlier 159×27 size came from the screenshot tool hiding and restoring the window (WPF drops SizeToContent after an outside resize), not from the app |
 
+## Instrument stage 4 (2026-10-24, Release development build beside the installed 2.0.13)
+
+Pages were switched and captured through UI Automation and PrintWindow, without mouse clicks.
+
+| Check | Result | Notes |
+|---|---|---|
+| Six pages, dark | ✅ | Optimizer ledger (amber edge on Power mode, "Apply 1 recommendation", GPU preference values wrap), Gaming pipeline, Overlay preview (Panel at top left with live GPU 87°/CPU 92°, Strip/Panel cards), Alerts scales (GPU 87 °C past hot 85, current-reading line visible), Settings status strip, Diagnostics grid ("All 12 checks look fine"), empty journal |
+| Six pages, light | ✅ | Same layouts; the selected Appearance segment shows a light icon on the dark fill; the tab-bar sun stays in step |
+| Theme chosen through UI Automation | ✅ | Selecting the Light segment through UI Automation saved `Appearance: Light`; Match Windows was restored the same way |
+| Screen-reader names | ✅ | Every top-level control on all seven pages has a name. The only unnamed items are slider and scrollbar parts (track buttons and thumbs) inside named sliders |
+| Dragging a scale handle, corner clicks, Pause | ⬜ | Not exercised on screen (no mouse input); left to the user |
+| Note | — | The screenshot tool hides other apps' windows. It minimized the control center and resized the overlay, so the dev copy was restarted and captured with PrintWindow instead |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
