@@ -114,9 +114,9 @@ public class ReleaseNotesTests
     {
         var csproj = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/PCSpecOverlay.csproj"));
         var version = System.Text.RegularExpressions.Regex.Match(csproj, "<Version>([^<]+)</Version>").Groups[1].Value;
-        Assert.Equal("2.1.1", version);
+        Assert.Equal("2.1.2", version);
         var notes = File.ReadAllText(SourceFiles.Path($"docs/releases/{version}.md"));
-        foreach (var topic in new[] { "Strip", "spacing" })
+        foreach (var topic in new[] { "Strip", "Panel", "button", "Layout button on the overlay" })
             Assert.Contains(topic, notes, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotMatch(@"SHA-?256\s*[:=]", notes); // the script adds the one checksum line the updater reads
     }
