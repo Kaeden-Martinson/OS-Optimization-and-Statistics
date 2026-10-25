@@ -980,66 +980,117 @@
         <!-- ===================== DIAGNOSTICS ===================== -->
         <TabItem Header="Diagnostics" Tag="{StaticResource Icon.Diagnostics}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Diagnostics" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}" Text="What works on this PC, what the app has changed, and recent problems." />
-
-                    <TextBlock Text="STATUS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <ItemsControl x:Name="StatusList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="20" />
-                                            <ColumnDefinition Width="200" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Ellipse Width="8" Height="8" Fill="{Binding Brush}" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,0,0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Detail}" Style="{StaticResource Body}" Margin="0" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Border>
-
-                    <TextBlock Text="ACTIONS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <WrapPanel>
-                                <Button Content="Copy diagnostic report" Style="{StaticResource Btn}" Click="OnCopyReport" Margin="0,0,8,8" />
-                                <Button Content="Open log" Style="{StaticResource Btn}" Click="OnOpenLog" Margin="0,0,8,8" />
-                                <Button Content="Open data folder" Style="{StaticResource Btn}" Click="OnOpenData" Margin="0,0,8,8" />
-                                <Button Content="Undo every change the app made" Style="{StaticResource Btn}" Tag="Danger" Click="OnUndoEverything" Margin="0,0,8,8" />
-                            </WrapPanel>
-                            <TextBlock x:Name="ActionResult" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" />
-                            <TextBlock Style="{StaticResource Small}" Margin="0,6,0,0"
-                                       Text="The report includes the version, settings, sensor availability and recent errors. Your user name and profile paths are replaced with placeholders." />
+                <StackPanel>
+                    <DockPanel Margin="24,18,24,10">
+                        <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                            <Button Style="{StaticResource Btn}" Click="OnCopyReport" Margin="8,0,0,6" AutomationProperties.Name="Copy diagnostic report">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Copy}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Copy report" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource Btn}" Click="OnOpenLog" Margin="8,0,0,6" AutomationProperties.Name="Open log">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.File}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Open log" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource Btn}" Click="OnOpenData" Margin="8,0,0,6" AutomationProperties.Name="Open data folder">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Folder}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Data folder" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource Btn}" Click="OnUndoEverything" Margin="8,0,0,6" AutomationProperties.Name="Undo every change the app made">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Undo}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Undo every change" />
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Diagnostics" Style="{StaticResource PageTitle}" />
+                            <TextBlock x:Name="HealthText" Style="{StaticResource Body}" />
                         </StackPanel>
-                    </Border>
+                    </DockPanel>
+                    <TextBlock x:Name="ActionResult" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="24,0,24,10" />
 
-                    <TextBlock Text="RECENT EVENTS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <ItemsControl x:Name="LogList">
+                    <!-- Health grid -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
+                        <ItemsControl x:Name="StatusGrid">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,0,0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="70" />
-                                            <ColumnDefinition Width="90" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Time, StringFormat='HH:mm:ss'}" Style="{StaticResource Small}" Margin="0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Area}" Style="{StaticResource Small}" Margin="0" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Message}" Style="{StaticResource Body}" Margin="0"
-                                                   Foreground="{Binding Level, Converter={x:Static local:LevelBrush.Instance}}"
-                                                   />
-                                    </Grid>
+                                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,1" Padding="16,12,16,14" ToolTip="{Binding Detail}"
+                                            AutomationProperties.Name="{Binding Name}" AutomationProperties.HelpText="{Binding Detail}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Key}" TextTrimming="CharacterEllipsis" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                <core:Icon x:Name="Mark" Data="{StaticResource Icon.Info}" Foreground="{DynamicResource Muted}"
+                                                           Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                <TextBlock Text="{Binding Word}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Small}" TextTrimming="CharacterEllipsis" MaxHeight="32" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Level}" Value="Ok">
+                                            <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Check}" />
+                                            <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Good}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Level}" Value="Warn">
+                                            <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Warning}" />
+                                            <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Signal}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Level}" Value="Error">
+                                            <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Warning}" />
+                                            <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Hot}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </Border>
+
+                    <!-- Change journal -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="Restored only if it's still what the app set" Style="{StaticResource Small}" Margin="0" VerticalAlignment="Center" />
+                            <TextBlock Text="CHANGE JOURNAL" Style="{StaticResource Key}" />
+                        </DockPanel>
+                    </Border>
+                    <ItemsControl x:Name="JournalList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource LedgerRow}" Padding="24,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="160" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding When}" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Setting}" FontSize="12.5" Margin="0,0,10,0" />
+                                            <TextBlock Text="{Binding Change}" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding Owners}" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                                        <Button Grid.Column="3" Content="Undo" Style="{StaticResource Btn}" MinWidth="0" Padding="10,3" Click="OnUndoChange"
+                                                AutomationProperties.Name="{Binding Setting, StringFormat='Undo {0}'}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="JournalEmpty" Style="{StaticResource Small}" Margin="24,8,24,0"
+                               Text="No Windows settings are changed by the app right now." />
+                    <TextBlock Style="{StaticResource Small}" Margin="24,12,24,24"
+                               Text="Copy report includes the version, settings, sensor availability and recent events, with your user name and profile paths replaced. Every event is in the log." />
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

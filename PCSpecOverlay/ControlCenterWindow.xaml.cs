@@ -800,17 +800,26 @@ public partial class ControlCenterWindow : Window
 
     private void RefreshDiagnostics()
     {
-        StatusList.ItemsSource = DiagnosticReport.Status(_engine).Select(s => new StatusRow(s.Name, s.Detail, s.Level switch
-        {
-            DiagLevel.Ok => (Brush)FindResource("Good"),
-            DiagLevel.Warn => (Brush)FindResource("Warn"),
-            DiagLevel.Error => (Brush)FindResource("Hot"),
-            _ => (Brush)FindResource("Info"),
-        })).ToList();
-        LogList.ItemsSource = Log.Recent().AsEnumerable().Reverse().Take(60).ToList();
+        var status = DiagnosticReport.Status(_engine).Where(s => s.Name != DiagnosticReport.ChangesCheck).ToList();
+        StatusGrid.ItemsSource = status.Select(s => new StatusCell(s.Name, s.Detail, s.Level, Health.Word(s.Level))).ToList();
+        HealthText.Text = Health.Summary(status.Select(s => s.Level).ToList());
+
+        var rows = JournalRows.Build(_engine.Journal.Entries, id => SettingCatalog.Resolve(id)?.Name, SettingCatalog.DescribeValue, DateTime.Now);
+        JournalList.ItemsSource = rows;
+        JournalEmpty.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private sealed record StatusRow(string Name, string Detail, Brush Brush);
+    private sealed record StatusCell(string Name, string Detail, DiagLevel Level, string Word);
+
+    private void OnUndoChange(object sender, RoutedEventArgs e)
+    {
+        var row = (JournalRow)((FrameworkElement)sender).DataContext;
+        if (!Confirm($"Undo {row.Setting} ({row.Change})?\n\nIt goes back only if it's still what the app set. If you changed it yourself since, your choice is kept.", "Undo change"))
+            return;
+        ActionResult.Text = string.Join("\n", _engine.UndoChange(row.Id));
+        foreach (var c in _checks) c.Refresh();
+        RefreshDiagnostics();
+    }
 
     private void OnCopyReport(object sender, RoutedEventArgs e)
     {
@@ -884,20 +893,4 @@ public partial class ControlCenterWindow : Window
 
         public event PropertyChangedEventHandler? PropertyChanged;
     }
-}
-
-/// <summary>Log level → text color in the diagnostics list.</summary>
-public sealed class LevelBrush : IValueConverter
-{
-    public static readonly LevelBrush Instance = new();
-
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-        Application.Current?.TryFindResource(value switch
-        {
-            LogLevel.Error => "Hot",
-            LogLevel.Warning => "Warn",
-            _ => "Muted",
-        }) as Brush ?? Brushes.Gray;
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
 }

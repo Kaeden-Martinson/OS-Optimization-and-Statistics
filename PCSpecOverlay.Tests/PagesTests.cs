@@ -254,3 +254,22 @@ public class SettingsPageTests
             Assert.DoesNotContain(gone, page);
     }
 }
+
+public class DiagnosticsPageTests
+{
+    [Fact]
+    public void Diagnostics_is_a_health_grid_and_a_change_journal()
+    {
+        var page = PageXaml.Tab("Diagnostics");
+        foreach (var part in new[] { "x:Name=\"StatusGrid\"", "x:Name=\"HealthText\"", "x:Name=\"JournalList\"", "x:Name=\"JournalEmpty\"",
+                     "Click=\"OnUndoChange\"", "Click=\"OnCopyReport\"", "Click=\"OnOpenLog\"", "Click=\"OnOpenData\"", "Click=\"OnUndoEverything\"",
+                     "x:Name=\"ActionResult\"", "Text=\"CHANGE JOURNAL\"" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "LogList", "StatusList", "LevelBrush", "CardBox", "\"H1\"" })
+            Assert.DoesNotContain(gone, page);
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        foreach (var call in new[] { "JournalRows.Build(", "Health.Summary(", "_engine.UndoChange(", "DiagnosticReport.ChangesCheck" })
+            Assert.Contains(call, code);
+        Assert.DoesNotContain("class LevelBrush", code);
+    }
+}
