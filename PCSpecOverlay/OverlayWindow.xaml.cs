@@ -167,11 +167,12 @@ public partial class OverlayWindow : Window
         try { DragMove(); } catch (InvalidOperationException) { return; }
 
         if (!Native.GetWindowRect(Handle, out var r)) return;
-        int cx = (r.Left + r.Right) / 2, cy = (r.Top + r.Bottom) / 2;
+        // The display is the one under the panel's center, not the window's (which includes the handle bar)
+        var panelTop = r.Top + HandlePixels((uint)Math.Round(VisualTreeHelper.GetDpi(this).PixelsPerInchY));
+        int cx = (r.Left + r.Right) / 2, cy = (panelTop + r.Bottom) / 2;
         var display = Displays.All().FirstOrDefault(d => cx >= d.Bounds.Left && cx < d.Bounds.Right && cy >= d.Bounds.Top && cy < d.Bounds.Bottom)
                       ?? Displays.Find(_settings.Monitor);
         if (display is null) return;
-        var panelTop = r.Top + HandlePixels(display.Dpi);
         var work = display.WorkArea;
         var (fx, fy) = OverlayPlacement.ToFractions(r.Left, panelTop, (work.Left, work.Top, work.Right, work.Bottom),
             r.Right - r.Left, r.Bottom - panelTop);
