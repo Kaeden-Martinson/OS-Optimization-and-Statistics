@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:PCSpecOverlay"
         xmlns:core="clr-namespace:PCSpecOverlay.Core"
+        xmlns:controls="clr-namespace:PCSpecOverlay.Controls"
         Title="Optiframe" Width="1040" Height="760" MinWidth="900" MinHeight="520"
-        WindowStartupLocation="Manual" Background="{DynamicResource Window}" Foreground="{DynamicResource Text}"
+        WindowStartupLocation="Manual" Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}"
         FontFamily="Segoe UI" UseLayoutRounding="True" SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display">
 
@@ -44,22 +45,6 @@
             <Setter Property="Height" Value="6" />
             <Setter Property="Margin" Value="0,10,0,0" />
         </Style>
-        <Style x:Key="TileLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Foreground" Value="{DynamicResource Muted}" />
-        </Style>
-        <Style x:Key="Row" TargetType="Grid">
-            <Setter Property="Margin" Value="0,0,0,14" />
-        </Style>
-        <Style x:Key="ValueLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12.5" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource Text}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="MinWidth" Value="56" />
-            <Setter Property="TextAlignment" Value="Right" />
-        </Style>
     </Window.Resources>
 
     <Grid>
@@ -85,7 +70,7 @@
                 <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="16,6">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button x:Name="StopButton" Content="Stop optimizations" Style="{StaticResource Btn}" Tag="Danger"
+                            <Button x:Name="StopButton" Content="Stop optimizations" Style="{StaticResource Btn}"
                                     Click="OnStopOptimizations" Padding="10,2" Margin="8,0,0,0" />
                             <Button x:Name="ResumeButton" Content="Resume" Style="{StaticResource Btn}" Tag="Primary"
                                     Click="OnResume" Visibility="Collapsed" Padding="10,2" Margin="8,0,0,0" />
@@ -220,67 +205,88 @@
         <!-- ===================== OPTIMIZER ===================== -->
         <TabItem Header="Optimizer" Tag="{StaticResource Icon.Optimizer}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Optimizer" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}"
-                               Text="Settings that affect performance, what each change does, and its drawbacks. Nothing changes until you press a button, and every change can be undone." />
-
-                    <DockPanel Margin="0,24,0,10">
-                        <Button x:Name="FixAllButton" DockPanel.Dock="Right" Content="Apply all recommendations" Tag="Primary"
-                                Style="{StaticResource Btn}" Click="OnFixAll" />
-                        <TextBlock Text="SYSTEM CHECKS" Style="{StaticResource Section}" Margin="0" VerticalAlignment="Center" />
+                <StackPanel>
+                    <DockPanel Margin="24,18,24,14">
+                        <Button x:Name="FixAllButton" DockPanel.Dock="Right" Tag="Primary" Style="{StaticResource Btn}"
+                                Click="OnFixAll" VerticalAlignment="Center" Content="Apply recommendations" />
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Optimizer" Style="{StaticResource PageTitle}" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="Nothing changes until you press a button. Every change is recorded and can be undone." />
+                        </StackPanel>
                     </DockPanel>
 
-                    <Border x:Name="RestartBanner" Visibility="Collapsed" Background="{DynamicResource AccentSoft}" BorderBrush="{DynamicResource Accent}"
-                            BorderThickness="1" Padding="16,12" Margin="0,0,0,10">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,16,0" VerticalAlignment="Center">
-                                <TextBlock x:Name="RestartTitle" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                <TextBlock x:Name="RestartDetail" Style="{StaticResource Body}" />
-                            </StackPanel>
-                            <Button x:Name="RestartButton" Grid.Column="1" Tag="Primary" Style="{StaticResource Btn}"
-                                    VerticalAlignment="Center" Click="OnRestartBrowser" />
-                        </Grid>
+                    <Border x:Name="RestartBanner" Visibility="Collapsed" Background="{DynamicResource Panel}"
+                            BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
+                        <Border BorderBrush="{DynamicResource Signal}" BorderThickness="2,0,0,0" Padding="22,10,24,10">
+                            <DockPanel>
+                                <Button x:Name="RestartButton" AutomationProperties.Name="Restart browser" DockPanel.Dock="Right" Tag="Primary" Style="{StaticResource Btn}"
+                                        VerticalAlignment="Center" Click="OnRestartBrowser" />
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock x:Name="RestartTitle" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="RestartDetail" Style="{StaticResource Body}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
                     </Border>
 
+                    <!-- One ruled table: mark, setting, now, recommended, effect, action -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1" Padding="24,7">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="26" />
+                                <ColumnDefinition Width="1.3*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="2.4*" />
+                                <ColumnDefinition Width="110" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="SETTING" Style="{StaticResource Key}" />
+                            <TextBlock Grid.Column="2" Text="NOW" Style="{StaticResource Key}" />
+                            <TextBlock Grid.Column="3" Text="RECOMMENDED" Style="{StaticResource Key}" />
+                            <TextBlock Grid.Column="4" Text="EFFECT AND DRAWBACK" Style="{StaticResource Key}" />
+                        </Grid>
+                    </Border>
                     <ItemsControl x:Name="CheckList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource CardBox}">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="20" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <Ellipse x:Name="Dot" Width="8" Height="8" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                                 Margin="0,6,0,0" Fill="{DynamicResource Good}" />
-                                        <StackPanel Grid.Column="1" Margin="0,0,16,0">
-                                            <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" />
-                                            <TextBlock Text="{Binding Description}" Style="{StaticResource Body}" />
-                                            <TextBlock x:Name="DetailText" Text="{Binding Detail}" Style="{StaticResource Small}" Margin="0,4,0,0" Visibility="Collapsed" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock x:Name="StatusText" Text="{Binding Status}" FontSize="12.5" FontWeight="SemiBold"
-                                                       VerticalAlignment="Center" Margin="0,0,14,0" Foreground="{DynamicResource Good}" />
-                                            <Button x:Name="ActionButton" Content="{Binding ActionLabel}" Style="{StaticResource Btn}"
+                                <Border Style="{StaticResource LedgerRow}" Padding="0">
+                                    <Border x:Name="Edge" BorderThickness="2,0,0,0" BorderBrush="Transparent" Padding="22,9,24,9">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="26" />
+                                                <ColumnDefinition Width="1.3*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="2.4*" />
+                                                <ColumnDefinition Width="110" />
+                                            </Grid.ColumnDefinitions>
+                                            <core:Icon x:Name="Mark" Data="{StaticResource Icon.Check}" Foreground="{DynamicResource Good}"
+                                                       Width="14" Height="14" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                <TextBlock x:Name="DetailText" Text="{Binding Detail}" Style="{StaticResource Small}" Visibility="Collapsed" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="{Binding Status}" Style="{StaticResource Mono}" TextWrapping="Wrap" TextTrimming="None" VerticalAlignment="Top" Margin="0,1,12,0" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Recommended}" Style="{StaticResource Mono}" TextWrapping="Wrap" TextTrimming="None"
+                                                       Foreground="{DynamicResource Muted}" VerticalAlignment="Top" Margin="0,1,12,0" />
+                                            <TextBlock Grid.Column="4" Text="{Binding Description}" Style="{StaticResource Body}" Margin="0,0,12,0" />
+                                            <Button x:Name="ActionButton" Grid.Column="5" Content="{Binding ActionLabel}" Style="{StaticResource Btn}"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Top" MinWidth="0" Padding="10,3"
                                                     Click="OnCheckAction" Visibility="Collapsed"
                                                     AutomationProperties.Name="{Binding Title, StringFormat='{}{0} action'}" />
-                                        </StackPanel>
-                                    </Grid>
+                                        </Grid>
+                                    </Border>
                                 </Border>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding State}" Value="Warn">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource Warn}" />
-                                        <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource Warn}" />
+                                        <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Warning}" />
+                                        <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Signal}" />
+                                        <Setter TargetName="Edge" Property="BorderBrush" Value="{DynamicResource Signal}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding State}" Value="Info">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource Info}" />
-                                        <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource Muted}" />
+                                        <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Info}" />
+                                        <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Muted}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding HasAction}" Value="True">
                                         <Setter TargetName="ActionButton" Property="Visibility" Value="Visible" />
@@ -296,55 +302,54 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="WHAT'S USING YOUR PC" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}" Padding="16,10,16,6">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,6">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="64" />
-                                    <ColumnDefinition Width="64" />
-                                    <ColumnDefinition Width="84" />
-                                    <ColumnDefinition Width="170" />
-                                    <ColumnDefinition Width="70" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="APP" Style="{StaticResource TileLabel}" />
-                                <TextBlock Grid.Column="1" Text="CPU" Style="{StaticResource TileLabel}" TextAlignment="Right" />
-                                <TextBlock Grid.Column="2" Text="GPU" Style="{StaticResource TileLabel}" TextAlignment="Right" />
-                                <TextBlock Grid.Column="3" Text="MEMORY" Style="{StaticResource TileLabel}" TextAlignment="Right" />
-                                <TextBlock Grid.Column="4" Text="LOWER DURING GAMES" Style="{StaticResource TileLabel}" Margin="22,0,0,0" />
-                            </Grid>
-                            <ItemsControl x:Name="AppList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="0,7">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="64" />
-                                                    <ColumnDefinition Width="64" />
-                                                    <ColumnDefinition Width="84" />
-                                                    <ColumnDefinition Width="170" />
-                                                    <ColumnDefinition Width="70" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Grid.Column="1" Text="{Binding Cpu}" Style="{StaticResource ValueLabel}" />
-                                                <TextBlock Grid.Column="2" Text="{Binding Gpu}" Style="{StaticResource ValueLabel}" />
-                                                <TextBlock Grid.Column="3" Text="{Binding Ram}" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Muted}" />
-                                                <CheckBox Grid.Column="4" Style="{StaticResource Switch}" Margin="22,0,0,0" HorizontalAlignment="Left"
-                                                          IsChecked="{Binding IsBoostTarget, Mode=TwoWay}" IsEnabled="{Binding CanLower}"
-                                                          AutomationProperties.Name="{Binding Name, StringFormat='Lower {0} during games'}" />
-                                                <Button Grid.Column="5" Content="End" Style="{StaticResource Btn}" MinWidth="0" Padding="12,3"
-                                                        HorizontalAlignment="Right" Click="OnEndApp" IsEnabled="{Binding CanEnd}"
-                                                        AutomationProperties.Name="{Binding Name, StringFormat='End {0}'}" />
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                    <!-- What's using the PC -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1" Padding="24,7" Margin="0,22,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="84" />
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="70" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="WHAT'S USING YOUR PC" Style="{StaticResource Key}" />
+                            <TextBlock Grid.Column="1" Text="CPU" Style="{StaticResource Key}" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="2" Text="GPU" Style="{StaticResource Key}" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="3" Text="MEMORY" Style="{StaticResource Key}" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="4" Text="LOWER DURING GAMES" Style="{StaticResource Key}" Margin="22,0,0,0" />
+                        </Grid>
                     </Border>
-                    <TextBlock Style="{StaticResource Small}" Margin="2,2,0,0"
+                    <ItemsControl x:Name="AppList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource LedgerRow}" Padding="24,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="84" />
+                                            <ColumnDefinition Width="160" />
+                                            <ColumnDefinition Width="70" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Cpu}" Style="{StaticResource Mono}" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Gpu}" Style="{StaticResource Mono}" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Ram}" Style="{StaticResource Mono}" HorizontalAlignment="Right"
+                                                   Foreground="{DynamicResource Muted}" />
+                                        <CheckBox Grid.Column="4" Style="{StaticResource Switch}" Margin="22,0,0,0" HorizontalAlignment="Left"
+                                                  IsChecked="{Binding IsBoostTarget, Mode=TwoWay}" IsEnabled="{Binding CanLower}"
+                                                  AutomationProperties.Name="{Binding Name, StringFormat='Lower {0} during games'}" />
+                                        <Button Grid.Column="5" Content="End" Style="{StaticResource Btn}" MinWidth="0" Padding="12,3"
+                                                HorizontalAlignment="Right" Click="OnEndApp" IsEnabled="{Binding CanEnd}"
+                                                AutomationProperties.Name="{Binding Name, StringFormat='End {0}'}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Style="{StaticResource Small}" Margin="24,8,24,24"
                                Text="Apps are grouped by name (Edge's many processes count as one) and limited to your account. Windows system processes can't be ended or lowered. Ending an app asks first and closes it without saving." />
                 </StackPanel>
             </ScrollViewer>
@@ -352,79 +357,125 @@
 
         <!-- ===================== GAMING ===================== -->
         <TabItem Header="Gaming" Tag="{StaticResource Icon.Gaming}" Style="{StaticResource TopTab}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Gaming" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}"
-                               Text="Automatic gaming mode applies the optimizations you choose while a game is in front, and puts everything back afterwards. If you change a setting yourself during a game, your choice is kept." />
-
-                    <TextBlock Text="AUTOMATIC GAMING MODE" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoGamingMode}">
-                                <StackPanel>
-                                    <TextBlock Text="Turn on automatically while I play" Style="{StaticResource CardTitle}" />
-                                    <TextBlock x:Name="GamingStatusLine" Style="{StaticResource Body}" />
+            <DockPanel>
+                <!-- Shown while gaming mode is on or paused -->
+                <Border x:Name="GamingBar" DockPanel.Dock="Top" Visibility="Collapsed" Background="{DynamicResource Panel}"
+                        BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button x:Name="GamingPause" Style="{StaticResource Btn}" MinWidth="0" Padding="10,2" Click="OnStopOptimizations"
+                                    AutomationProperties.Name="Pause optimizations">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Pause}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Pause" />
                                 </StackPanel>
-                            </CheckBox>
-                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GamingPowerMode}" Margin="0,0,0,12">
-                                <StackPanel>
-                                    <TextBlock Text="Switch power mode to Best performance" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Higher CPU boost while playing. Your previous power mode is restored afterwards." />
-                                </StackPanel>
-                            </CheckBox>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GamingProcessPriority}">
-                                <StackPanel>
-                                    <TextBlock Text="Prioritize the game (Game Boost)" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Raises the game one step (Above normal) and lowers apps you choose one step (Below normal). Never touches Windows system processes; shares CPU time only, not the GPU." />
-                                </StackPanel>
-                            </CheckBox>
-                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="220" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Switch on after" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="How long a game must be in front first." />
-                                </StackPanel>
-                                <Slider x:Name="EnterSlider" Grid.Column="1" Minimum="2" Maximum="30" TickFrequency="1" Value="{Binding GamingEnterSeconds}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=EnterSlider, StringFormat='{}{0:0} s'}" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="220" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Switch back after (Alt+Tab grace)" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="How long no game may be in front before everything is put back." />
-                                </StackPanel>
-                                <Slider x:Name="ExitSlider" Grid.Column="1" Minimum="5" Maximum="120" TickFrequency="5" Value="{Binding GamingExitSeconds}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=ExitSlider, StringFormat='{}{0:0} s'}" />
-                            </Grid>
+                            </Button>
+                            <Button x:Name="GamingResume" Content="Resume" Style="{StaticResource Btn}" Tag="Primary" Padding="10,2"
+                                    Click="OnResume" Visibility="Collapsed" />
                         </StackPanel>
-                    </Border>
+                        <Rectangle x:Name="GamingLed" Width="6" Height="6" Fill="{DynamicResource Good}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock x:Name="GamingBarText" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </Border>
 
-                    <TextBlock Text="GAMES" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource Body}" Margin="0,0,0,10"
-                                       Text="A window counts as a game when it renders at 30+ FPS and matches a rule below. Match browser games by part of the window title (e.g. Starve.io) and other games by app name. Turn off Optimize to detect a game without changing anything." />
-                            <ItemsControl x:Name="RuleList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,0,0,8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <StackPanel Margin="24,18,24,14">
+                            <TextBlock Text="Gaming" Style="{StaticResource PageTitle}" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="While a game is in front, gaming mode takes these steps and puts everything back afterwards. If you change a setting yourself during a game, your choice is kept." />
+                        </StackPanel>
+
+                        <!-- The four steps, left to right -->
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1">
+                            <UniformGrid Columns="4">
+                                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="16,12,16,14">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding AutoGamingMode}"
+                                                      AutomationProperties.Name="Turn gaming mode on automatically" />
+                                            <TextBlock Text="01" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0" />
+                                            <TextBlock Text="Detect" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0" Text="A game from your list renders at 30+ FPS in front." />
+                                        <DockPanel Margin="0,10,0,0">
+                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" Margin="8,0,0,0"
+                                                       Text="{Binding Value, ElementName=EnterSlider, StringFormat='after {0:0} s'}" />
+                                            <Slider x:Name="EnterSlider" Minimum="2" Maximum="30" TickFrequency="1" Value="{Binding GamingEnterSeconds}"
+                                                    AutomationProperties.Name="Switch on after this many seconds" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="16,12,16,14">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding GamingPowerMode}"
+                                                      AutomationProperties.Name="Switch power mode to Best performance" />
+                                            <TextBlock Text="02" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0" />
+                                            <TextBlock Text="Power" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
+                                                   Text="Switch to Best performance for a higher CPU boost. Your power mode is remembered and put back." />
+                                    </StackPanel>
+                                </Border>
+                                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="16,12,16,14">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding GamingProcessPriority}"
+                                                      AutomationProperties.Name="Prioritize the game (Game Boost)" />
+                                            <TextBlock Text="03" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0" />
+                                            <TextBlock Text="Boost" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
+                                                   Text="The game one step up (Above normal), apps you choose one step down. Never touches Windows system processes." />
+                                        <TextBlock x:Name="BoostTargetsText" Style="{StaticResource Small}" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Padding="16,12,16,14">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock Text="04" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0" />
+                                            <TextBlock Text="Restore" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0" Text="Everything is put back once no game is in front (Alt+Tab grace)." />
+                                        <DockPanel Margin="0,10,0,0">
+                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" Margin="8,0,0,0"
+                                                       Text="{Binding Value, ElementName=ExitSlider, StringFormat='after {0:0} s'}" />
+                                            <Slider x:Name="ExitSlider" Minimum="5" Maximum="120" TickFrequency="5" Value="{Binding GamingExitSeconds}"
+                                                    AutomationProperties.Name="Switch back after this many seconds" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+                        </Border>
+
+                        <!-- Games -->
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="148" />
+                                    <ColumnDefinition Width="132" />
+                                    <ColumnDefinition Width="96" />
+                                    <ColumnDefinition Width="40" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="GAME" Style="{StaticResource Key}" />
+                                <TextBlock Grid.Column="1" Text="MATCH BY" Style="{StaticResource Key}" />
+                                <TextBlock Grid.Column="2" Text="OVERLAY" Style="{StaticResource Key}" />
+                                <TextBlock Grid.Column="3" Text="OPTIMIZE" Style="{StaticResource Key}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl x:Name="RuleList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource LedgerRow}" Padding="24,6">
+                                        <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="140" />
-                                                <ColumnDefinition Width="120" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="148" />
+                                                <ColumnDefinition Width="132" />
+                                                <ColumnDefinition Width="96" />
+                                                <ColumnDefinition Width="40" />
                                             </Grid.ColumnDefinitions>
                                             <TextBox Text="{Binding Match, UpdateSourceTrigger=LostFocus}" Margin="0,0,8,0" VerticalContentAlignment="Center"
                                                      AutomationProperties.Name="Game match" />
@@ -433,263 +484,319 @@
                                                 <ComboBoxItem Content="Window title" Tag="{x:Static local:GameMatchKind.WindowTitle}" />
                                                 <ComboBoxItem Content="App name" Tag="{x:Static local:GameMatchKind.ProcessName}" />
                                             </ComboBox>
-                                            <ComboBox Grid.Column="2" Margin="0,0,12,0" MinWidth="0" SelectedValuePath="Tag"
+                                            <ComboBox Grid.Column="2" Margin="0,0,8,0" MinWidth="0" SelectedValuePath="Tag"
                                                       SelectedValue="{Binding LayoutChoice}" AutomationProperties.Name="Overlay layout for this game">
                                                 <ComboBoxItem Content="Default" Tag="Default" />
                                                 <ComboBoxItem Content="Strip" Tag="Compact" />
                                                 <ComboBoxItem Content="Panel" Tag="Expanded" />
                                             </ComboBox>
-                                            <CheckBox Grid.Column="3" Style="{StaticResource Switch}" IsChecked="{Binding Optimize}" Margin="0,0,12,0">
-                                                <TextBlock Text="Optimize" FontSize="12" Foreground="{DynamicResource Muted}" />
-                                            </CheckBox>
-                                            <Button Grid.Column="4" Content="Remove" Style="{StaticResource Btn}" MinWidth="0" Padding="10,3" Click="OnRemoveRule" />
+                                            <CheckBox Grid.Column="3" Style="{StaticResource Switch}" IsChecked="{Binding Optimize}" HorizontalAlignment="Left"
+                                                      AutomationProperties.Name="{Binding Match, StringFormat='Optimize while {0} is in front'}" />
+                                            <Button Grid.Column="4" Style="{StaticResource Btn}" MinWidth="0" Padding="6,4" HorizontalAlignment="Right"
+                                                    Click="OnRemoveRule" AutomationProperties.Name="{Binding Match, StringFormat='Remove {0}'}">
+                                                <core:Icon Data="{StaticResource Icon.Close}" Width="12" Height="12" />
+                                            </Button>
                                         </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <Grid Margin="0,4,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border Style="{StaticResource LedgerRow}" Padding="24,8">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Click="OnAddRule" AutomationProperties.Name="Add game">
+                                    <StackPanel Orientation="Horizontal">
+                                        <core:Icon Data="{StaticResource Icon.Plus}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="Add game" />
+                                    </StackPanel>
+                                </Button>
                                 <TextBox x:Name="NewRule" Margin="0,0,8,0" AutomationProperties.Name="New game window title" KeyDown="OnNewRuleKey" />
-                                <Button Grid.Column="1" Content="Add game" Style="{StaticResource Btn}" Click="OnAddRule" />
-                            </Grid>
-                            <TextBlock Text="Recently seen" FontSize="12.5" FontWeight="SemiBold" Margin="0,16,0,6" />
-                            <ItemsControl x:Name="RecentList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <DockPanel Margin="0,0,0,6">
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Style="{StaticResource Small}" Margin="24,6,24,0"
+                                   Text="A window counts as a game when it renders at 30+ FPS and matches a rule. Match browser games by part of the window title (e.g. Starve.io) and other games by app name. Turn off Optimize to detect a game without changing anything." />
+
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                            <TextBlock Text="RECENTLY SEEN" Style="{StaticResource Key}" />
+                        </Border>
+                        <ItemsControl x:Name="RecentList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource LedgerRow}" Padding="24,6">
+                                        <DockPanel>
                                             <Button DockPanel.Dock="Right" Content="Add" Style="{StaticResource Btn}" MinWidth="0" Padding="10,2"
                                                     Click="OnAddRecent" IsEnabled="{Binding CanAdd}" />
-                                            <TextBlock Text="{Binding Text}" Style="{StaticResource Body}" VerticalAlignment="Center" Margin="0" />
+                                            <TextBlock Text="{Binding Text}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                         </DockPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock x:Name="RecentEmpty" Style="{StaticResource Small}" Text="Nothing yet — games appear here while they render in front." />
-                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding DetectFullscreenGames}" Margin="0,0,0,12">
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock x:Name="RecentEmpty" Style="{StaticResource Small}" Margin="24,8,24,0"
+                                   Text="Nothing yet. Games appear here while they render in front." />
+
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                            <TextBlock Text="OPTIONS" Style="{StaticResource Key}" />
+                        </Border>
+                        <Border Style="{StaticResource LedgerRow}">
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding DetectFullscreenGames}">
                                 <StackPanel>
                                     <TextBlock Text="Detect fullscreen games" FontSize="13" />
                                     <TextBlock Style="{StaticResource Body}" Text="Shows fullscreen apps that render steadily as games, even if they aren't listed." />
                                 </StackPanel>
                             </CheckBox>
+                        </Border>
+                        <Border Style="{StaticResource LedgerRow}">
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding OptimizeFullscreenGames}">
                                 <StackPanel>
                                     <TextBlock Text="Also optimize unlisted fullscreen apps" FontSize="13" />
                                     <TextBlock Style="{StaticResource Body}" Text="Off by default: a fullscreen video would also count. Adding the game to the list is the safer choice." />
                                 </StackPanel>
                             </CheckBox>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="GAME BOOST" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource LedgerRow}" Margin="0,0,0,24">
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GameBoost}">
                                 <StackPanel>
                                     <TextBlock Text="Always prioritize games (even without gaming mode)" FontSize="13" />
                                     <TextBlock Style="{StaticResource Body}" Text="Applies the same one-step priority changes whenever a listed game is in front." />
                                 </StackPanel>
                             </CheckBox>
-                            <TextBlock x:Name="BoostTargetsText" Style="{StaticResource Body}" Margin="0,10,0,0" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
         </TabItem>
 
         <!-- ===================== OVERLAY ===================== -->
         <TabItem Header="Overlay" Tag="{StaticResource Icon.Overlay}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Overlay" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}" Text="How the in-game panel looks and where it sits. Changes apply immediately." />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="360" />
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="APPEARANCE" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox x:Name="ShowOverlay" Style="{StaticResource Switch}" Margin="0,0,0,14" Click="OnShowOverlay">
+                    <!-- Left: where and how it appears -->
+                    <StackPanel Margin="24,18,24,24">
+                        <TextBlock Text="Overlay" Style="{StaticResource PageTitle}" />
+                        <TextBlock Style="{StaticResource Body}" Text="What you see in games. Changes apply immediately." Margin="0,3,0,14" />
+
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="1">
+                            <Viewbox Stretch="Uniform">
+                                <Canvas x:Name="PreviewScreen" Width="320" Height="180" Background="{DynamicResource Panel}" ClipToBounds="True">
+                                    <Button x:Name="CornerTopLeft" Style="{StaticResource CornerTarget}" CommandParameter="TopLeft"
+                                            Canvas.Left="6" Canvas.Top="6" Click="OnCornerTarget" AutomationProperties.Name="Move the overlay to the top left" />
+                                    <Button x:Name="CornerTopRight" Style="{StaticResource CornerTarget}" CommandParameter="TopRight"
+                                            Canvas.Left="250" Canvas.Top="6" Click="OnCornerTarget" AutomationProperties.Name="Move the overlay to the top right" />
+                                    <Button x:Name="CornerBottomLeft" Style="{StaticResource CornerTarget}" CommandParameter="BottomLeft"
+                                            Canvas.Left="6" Canvas.Top="158" Click="OnCornerTarget" AutomationProperties.Name="Move the overlay to the bottom left" />
+                                    <Button x:Name="CornerBottomRight" Style="{StaticResource CornerTarget}" CommandParameter="BottomRight"
+                                            Canvas.Left="250" Canvas.Top="158" Click="OnCornerTarget" AutomationProperties.Name="Move the overlay to the bottom right" />
+                                    <Border x:Name="PreviewOverlay" IsHitTestVisible="False" Background="{DynamicResource Bg}"
+                                            BorderBrush="{DynamicResource Line}" BorderThickness="0.5" Padding="4,2">
+                                        <TextBlock x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas" FontSize="7" Foreground="{DynamicResource Text}" />
+                                    </Border>
+                                </Canvas>
+                            </Viewbox>
+                        </Border>
+                        <DockPanel Margin="0,6,0,0">
+                            <TextBlock x:Name="PreviewHotkey" DockPanel.Dock="Right" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" FontSize="11" />
+                            <TextBlock x:Name="PreviewCaption" Style="{StaticResource Small}" Margin="0" />
+                        </DockPanel>
+
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="DisplayBox" SelectedValuePath="Tag" SelectedValue="{Binding Monitor}" AutomationProperties.Name="Display"
+                                      HorizontalAlignment="Left" MinWidth="220" />
+                            <Button Grid.Column="1" Style="{StaticResource Btn}" Click="OnMoveOverlay" AutomationProperties.Name="Move overlay">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Pointer}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Move overlay" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock Style="{StaticResource Small}" Margin="0,6,0,0"
+                                   Text="Move overlay unlocks it so you can drag it anywhere on any screen; press Pin on the overlay to lock it there. Clicks pass through to your game whenever it's pinned." />
+
+                        <UniformGrid Columns="2" Margin="0,16,0,0">
+                            <RadioButton x:Name="StripCard" GroupName="Layout" Style="{StaticResource LayoutCard}" Tag="Compact" Checked="OnLayoutCard"
+                                         Margin="0,0,6,0" AutomationProperties.Name="Strip layout">
                                 <StackPanel>
-                                    <TextBlock Text="Show the overlay" FontSize="13" />
-                                    <TextBlock x:Name="HotkeyHint" Style="{StaticResource Body}" />
+                                    <TextBlock Text="Strip" FontSize="13" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Small}" Text="One ruled line. The default." />
                                 </StackPanel>
-                            </CheckBox>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Layout" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Layout}" AutomationProperties.Name="Overlay layout">
-                                    <ComboBoxItem Content="Strip (one line)" Tag="Compact" />
-                                    <ComboBoxItem Content="Panel" Tag="Expanded" />
-                                </ComboBox>
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <StackPanel Margin="0,0,16,0">
-                                    <TextBlock Text="Overlay theme" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Dark reads best over most games." />
+                            </RadioButton>
+                            <RadioButton x:Name="PanelCard" GroupName="Layout" Style="{StaticResource LayoutCard}" Tag="Expanded" Checked="OnLayoutCard"
+                                         Margin="6,0,0,0" AutomationProperties.Name="Panel layout">
+                                <StackPanel>
+                                    <TextBlock Text="Panel" FontSize="13" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Small}" Text="Adds the frame-time trace and a row per reading." />
                                 </StackPanel>
-                                <ComboBox Grid.Column="1" VerticalAlignment="Center" SelectedValuePath="Tag" SelectedValue="{Binding OverlayTheme}"
-                                          AutomationProperties.Name="Overlay theme">
-                                    <ComboBoxItem Content="Always dark" Tag="AlwaysDark" />
-                                    <ComboBoxItem Content="Always light" Tag="AlwaysLight" />
-                                    <ComboBoxItem Content="Same as app" Tag="SameAsApp" />
-                                </ComboBox>
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Display" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox x:Name="DisplayBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Monitor}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Position" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox x:Name="PositionBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Position}"
-                                          AutomationProperties.Name="Overlay position">
-                                    <ComboBoxItem Content="Top right" Tag="TopRight" />
-                                    <ComboBoxItem Content="Top left" Tag="TopLeft" />
-                                    <ComboBoxItem Content="Bottom right" Tag="BottomRight" />
-                                    <ComboBoxItem Content="Bottom left" Tag="BottomLeft" />
-                                    <ComboBoxItem Content="Custom (pinned spot)" Tag="Custom" />
-                                </ComboBox>
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Opacity" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="OpacitySlider" Grid.Column="1" Minimum="0.3" Maximum="1" TickFrequency="0.05" Value="{Binding Opacity}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=OpacitySlider, StringFormat='{}{0:P0}'}" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Text size" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="ScaleSlider" Grid.Column="1" Minimum="0.75" Maximum="1.75" TickFrequency="0.05" Value="{Binding Scale}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=ScaleSlider, StringFormat='{}{0:P0}'}" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="METRICS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <UniformGrid Columns="2">
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowFrameTime}" Margin="0,0,24,12" Content="Frame time" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowOnePercentLow}" Margin="0,0,0,12" Content="1% low FPS" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowGpu}" Margin="0,0,24,12" Content="GPU" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowVram}" Margin="0,0,0,12" Content="GPU memory (VRAM)" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowCpu}" Margin="0,0,24,12" Content="CPU" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowRam}" Margin="0,0,0,12" Content="RAM" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowSlowdowns}" Margin="0,0,24,0" Content="Slowdown warnings" />
+                            </RadioButton>
                         </UniformGrid>
-                    </Border>
+                    </StackPanel>
 
-                    <TextBlock Text="BEHAVIOR" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
+                    <!-- Right: the other settings -->
+                    <Border Grid.Column="1" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
                         <StackPanel>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <StackPanel Margin="0,0,16,0">
-                                    <TextBlock Text="Move the overlay" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="Unlocks it so you can drag it anywhere on any screen; press Pin on the overlay to lock it there. Clicks pass through to your game whenever it's pinned." />
-                                </StackPanel>
-                                <Button Grid.Column="1" Content="Move overlay" Style="{StaticResource Btn}" Click="OnMoveOverlay" VerticalAlignment="Center" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,12">
+                                <CheckBox x:Name="ShowOverlay" Style="{StaticResource Switch}" Click="OnShowOverlay">
+                                    <StackPanel>
+                                        <TextBlock Text="Show the overlay" FontSize="13" />
+                                        <TextBlock x:Name="HotkeyHint" Style="{StaticResource Body}" />
+                                    </StackPanel>
+                                </CheckBox>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="40" TextAlignment="Right"
+                                               Text="{Binding Value, ElementName=OpacitySlider, StringFormat='{}{0:P0}'}" />
+                                    <TextBlock Text="Opacity" FontSize="13" Width="86" VerticalAlignment="Center" />
+                                    <Slider x:Name="OpacitySlider" Minimum="0.3" Maximum="1" TickFrequency="0.05" Value="{Binding Opacity}"
+                                            Margin="0,0,10,0" AutomationProperties.Name="Overlay opacity" />
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="40" TextAlignment="Right"
+                                               Text="{Binding Value, ElementName=ScaleSlider, StringFormat='{}{0:P0}'}" />
+                                    <TextBlock Text="Text size" FontSize="13" Width="86" VerticalAlignment="Center" />
+                                    <Slider x:Name="ScaleSlider" Minimum="0.75" Maximum="1.75" TickFrequency="0.05" Value="{Binding Scale}"
+                                            Margin="0,0,10,0" AutomationProperties.Name="Overlay text size" />
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
                                 <StackPanel>
-                                    <TextBlock Text="FPS refresh" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="How often the overlay redraws. Once a second uses the least CPU." />
+                                    <TextBlock Text="SHOW" Style="{StaticResource Key}" Margin="0,0,0,8" />
+                                    <UniformGrid Columns="2">
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowFrameTime}" Margin="0,0,14,8" Content="Frame time" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowOnePercentLow}" Margin="0,0,0,8" Content="1% low" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowGpu}" Margin="0,0,14,8" Content="GPU" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowVram}" Margin="0,0,0,8" Content="VRAM" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowCpu}" Margin="0,0,14,8" Content="CPU" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowRam}" Margin="0,0,0,8" Content="RAM" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowSlowdowns}" Margin="0,0,14,0" Content="Slowdowns" />
+                                    </UniformGrid>
                                 </StackPanel>
-                                <ComboBox x:Name="FpsRefreshBox" Grid.Column="1" SelectedValuePath="Tag"
-                                          SelectedValue="{Binding FpsRefreshMs}" VerticalAlignment="Center" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <ComboBox x:Name="FpsRefreshBox" DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding FpsRefreshMs}"
+                                              AutomationProperties.Name="FPS refresh" />
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="FPS refresh" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Small}" Text="Once a second uses the least CPU." />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <ComboBox x:Name="StatsRefreshBox" DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding StatsRefreshMs}"
+                                              AutomationProperties.Name="Sensor refresh" />
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Sensor refresh" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Small}" Text="Slower uses less power." />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding OverlayTheme}" AutomationProperties.Name="Overlay theme">
+                                        <ComboBoxItem Content="Always dark" Tag="AlwaysDark" />
+                                        <ComboBoxItem Content="Always light" Tag="AlwaysLight" />
+                                        <ComboBoxItem Content="Same as app" Tag="SameAsApp" />
+                                    </ComboBox>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Overlay theme" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Small}" Text="Dark reads best over most games." />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,12">
                                 <StackPanel>
-                                    <TextBlock Text="Sensor refresh" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="GPU, CPU and memory. Slower uses less power." />
+                                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GpuRendering}">
+                                        <StackPanel>
+                                            <TextBlock Text="Draw with the graphics chip" FontSize="13" />
+                                            <TextBlock Style="{StaticResource Body}" Text="Off by default. Measured on this laptop: about 0.3% of one CPU core less, but about 145 MB more memory. Takes effect after the app restarts." />
+                                        </StackPanel>
+                                    </CheckBox>
+                                    <Button x:Name="RestartAppButton" Content="Restart the app now" Style="{StaticResource Btn}" Tag="Primary"
+                                            HorizontalAlignment="Left" Margin="0,10,0,0" Visibility="Collapsed" Click="OnRestartApp" />
                                 </StackPanel>
-                                <ComboBox x:Name="StatsRefreshBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding StatsRefreshMs}" VerticalAlignment="Center" />
-                            </Grid>
-                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GpuRendering}">
-                                <StackPanel>
-                                    <TextBlock Text="Draw the overlay with the graphics chip" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Off by default. Measured on this laptop: about 0.3% of one CPU core less, but about 145 MB more memory, because the graphics driver loads into the app. Takes effect after the app restarts." />
-                                </StackPanel>
-                            </CheckBox>
-                            <Button x:Name="RestartAppButton" Content="Restart the app now" Style="{StaticResource Btn}" Tag="Primary"
-                                    HorizontalAlignment="Left" Margin="0,10,0,0" Visibility="Collapsed" Click="OnRestartApp" />
+                            </Border>
                         </StackPanel>
                     </Border>
-                </StackPanel>
+                </Grid>
             </ScrollViewer>
         </TabItem>
 
         <!-- ===================== ALERTS ===================== -->
         <TabItem Header="Alerts" Tag="{StaticResource Icon.Temperature}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Temperatures &amp; alerts" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}"
-                               Text="Warning levels color the overlay amber; hot levels color it red. Two kinds of notification: confirmed slowdowns (the driver or Windows reports the hardware is slowing itself down) and temperature warnings (above your levels, which isn't a fault on its own)." />
+                <StackPanel>
+                    <StackPanel Margin="24,18,24,14">
+                        <TextBlock Text="Temperatures &amp; alerts" Style="{StaticResource PageTitle}" />
+                        <TextBlock Style="{StaticResource Body}"
+                                   Text="Drag a handle, or focus it and use the arrow keys, to change a level. The vertical line is the current reading. Warning levels color the overlay amber; hot levels color it red." />
+                    </StackPanel>
 
-                    <TextBlock Text="LEVELS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1" Padding="24,14,24,10">
                         <StackPanel>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="GPU warning" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="GpuWarn" Grid.Column="1" Minimum="50" Maximum="105" TickFrequency="1" Value="{Binding GpuTempWarn}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Warn}" Text="{Binding Value, ElementName=GpuWarn, StringFormat='{}{0:0} °C'}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="GPU hot" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="GpuHot" Grid.Column="1" Minimum="50" Maximum="110" TickFrequency="1" Value="{Binding GpuTempHot}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Hot}" Text="{Binding Value, ElementName=GpuHot, StringFormat='{}{0:0} °C'}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="CPU warning" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="CpuWarn" Grid.Column="1" Minimum="50" Maximum="105" TickFrequency="1" Value="{Binding CpuTempWarn}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Warn}" Text="{Binding Value, ElementName=CpuWarn, StringFormat='{}{0:0} °C'}" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="CPU hot" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="CpuHot" Grid.Column="1" Minimum="50" Maximum="110" TickFrequency="1" Value="{Binding CpuTempHot}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Hot}" Text="{Binding Value, ElementName=CpuHot, StringFormat='{}{0:0} °C'}" />
-                            </Grid>
-                            <TextBlock Style="{StaticResource Small}" Margin="0,10,0,0"
-                                       Text="CPU temperature comes from the hottest ACPI thermal zone, which tracks the CPU package closely on laptops but isn't a per-core sensor." />
+                            <DockPanel>
+                                <TextBlock x:Name="GpuNow" DockPanel.Dock="Right" Style="{StaticResource Mono}" FontSize="14" />
+                                <TextBlock Text="GPU" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock x:Name="GpuSource" Style="{StaticResource Small}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <controls:TempScaleControl x:Name="GpuScale" Sensor="GPU" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,14,24,10">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock x:Name="CpuNow" DockPanel.Dock="Right" Style="{StaticResource Mono}" FontSize="14" />
+                                <TextBlock Text="CPU" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock x:Name="CpuSource" Style="{StaticResource Small}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <controls:TempScaleControl x:Name="CpuScale" Sensor="CPU" Margin="0,10,0,0" />
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Text="NOTIFICATIONS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Alerts}" Margin="0,0,0,14">
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                        <TextBlock Text="NOTIFICATIONS" Style="{StaticResource Key}" />
+                    </Border>
+                    <Border Style="{StaticResource LedgerRow}">
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Alerts}">
+                            <StackPanel>
                                 <TextBlock Text="Notify me about slowdowns and high temperatures" FontSize="13" />
-                            </CheckBox>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Only if it lasts" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="Brief spikes are ignored." />
-                                </StackPanel>
-                                <Slider x:Name="AfterSlider" Grid.Column="1" Minimum="5" Maximum="120" TickFrequency="5" Value="{Binding AlertAfterSeconds}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=AfterSlider, StringFormat='{}{0:0} s'}" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="At most once every" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="Per kind of alert. If the same problem keeps going, reminders slow to hourly after the third." />
-                                </StackPanel>
-                                <Slider x:Name="CooldownSlider" Grid.Column="1" Minimum="1" Maximum="120" TickFrequency="1" Value="{Binding AlertCooldownMinutes}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=CooldownSlider, StringFormat='{}{0:0} min'}" />
-                            </Grid>
-                        </StackPanel>
+                                <TextBlock Style="{StaticResource Body}" Text="Confirmed slowdowns (the driver or Windows reports the hardware slowing itself down) and temperatures above your hot levels, which isn't a fault on its own." />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                    <Border Style="{StaticResource LedgerRow}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="56" TextAlignment="Right"
+                                       Text="{Binding Value, ElementName=AfterSlider, StringFormat='{}{0:0} s'}" />
+                            <Slider x:Name="AfterSlider" DockPanel.Dock="Right" Width="220" Minimum="5" Maximum="120" TickFrequency="5"
+                                    Value="{Binding AlertAfterSeconds}" Margin="12,0,10,0" AutomationProperties.Name="Only notify if it lasts this many seconds" />
+                            <StackPanel>
+                                <TextBlock Text="Only if it lasts" FontSize="13" />
+                                <TextBlock Style="{StaticResource Small}" Text="Brief spikes are ignored." />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource LedgerRow}" Margin="0,0,0,24">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="56" TextAlignment="Right"
+                                       Text="{Binding Value, ElementName=CooldownSlider, StringFormat='{}{0:0} min'}" />
+                            <Slider x:Name="CooldownSlider" DockPanel.Dock="Right" Width="220" Minimum="1" Maximum="120" TickFrequency="1"
+                                    Value="{Binding AlertCooldownMinutes}" Margin="12,0,10,0" AutomationProperties.Name="Notify at most once every this many minutes" />
+                            <StackPanel>
+                                <TextBlock Text="At most once every" FontSize="13" />
+                                <TextBlock Style="{StaticResource Small}" Text="Per kind of alert. If the same problem keeps going, reminders slow to hourly after the third." />
+                            </StackPanel>
+                        </DockPanel>
                     </Border>
                 </StackPanel>
             </ScrollViewer>
@@ -698,114 +805,153 @@
         <!-- ===================== GENERAL ===================== -->
         <TabItem Header="Settings" Tag="{StaticResource Icon.Settings}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Settings" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}" Text="Startup, shortcut, power use and history." />
+                <StackPanel>
+                    <StackPanel Margin="24,18,24,14">
+                        <TextBlock Text="Settings" Style="{StaticResource PageTitle}" />
+                        <TextBlock Style="{StaticResource Body}" Text="Version, startup and appearance, then the shortcut, power use and history." />
+                    </StackPanel>
 
-                    <TextBlock Text="STARTUP" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox x:Name="StartupSwitch" Style="{StaticResource Switch}" Click="OnStartupToggle">
+                    <!-- Status strip -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1">
+                        <UniformGrid Columns="3">
+                            <Border Style="{StaticResource ReadingCell}">
                                 <StackPanel>
-                                    <TextBlock Text="Start with Windows" FontSize="13" />
-                                    <TextBlock x:Name="StartupStatus" Style="{StaticResource Body}" />
+                                    <TextBlock Text="VERSION" Style="{StaticResource ReadingKey}" />
+                                    <TextBlock x:Name="VersionValue" Style="{StaticResource ReadingValue}" FontSize="22" />
+                                    <TextBlock x:Name="UpdateStatus" Style="{StaticResource Small}" />
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button x:Name="CheckUpdatesButton" Style="{StaticResource Btn}" Click="OnCheckUpdates" Margin="0,0,8,6"
+                                                AutomationProperties.Name="Check for updates now">
+                                            <StackPanel Orientation="Horizontal">
+                                                <core:Icon Data="{StaticResource Icon.Refresh}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                <TextBlock Text="Check now" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="InstallUpdateButton" Content="Download and install" Style="{StaticResource Btn}" Tag="Primary"
+                                                Click="OnInstallUpdate" Visibility="Collapsed" Margin="0,0,8,6" />
+                                        <Button x:Name="ReleasePageButton" Content="What's new" Style="{StaticResource Btn}"
+                                                Click="OnReleasePage" Visibility="Collapsed" Margin="0,0,8,6" />
+                                    </WrapPanel>
                                 </StackPanel>
-                            </CheckBox>
-                        </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ReadingCell}">
+                                <StackPanel>
+                                    <TextBlock Text="STARTUP" Style="{StaticResource ReadingKey}" />
+                                    <TextBlock x:Name="StartupValue" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0" />
+                                    <TextBlock x:Name="StartupStatus" Style="{StaticResource Small}" />
+                                    <CheckBox x:Name="StartupSwitch" Style="{StaticResource Switch}" Click="OnStartupToggle" HorizontalAlignment="Left"
+                                              Margin="0,10,0,0" AutomationProperties.Name="Start with Windows" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ReadingCell}" BorderThickness="0">
+                                <StackPanel>
+                                    <TextBlock Text="APPEARANCE" Style="{StaticResource ReadingKey}" />
+                                    <TextBlock x:Name="AppearanceValue" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0" />
+                                    <TextBlock Style="{StaticResource Small}" Text="This window. The overlay has its own theme on the Overlay page." />
+                                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="1,1,0,1" HorizontalAlignment="Left" Margin="0,10,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton x:Name="AppearanceLight" GroupName="Appearance" Style="{StaticResource Seg}" Tag="Light"
+                                                         Checked="OnAppearance" AutomationProperties.Name="Light" ToolTip="Light">
+                                                <core:Icon Data="{StaticResource Icon.Sun}" Width="14" Height="14"
+                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
+                                            </RadioButton>
+                                            <RadioButton x:Name="AppearanceDark" GroupName="Appearance" Style="{StaticResource Seg}" Tag="Dark"
+                                                         Checked="OnAppearance" AutomationProperties.Name="Dark" ToolTip="Dark">
+                                                <core:Icon Data="{StaticResource Icon.Moon}" Width="14" Height="14"
+                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
+                                            </RadioButton>
+                                            <RadioButton x:Name="AppearanceMatch" GroupName="Appearance" Style="{StaticResource Seg}" Tag="MatchWindows"
+                                                         Checked="OnAppearance" AutomationProperties.Name="Match Windows" ToolTip="Match Windows">
+                                                <core:Icon Data="{StaticResource Icon.Monitor}" Width="14" Height="14"
+                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
+                                            </RadioButton>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
                     </Border>
 
-                    <TextBlock Text="APPEARANCE" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <DockPanel>
-                            <ComboBox x:Name="AppearanceBox" DockPanel.Dock="Right" VerticalAlignment="Center"
-                                      SelectedValuePath="Tag" SelectedValue="{Binding Appearance}" AutomationProperties.Name="Theme">
-                                <ComboBoxItem Tag="MatchWindows" Content="Match Windows" />
-                                <ComboBoxItem Tag="Light" Content="Light" />
-                                <ComboBoxItem Tag="Dark" Content="Dark" />
-                            </ComboBox>
-                            <StackPanel Margin="0,0,16,0">
-                                <TextBlock Text="Theme" FontSize="13" />
-                                <TextBlock Style="{StaticResource Body}" Text="Light, dark, or follow the Windows app setting. The in-game overlay stays dark." />
+                    <!-- Two columns -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
+                            <StackPanel>
+                                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,18,0,0">
+                                    <TextBlock Text="SHORTCUT AND UPDATES" Style="{StaticResource Key}" />
+                                </Border>
+                                <Border Style="{StaticResource LedgerRow}">
+                                    <StackPanel>
+                                        <TextBlock Text="Show or hide the overlay" FontSize="13" />
+                                        <DockPanel Margin="0,8,0,0">
+                                            <Button DockPanel.Dock="Right" Content="Use this shortcut" Style="{StaticResource Btn}" Margin="8,0,0,0" Click="OnApplyHotkey" />
+                                            <TextBox x:Name="HotkeyBox" IsReadOnly="True" PreviewKeyDown="OnHotkeyKey" AutomationProperties.Name="Overlay shortcut"
+                                                     ToolTip="Click here and press the new shortcut" FontFamily="Cascadia Mono, Consolas" />
+                                        </DockPanel>
+                                        <TextBlock x:Name="HotkeyResult" Style="{StaticResource Body}" />
+                                        <TextBlock Style="{StaticResource Small}" Text="Click the box, press the keys you want (e.g. Ctrl+Alt+P), then choose Use this shortcut. If another app already uses it, your current shortcut stays." />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource LedgerRow}">
+                                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CheckForUpdates}">
+                                        <StackPanel>
+                                            <TextBlock Text="Check for updates once a day" FontSize="13" />
+                                            <TextBlock Style="{StaticResource Body}" Text="Asks GitHub for the latest release; nothing personal is sent. Updates install only when you choose, after the download's checksum is verified." />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </Border>
                             </StackPanel>
-                        </DockPanel>
-                    </Border>
-
-                    <TextBlock Text="UPDATES" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <TextBlock x:Name="UpdateVersion" FontSize="13" />
-                            <TextBlock x:Name="UpdateStatus" Style="{StaticResource Body}" />
-                            <WrapPanel Margin="0,10,0,0">
-                                <Button x:Name="CheckUpdatesButton" Content="Check now" Style="{StaticResource Btn}" Click="OnCheckUpdates" Margin="0,0,8,8" />
-                                <Button x:Name="InstallUpdateButton" Content="Download and install" Style="{StaticResource Btn}" Tag="Primary"
-                                        Click="OnInstallUpdate" Visibility="Collapsed" Margin="0,0,8,8" />
-                                <Button x:Name="ReleasePageButton" Content="What's new" Style="{StaticResource Btn}"
-                                        Click="OnReleasePage" Visibility="Collapsed" Margin="0,0,8,8" />
-                            </WrapPanel>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CheckForUpdates}" Margin="0,6,0,0">
+                        </Border>
+                        <StackPanel Grid.Column="1">
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,18,0,0">
+                                <TextBlock Text="POWER AND HISTORY" Style="{StaticResource Key}" />
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}">
+                                <CheckBox x:Name="SleepSwitch" Style="{StaticResource Switch}" IsChecked="{Binding LetGpuSleep}">
+                                    <StackPanel>
+                                        <TextBlock Text="Let the laptop GPU sleep" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Body}" Text="When the NVIDIA GPU is powered down, don't wake it just to read its sensors." />
+                                    </StackPanel>
+                                </CheckBox>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}">
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding HistoryEnabled}">
+                                    <StackPanel>
+                                        <TextBlock Text="Keep performance history" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Body}" Text="The last 10 minutes stay in memory for the graphs. A short summary of each gaming session is saved on this PC; nothing is uploaded." />
+                                    </StackPanel>
+                                </CheckBox>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="64" TextAlignment="Right"
+                                               Text="{Binding Value, ElementName=RetentionSlider, StringFormat='{}{0:0} days'}" />
+                                    <Slider x:Name="RetentionSlider" DockPanel.Dock="Right" Width="160" Minimum="1" Maximum="90" TickFrequency="1"
+                                            Value="{Binding HistoryRetentionDays}" Margin="12,0,10,0" AutomationProperties.Name="Keep session summaries for this many days" />
+                                    <TextBlock Text="Keep session summaries for" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}">
                                 <StackPanel>
-                                    <TextBlock Text="Check automatically once a day" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Asks GitHub for the latest release; nothing personal is sent. Updates are only installed when you choose to, after the download's checksum is verified." />
+                                    <TextBlock Text="RECENT SESSIONS" Style="{StaticResource Key}" Margin="0,0,0,6" />
+                                    <ItemsControl x:Name="SessionList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontFamily="Cascadia Mono, Consolas" FontSize="11" Foreground="{DynamicResource Text}"
+                                                           TextWrapping="Wrap" Margin="0,0,0,5" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock x:Name="SessionsEmpty" Style="{StaticResource Small}" Text="No sessions saved yet." />
                                 </StackPanel>
-                            </CheckBox>
+                            </Border>
                         </StackPanel>
-                    </Border>
+                    </Grid>
 
-                    <TextBlock Text="SHORTCUT" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <TextBlock Text="Show or hide the overlay" FontSize="13" />
-                            <Grid Margin="0,8,0,0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                <TextBox x:Name="HotkeyBox" IsReadOnly="True" PreviewKeyDown="OnHotkeyKey" AutomationProperties.Name="Overlay shortcut"
-                                         ToolTip="Click here and press the new shortcut" />
-                                <Button Grid.Column="1" Content="Use this shortcut" Style="{StaticResource Btn}" Margin="8,0,0,0" Click="OnApplyHotkey" />
-                                <TextBlock x:Name="HotkeyResult" Grid.Column="2" Style="{StaticResource Body}" Margin="12,0,0,0" VerticalAlignment="Center" />
-                            </Grid>
-                            <TextBlock Style="{StaticResource Small}" Margin="0,6,0,0" Text="Click the box, press the keys you want (e.g. Ctrl+Alt+P), then choose Use this shortcut. If another app already uses it, your current shortcut stays." />
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="POWER AND HISTORY" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox x:Name="SleepSwitch" Style="{StaticResource Switch}" IsChecked="{Binding LetGpuSleep}" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="Let the laptop GPU sleep" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="When the NVIDIA GPU is powered down, don't wake it just to read its sensors. The overlay shows it as sleeping." />
-                                </StackPanel>
-                            </CheckBox>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding HistoryEnabled}" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="Keep performance history" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="The last 10 minutes stay in memory for the graphs. A short summary of each gaming session is saved on this PC; nothing is uploaded." />
-                                </StackPanel>
-                            </CheckBox>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Keep session summaries for" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="RetentionSlider" Grid.Column="1" Minimum="1" Maximum="90" TickFrequency="1" Value="{Binding HistoryRetentionDays}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=RetentionSlider, StringFormat='{}{0:0} days'}" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="RECENT SESSIONS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <ItemsControl x:Name="SessionList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,0,0,6" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock x:Name="SessionsEmpty" Style="{StaticResource Small}" Text="No sessions saved yet." />
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="RESET" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="24,14" Margin="0,18,0,0">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Restore defaults" Style="{StaticResource Btn}" Click="OnResetSettings" VerticalAlignment="Center" />
                             <StackPanel Margin="0,0,16,0">
@@ -821,66 +967,116 @@
         <!-- ===================== DIAGNOSTICS ===================== -->
         <TabItem Header="Diagnostics" Tag="{StaticResource Icon.Diagnostics}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Diagnostics" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}" Text="What works on this PC, what the app has changed, and recent problems." />
-
-                    <TextBlock Text="STATUS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <ItemsControl x:Name="StatusList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="20" />
-                                            <ColumnDefinition Width="200" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Ellipse Width="8" Height="8" Fill="{Binding Brush}" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,5,0,0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Detail}" Style="{StaticResource Body}" Margin="0" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Border>
-
-                    <TextBlock Text="ACTIONS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <WrapPanel>
-                                <Button Content="Copy diagnostic report" Style="{StaticResource Btn}" Click="OnCopyReport" Margin="0,0,8,8" />
-                                <Button Content="Open log" Style="{StaticResource Btn}" Click="OnOpenLog" Margin="0,0,8,8" />
-                                <Button Content="Open data folder" Style="{StaticResource Btn}" Click="OnOpenData" Margin="0,0,8,8" />
-                                <Button Content="Undo every change the app made" Style="{StaticResource Btn}" Tag="Danger" Click="OnUndoEverything" Margin="0,0,8,8" />
-                            </WrapPanel>
-                            <TextBlock x:Name="ActionResult" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" />
-                            <TextBlock Style="{StaticResource Small}" Margin="0,6,0,0"
-                                       Text="The report includes the version, settings, sensor availability and recent errors. Your user name and profile paths are replaced with placeholders." />
+                <StackPanel>
+                    <DockPanel Margin="24,18,24,10">
+                        <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                            <Button Style="{StaticResource Btn}" Click="OnCopyReport" Margin="8,0,0,6" AutomationProperties.Name="Copy diagnostic report">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Copy}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Copy report" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource Btn}" Click="OnOpenLog" Margin="8,0,0,6" AutomationProperties.Name="Open log">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.File}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Open log" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource Btn}" Click="OnOpenData" Margin="8,0,0,6" AutomationProperties.Name="Open data folder">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Folder}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Data folder" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource Btn}" Click="OnUndoEverything" Margin="8,0,0,6" AutomationProperties.Name="Undo every change the app made">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Undo}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Undo every change" />
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Diagnostics" Style="{StaticResource PageTitle}" />
+                            <TextBlock x:Name="HealthText" Style="{StaticResource Body}" />
                         </StackPanel>
-                    </Border>
+                    </DockPanel>
+                    <TextBlock x:Name="ActionResult" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="24,0,24,10" />
 
-                    <TextBlock Text="RECENT EVENTS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <ItemsControl x:Name="LogList">
+                    <!-- Health grid -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
+                        <ItemsControl x:Name="StatusGrid">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="0,0,0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="70" />
-                                            <ColumnDefinition Width="90" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Time, StringFormat='HH:mm:ss'}" Style="{StaticResource Small}" Margin="0" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Area}" Style="{StaticResource Small}" Margin="0" />
-                                        <TextBlock Grid.Column="2" Text="{Binding Message}" Style="{StaticResource Body}" Margin="0"
-                                                   Foreground="{Binding Level, Converter={x:Static local:LevelBrush.Instance}}"
-                                                   />
-                                    </Grid>
+                                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,1" Padding="16,12,16,14" ToolTip="{Binding Detail}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Key}" TextTrimming="CharacterEllipsis" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                <core:Icon x:Name="Mark" Data="{StaticResource Icon.Info}" Foreground="{DynamicResource Muted}"
+                                                           Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                <TextBlock Text="{Binding Word}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Small}" TextTrimming="CharacterEllipsis" MaxHeight="32" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Level}" Value="Ok">
+                                            <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Check}" />
+                                            <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Good}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Level}" Value="Warn">
+                                            <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Warning}" />
+                                            <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Signal}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Level}" Value="Error">
+                                            <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Warning}" />
+                                            <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Hot}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </Border>
+
+                    <!-- Change journal -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="Restored only if it's still what the app set" Style="{StaticResource Small}" Margin="0" VerticalAlignment="Center" />
+                            <TextBlock Text="CHANGE JOURNAL" Style="{StaticResource Key}" />
+                        </DockPanel>
+                    </Border>
+                    <ItemsControl x:Name="JournalList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource LedgerRow}" Padding="24,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="160" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding When}" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Setting}" FontSize="12.5" Margin="0,0,10,0" />
+                                            <TextBlock Text="{Binding Change}" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding Owners}" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                                        <Button Grid.Column="3" Content="Undo" Style="{StaticResource Btn}" MinWidth="0" Padding="10,3" Click="OnUndoChange"
+                                                AutomationProperties.Name="{Binding Setting, StringFormat='Undo {0}'}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="JournalEmpty" Style="{StaticResource Small}" Margin="24,8,24,0"
+                               Text="No Windows settings are changed by the app right now." />
+                    <TextBlock Style="{StaticResource Small}" Margin="24,12,24,24"
+                               Text="Copy report includes the version, settings, sensor availability and recent events, with your user name and profile paths replaced. Every event is in the log." />
                 </StackPanel>
             </ScrollViewer>
         </TabItem>

@@ -25,6 +25,7 @@ namespace PCSpecOverlay;
 public partial class ControlCenterWindow : Window
 {
     private const int AppRows = 8;
+    private const int PreviewMargin = 6;
 
     private readonly App _app;
     private readonly Engine _engine;
@@ -64,6 +65,8 @@ public partial class ControlCenterWindow : Window
         CheckList.ItemsSource = _checks;
         AppList.ItemsSource = _appRows;
         RuleList.ItemsSource = _rules;
+        GpuScale.LevelsChanged += (warn, hot) => { _settings.GpuTempWarn = warn; _settings.GpuTempHot = hot; ScheduleSave(); };
+        CpuScale.LevelsChanged += (warn, hot) => { _settings.CpuTempWarn = warn; _settings.CpuTempHot = hot; ScheduleSave(); };
 
         // Any edit to a bound control schedules one save
         _saveSoon = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
@@ -91,8 +94,24 @@ public partial class ControlCenterWindow : Window
         if (_loading || e.OriginalSource is TabControl) return;
         if (e.OriginalSource == ShowOverlay || e.OriginalSource == StartupSwitch) return; // handled by their own clicks
         if (e.OriginalSource == LightButton || e.OriginalSource == DarkButton) return; // saved by ChooseTheme
+        if (e.OriginalSource is RadioButton) return; // layout cards and appearance segments save in their own Checked handlers
+        ScheduleSave();
+    }
+
+    private void ScheduleSave()
+    {
+        if (_loading) return;
         _saveSoon.Stop();
         _saveSoon.Start();
+    }
+
+    /// <summary>Sets controls from settings without that counting as an edit.</summary>
+    private void Quietly(Action set)
+    {
+        var was = _loading;
+        _loading = true;
+        try { set(); }
+        finally { _loading = was; }
     }
 
     private void Save()
@@ -106,6 +125,7 @@ public partial class ControlCenterWindow : Window
         }
         UpdateBoostTargets();
         UpdateRestartHint();
+        RefreshPreview();
     }
 
     private void OnRestartApp(object sender, RoutedEventArgs e) => _app.RestartApp();
@@ -114,7 +134,7 @@ public partial class ControlCenterWindow : Window
 
     private void ShowUpdate(UpdateResult? r)
     {
-        UpdateVersion.Text = $"You have version {AppIdentity.Version}" + (AppIdentity.IsDevBuild ? " (development build)" : "");
+        VersionValue.Text = AppIdentity.Version + (AppIdentity.IsDevBuild ? " dev" : "");
         UpdateStatus.Text = r?.Message is { Length: > 0 } m ? m
             : string.IsNullOrEmpty(Updates.Repository) ? "Updates aren't set up yet: this build doesn't know where releases are published."
             : "Not checked yet.";
@@ -173,27 +193,29 @@ public partial class ControlCenterWindow : Window
 
     private void OnLightTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Light);
 
+    /// <summary>Checked (not Click), so a screen reader selecting a segment saves too; code-driven checks run Quietly and are skipped.</summary>
+    private void OnAppearance(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        ChooseTheme((string)((FrameworkElement)sender).Tag);
+    }
+
     private void OnDarkTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Dark);
 
     private void OnMoveOverlay(object sender, RoutedEventArgs e) => _app.MoveOverlay();
 
-    /// <summary>The overlay was dragged or pinned: show its new position choice and display without saving again.</summary>
+    /// <summary>The overlay was dragged or pinned: show its new display and spot without saving again.</summary>
     public void OverlayMoved()
     {
-        _loading = true;
-        PositionBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
-        DisplayBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
-        _loading = false;
+        Quietly(() => DisplayBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget());
+        RefreshPreview();
     }
 
-    /// <summary>The switch in the tab bar picks Light or Dark outright; Match Windows stays on the Settings page.</summary>
+    /// <summary>The tab-bar switch and the Appearance segments both land here; the switch picks Light or Dark outright.</summary>
     private void ChooseTheme(string appearance)
     {
         _settings.Appearance = appearance;
         _app.SaveSettings();
-        _loading = true; // the dropdown echoes the change; it was saved just above
-        AppearanceBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
-        _loading = false;
         SyncThemeButtons();
     }
 
@@ -202,6 +224,15 @@ public partial class ControlCenterWindow : Window
     {
         LightButton.IsChecked = _app.Theme.Current == AppTheme.Light;
         DarkButton.IsChecked = _app.Theme.Current == AppTheme.Dark;
+        Quietly(() =>
+        {
+            AppearanceLight.IsChecked = _settings.Appearance == Settings.Light;
+            AppearanceDark.IsChecked = _settings.Appearance == Settings.Dark;
+            AppearanceMatch.IsChecked = _settings.Appearance == Settings.MatchWindows;
+        });
+        AppearanceValue.Text = _settings.Appearance == Settings.MatchWindows
+            ? $"Match Windows ({(_app.Theme.Current == AppTheme.Dark ? "dark" : "light")})"
+            : _settings.Appearance;
     }
 
     /// <summary>Brushes made in code (banners, charts, temperature colors) are rebuilt by the next refresh.</summary>
@@ -228,6 +259,8 @@ public partial class ControlCenterWindow : Window
             case 0: RefreshOverview(); break;
             case 1: if (_tick % 2 == 1) RefreshOptimizer(); break;
             case 2: RefreshGaming(); break;
+            case 3: RefreshPreview(); break;
+            case 4: RefreshAlerts(); break;
             case 6: if (_tick % 3 == 1) RefreshDiagnostics(); break;
         }
     }
@@ -236,10 +269,17 @@ public partial class ControlCenterWindow : Window
     private void RefreshSlow()
     {
         ShowOverlay.IsChecked = _app.OverlayVisible;
+        Quietly(() =>
+        {
+            StripCard.IsChecked = _settings.Layout == Settings.Compact;
+            PanelCard.IsChecked = _settings.Layout == Settings.Expanded;
+        });
+        RefreshPreview();
         HotkeyHint.Text = _app.HotkeyInUse is { } h ? $"Shortcut: {h}" : "No shortcut is active; set one on the Settings page.";
         HotkeyBox.Text = _app.HotkeyInUse ?? _settings.Hotkey;
         var startup = StartupTask.Status();
         StartupSwitch.IsChecked = startup.Enabled;
+        StartupValue.Text = startup.Enabled ? "With Windows" : "Off";
         StartupStatus.Text = startup.Describe() + (AppIdentity.IsDevBuild ? " · This is a development build; it uses its own startup entry." : "");
         UpdateBoostTargets();
         UpdateRestartHint();
@@ -248,7 +288,25 @@ public partial class ControlCenterWindow : Window
         var sessions = HistoryRecorder.LoadSessions(10);
         SessionList.ItemsSource = sessions.Select(DescribeSession).ToList();
         SessionsEmpty.Visibility = sessions.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        GpuScale.SetLevels(_settings.GpuTempWarn, _settings.GpuTempHot);
+        CpuScale.SetLevels(_settings.CpuTempWarn, _settings.CpuTempHot);
+        GpuSource.Text = _engine.Gpu is { } gpu ? $"{gpu.Name.Replace("NVIDIA ", "").Replace("GeForce ", "")} · NVIDIA driver" : "No NVIDIA GPU found";
+        CpuSource.Text = _engine.System is { Ready: true, ThermalZones: 0 } ? "No thermal zones exposed by this PC" : "Hottest ACPI thermal zone (package, not per core)";
+        RefreshAlerts();
         if (Nav.SelectedIndex == 6) RefreshDiagnostics();
+    }
+
+    // ---- alerts ----
+
+    private void RefreshAlerts()
+    {
+        var t = _engine.Latest;
+        GpuScale.SetCurrent(t.Gpu.TempC);
+        CpuScale.SetCurrent(t.CpuTempC);
+        GpuNow.Text = t.Gpu.TempC is { } g ? $"{g:0} °C" : t.Gpu.Status == GpuStatus.Sleeping ? "Sleeping" : "—";
+        GpuNow.Foreground = Temp(t.Gpu.TempC, _settings.GpuTempWarn, _settings.GpuTempHot);
+        CpuNow.Text = t.CpuTempC is { } c ? $"{c:0} °C" : "—";
+        CpuNow.Foreground = Temp(t.CpuTempC, _settings.CpuTempWarn, _settings.CpuTempHot);
     }
 
     private static string DescribeSession(SessionSummary s)
@@ -362,7 +420,7 @@ public partial class ControlCenterWindow : Window
 
     private Border Banner(string title, string text, string? button, RoutedEventHandler? click, bool warn)
     {
-        var accent = (Brush)FindResource(warn ? "Warn" : "Accent");
+        var accent = (Brush)FindResource(warn ? "Signal" : "Text");
         var c = ((SolidColorBrush)accent).Color;
         var dock = new DockPanel();
         if (button != null)
@@ -450,7 +508,14 @@ public partial class ControlCenterWindow : Window
     private void RefreshOptimizer()
     {
         foreach (var c in _checks) c.Refresh();
-        FixAllButton.IsEnabled = _checks.OfType<Tweak>().Any(t => t.NeedsFix);
+        var pending = _checks.OfType<Tweak>().Count(t => t.NeedsFix);
+        FixAllButton.IsEnabled = pending > 0;
+        FixAllButton.Content = pending switch
+        {
+            0 => "Nothing to apply",
+            1 => "Apply 1 recommendation",
+            _ => $"Apply {pending} recommendations",
+        };
         UpdateRestartBanner();
 
         var top = _sampler.Sample()
@@ -486,6 +551,7 @@ public partial class ControlCenterWindow : Window
             : "It closes the way Windows does at shutdown, saving every window and tab, then reopens them. You'll be asked first.";
         RestartButton.Visibility = ok.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         RestartButton.Content = $"Restart {Names(ok)}";
+        System.Windows.Automation.AutomationProperties.SetName(RestartButton, $"Restart {Names(ok)}");
         RestartButton.IsEnabled = true;
     }
 
@@ -507,6 +573,7 @@ public partial class ControlCenterWindow : Window
         _restarting = true;
         RestartButton.IsEnabled = false;
         RestartButton.Content = "Restarting…";
+        System.Windows.Automation.AutomationProperties.SetName(RestartButton, "Restarting…");
         var messages = new List<string>();
         foreach (var b in browsers)
         {
@@ -537,7 +604,7 @@ public partial class ControlCenterWindow : Window
     {
         var pending = _checks.OfType<Tweak>().Where(t => t.NeedsFix).ToList();
         if (pending.Count == 0) return;
-        if (!Confirm("Apply these recommendations?\n\n" + string.Join("\n", pending.Select(t => $"• {t.Title}: {t.Status} → {t.Detail.Replace("Recommended: ", "")}")) +
+        if (!Confirm("Apply these recommendations?\n\n" + string.Join("\n", pending.Select(t => $"• {t.Title}: {t.Status} → {t.Recommended}")) +
                      "\n\nEach can be undone individually afterwards.", "Apply recommendations"))
             return;
         var failed = new List<string>();
@@ -584,9 +651,14 @@ public partial class ControlCenterWindow : Window
     private void RefreshGaming()
     {
         var gm = _engine.Gaming;
-        GamingStatusLine.Text = _engine.OptimizationsPaused ? "Paused — resume from the Overview page or the tray."
-            : gm.Active ? $"Active now for {string.Join(", ", gm.ActiveGames)}: {string.Join("; ", gm.Optimizations)}"
-            : _settings.AutoGamingMode ? "Waiting for a game." : "Off.";
+        var paused = _engine.OptimizationsPaused;
+        GamingBar.Visibility = gm.Active || paused ? Visibility.Visible : Visibility.Collapsed;
+        GamingBarText.Text = paused ? "Optimizations are paused. Gaming mode won't change anything until you resume."
+            : gm.Active ? $"Gaming mode is on for {string.Join(", ", gm.ActiveGames)}: {string.Join("; ", gm.Optimizations)}"
+            : "";
+        GamingLed.SetResourceReference(Shape.FillProperty, paused ? "Signal" : "Good");
+        GamingPause.Visibility = paused ? Visibility.Collapsed : Visibility.Visible;
+        GamingResume.Visibility = paused ? Visibility.Visible : Visibility.Collapsed;
 
         var recent = _engine.RecentGames.Select(g => new RecentGame(g,
             !_rules.Any(r => GameDetector.Matches(r, new ForegroundWindow(g.Process, g.Label, false, null))))).ToList();
@@ -632,6 +704,7 @@ public partial class ControlCenterWindow : Window
         var report = _app.StopOptimizations();
         MessageBox.Show(this, string.Join("\n", report), "Optimizations stopped", MessageBoxButton.OK, MessageBoxImage.Information);
         RefreshOverview();
+        RefreshGaming();
     }
 
     private void OnResume(object sender, RoutedEventArgs e)
@@ -639,9 +712,53 @@ public partial class ControlCenterWindow : Window
         if (_engine.RecoveryMode) _engine.LeaveRecoveryMode();
         _app.ResumeOptimizations();
         RefreshOverview();
+        RefreshGaming();
     }
 
     // ---- overlay / general ----
+
+    /// <summary>A dashed corner on the preview: puts the overlay in that corner.</summary>
+    private void OnCornerTarget(object sender, RoutedEventArgs e)
+    {
+        _settings.Position = (string)((Button)sender).CommandParameter;
+        Save();
+    }
+
+    /// <summary>Checked (not Click), so a screen reader selecting a card saves too; code-driven checks run Quietly and are skipped.</summary>
+    private void OnLayoutCard(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _settings.Layout = (string)((FrameworkElement)sender).Tag;
+        Save();
+    }
+
+    /// <summary>Draws the overlay on the preview screen where and how it will appear, with live readings.</summary>
+    private void RefreshPreview()
+    {
+        var t = _engine.Latest;
+        PreviewText.Text = _settings.Layout == Settings.Compact
+            ? OverlayPreview.Strip(_settings, t.Fps?.Fps, t.Fps?.FrameTimeMs, t.Gpu.TempC, t.CpuTempC)
+            : OverlayPreview.Panel(_settings, t.Fps?.Fps, t.Fps?.FrameTimeMs, t.Gpu.TempC, t.CpuTempC, t.Ram?.UsedGb);
+        PreviewText.FontSize = 7 * _settings.Scale;
+        PreviewOverlay.Opacity = _settings.Opacity;
+        PreviewOverlay.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var size = PreviewOverlay.DesiredSize;
+        var (x, y) = OverlayPlacement.Place(_settings.Position, _settings.CustomX, _settings.CustomY,
+            (0, 0, (int)PreviewScreen.Width, (int)PreviewScreen.Height), (int)Math.Ceiling(size.Width), (int)Math.Ceiling(size.Height), PreviewMargin);
+        Canvas.SetLeft(PreviewOverlay, x);
+        Canvas.SetTop(PreviewOverlay, y);
+        foreach (var target in new[] { CornerTopLeft, CornerTopRight, CornerBottomLeft, CornerBottomRight })
+        {
+            var on = (string)target.CommandParameter == _settings.Position;
+            target.Tag = on ? "On" : null;
+            System.Windows.Automation.AutomationProperties.SetItemStatus(target, on ? "Current position" : "");
+        }
+
+        var display = Displays.Find(_settings.Monitor);
+        PreviewCaption.Text = (_settings.Position == Settings.Custom ? "Pinned spot. Use Move overlay to drag it" : "Click a corner to move it there") +
+                              (display is null ? "" : $" · {display.Label}");
+        PreviewHotkey.Text = _app.HotkeyInUse ?? "";
+    }
 
     private void OnShowOverlay(object sender, RoutedEventArgs e)
     {
@@ -674,7 +791,7 @@ public partial class ControlCenterWindow : Window
     private void OnApplyHotkey(object sender, RoutedEventArgs e)
     {
         var error = _app.TryRegisterHotkey(HotkeyBox.Text);
-        HotkeyResult.Foreground = (Brush)FindResource(error is null ? "Good" : "Warn");
+        HotkeyResult.Foreground = (Brush)FindResource(error is null ? "Good" : "Signal");
         HotkeyResult.Text = error ?? $"Now using {_app.HotkeyInUse}.";
         RefreshSlow();
     }
@@ -689,23 +806,37 @@ public partial class ControlCenterWindow : Window
         DataContext = _settings;
         _loading = false;
         RefreshAll();
+        SyncThemeButtons();
     }
 
     // ---- diagnostics ----
 
     private void RefreshDiagnostics()
     {
-        StatusList.ItemsSource = DiagnosticReport.Status(_engine).Select(s => new StatusRow(s.Name, s.Detail, s.Level switch
-        {
-            DiagLevel.Ok => (Brush)FindResource("Good"),
-            DiagLevel.Warn => (Brush)FindResource("Warn"),
-            DiagLevel.Error => (Brush)FindResource("Hot"),
-            _ => (Brush)FindResource("Info"),
-        })).ToList();
-        LogList.ItemsSource = Log.Recent().AsEnumerable().Reverse().Take(60).ToList();
+        var status = DiagnosticReport.Status(_engine).Where(s => s.Name != DiagnosticReport.ChangesCheck).ToList();
+        var cells = status.Select(s => new StatusCell(s.Name, s.Detail, s.Level, Health.Word(s.Level))).ToList();
+        if (StatusGrid.ItemsSource is not IEnumerable<StatusCell> shown || !shown.SequenceEqual(cells))
+            StatusGrid.ItemsSource = cells;
+        HealthText.Text = Health.Summary(status.Select(s => s.Level).ToList());
+
+        var rows = JournalRows.Build(_engine.Journal.Entries, id => SettingCatalog.Resolve(id)?.Name, SettingCatalog.DescribeValue, DateTime.Now);
+        if (JournalList.ItemsSource is not IEnumerable<JournalRow> listed || !listed.SequenceEqual(rows))
+            JournalList.ItemsSource = rows;
+        JournalEmpty.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private sealed record StatusRow(string Name, string Detail, Brush Brush);
+    private sealed record StatusCell(string Name, string Detail, DiagLevel Level, string Word);
+
+    private void OnUndoChange(object sender, RoutedEventArgs e)
+    {
+        var row = (JournalRow)((FrameworkElement)sender).DataContext;
+        if (!Confirm($"Undo {row.Setting} ({row.Change})?\n\nIt goes back only if it's still what the app set. If you changed it yourself since, your choice is kept.", "Undo change"))
+            return;
+        // With several owners each release reports a step ("still needed by …"); only the final outcome matters here
+        ActionResult.Text = _engine.UndoChange(row.Id).LastOrDefault() ?? "This change was already undone.";
+        foreach (var c in _checks) c.Refresh();
+        RefreshDiagnostics();
+    }
 
     private void OnCopyReport(object sender, RoutedEventArgs e)
     {
@@ -740,7 +871,7 @@ public partial class ControlCenterWindow : Window
         MessageBox.Show(this, text, title, MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) == MessageBoxResult.OK;
 
     private Brush Temp(double? c, double warm, double hot) =>
-        (Brush)FindResource(c is null ? "Text" : c >= hot ? "Hot" : c >= warm ? "Warn" : "Text");
+        (Brush)FindResource(c is null ? "Text" : c >= hot ? "Hot" : c >= warm ? "Signal" : "Text");
 
     /// <summary>One row of the "What's using your PC" list.</summary>
     internal sealed class AppRow(ControlCenterWindow owner) : INotifyPropertyChanged
@@ -779,20 +910,4 @@ public partial class ControlCenterWindow : Window
 
         public event PropertyChangedEventHandler? PropertyChanged;
     }
-}
-
-/// <summary>Log level → text color in the diagnostics list.</summary>
-public sealed class LevelBrush : IValueConverter
-{
-    public static readonly LevelBrush Instance = new();
-
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-        Application.Current?.TryFindResource(value switch
-        {
-            LogLevel.Error => "Hot",
-            LogLevel.Warning => "Warn",
-            _ => "Muted",
-        }) as Brush ?? Brushes.Gray;
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
 }

@@ -13,6 +13,8 @@ public sealed record DiagStatus(string Name, string Detail, DiagLevel Level);
 /// <summary>What works on this PC and why, for the Diagnostics page and the copyable report.</summary>
 internal static class DiagnosticReport
 {
+    public const string ChangesCheck = "Windows changes by the app";
+
     private const string PerformanceLogUsersSid = "S-1-5-32-559";
 
     public static List<DiagStatus> Status(Engine engine)
@@ -75,7 +77,7 @@ internal static class DiagnosticReport
             browsers.Any(b => engine.State.BrowserRestartFailedUtc.ContainsKey(b.ExePath)) ? DiagLevel.Warn : DiagLevel.Info));
 
         var changes = engine.Journal.Entries;
-        list.Add(new("Windows changes by the app", changes.Count == 0 ? "None"
+        list.Add(new(ChangesCheck, changes.Count == 0 ? "None"
             : string.Join("; ", changes.Select(c => $"{SettingCatalog.Resolve(c.Id)?.Name ?? c.Id} (by {string.Join(", ", c.Owners)}, since {c.AppliedUtc.ToLocalTime():g})")),
             DiagLevel.Info));
         list.Add(new("Process priorities changed", engine.State.Priorities.Count == 0 ? "None"
@@ -85,7 +87,7 @@ internal static class DiagnosticReport
         if (engine.OptimizationsPaused) list.Add(new("Optimizations", "Paused by you", DiagLevel.Info));
 
         var errors = Log.Recent().Count(e => e.Level == LogLevel.Error);
-        list.Add(new("Recent errors", errors == 0 ? "None this session" : $"{errors} — see Recent events below", errors == 0 ? DiagLevel.Ok : DiagLevel.Error));
+        list.Add(new("Recent errors", errors == 0 ? "None this session" : $"{errors} — see the log (Open log)", errors == 0 ? DiagLevel.Ok : DiagLevel.Error));
         return list;
     }
 

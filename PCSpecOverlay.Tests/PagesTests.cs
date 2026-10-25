@@ -1,0 +1,399 @@
+using System.Xml.Linq;
+using PCSpecOverlay.Core;
+using PCSpecOverlay.Optimizer;
+
+namespace PCSpecOverlay.Tests;
+
+public class TempScaleTests
+{
+    [Theory]
+    [InlineData(30.0, 0.0)]
+    [InlineData(65.0, 0.5)]
+    [InlineData(100.0, 1.0)]
+    [InlineData(10.0, 0.0)]
+    [InlineData(120.0, 1.0)]
+    public void Celsius_maps_onto_the_scale(double c, double fraction) =>
+        Assert.Equal(fraction, TempScale.Fraction(c), 6);
+
+    [Theory]
+    [InlineData(0.0, 30)]
+    [InlineData(0.5, 65)]
+    [InlineData(1.0, 100)]
+    [InlineData(-1.0, 30)]
+    [InlineData(double.NaN, 30)]
+    public void A_position_reads_back_in_whole_degrees(double fraction, int c) =>
+        Assert.Equal(c, TempScale.ValueAt(fraction));
+
+    [Theory]
+    [InlineData(30)]
+    [InlineData(71)]
+    [InlineData(100)]
+    public void Degrees_round_trip_through_the_scale(int c) =>
+        Assert.Equal(c, TempScale.ValueAt(TempScale.Fraction(c)));
+
+    [Fact]
+    public void Warning_stays_below_hot()
+    {
+        Assert.Equal((84, 85), TempScale.MoveWarn(75, 85, 92));
+        Assert.Equal((30, 85), TempScale.MoveWarn(75, 85, 5));
+        Assert.Equal((75, 76), TempScale.MoveHot(75, 85, 60));
+        Assert.Equal((75, 100), TempScale.MoveHot(75, 85, 130));
+    }
+
+    [Fact]
+    public void Saved_levels_fit_the_scale()
+    {
+        var s = new Settings { GpuTempWarn = 105, GpuTempHot = 110, CpuTempWarn = 10, CpuTempHot = 10 };
+        s.Validate();
+        Assert.Equal((99, 100), (s.GpuTempWarn, s.GpuTempHot));
+        Assert.Equal((30, 31), (s.CpuTempWarn, s.CpuTempHot));
+    }
+}
+
+public class JournalRowTests
+{
+    [Fact]
+    public void Rows_read_newest_first_in_words()
+    {
+        var now = new DateTime(2026, 10, 24, 20, 0, 0, DateTimeKind.Local);
+        var entries = new[]
+        {
+            new JournalEntry
+            {
+                Id = "bg-recording", Original = "1", Applied = "0", Owners = new List<string> { "optimizer" },
+                AppliedUtc = new DateTime(2026, 10, 23, 14, 2, 0, DateTimeKind.Local).ToUniversalTime(),
+            },
+            new JournalEntry
+            {
+                Id = "game-mode", Original = "0", Applied = "1", Owners = new List<string> { "gaming", "optimizer" },
+                AppliedUtc = new DateTime(2026, 10, 24, 19, 38, 0, DateTimeKind.Local).ToUniversalTime(),
+            },
+        };
+
+        var rows = JournalRows.Build(entries, id => SettingCatalog.Resolve(id)?.Name, SettingCatalog.DescribeValue, now);
+
+        Assert.Equal(new JournalRow("game-mode", "Today 19:38", "Game Mode", "Off → On", "Gaming mode, Optimizer"), rows[0]);
+        Assert.Equal(new JournalRow("bg-recording", "Oct 23 14:02", "Background recording", "On → Off", "Optimizer"), rows[1]);
+    }
+
+    [Fact]
+    public void An_unknown_setting_falls_back_to_its_id_and_raw_values()
+    {
+        var row = JournalRows.Build(
+            new[] { new JournalEntry { Id = "x", Original = "a", Applied = "b", Owners = new List<string> { "lab" } } },
+            _ => null, SettingCatalog.DescribeValue, DateTime.Now)[0];
+        Assert.Equal(("x", "a → b", "lab"), (row.Setting, row.Change, row.Owners));
+    }
+}
+
+public class OverlayPreviewTests
+{
+    [Fact]
+    public void The_strip_follows_the_metric_switches()
+    {
+        var s = new Settings { ShowFrameTime = false, ShowGpu = true, ShowCpu = false };
+        Assert.Equal("144 FPS  GPU 71°", OverlayPreview.Strip(s, 144, 6.9, 71, 84));
+        var all = new Settings { ShowFrameTime = true, ShowGpu = true, ShowCpu = true };
+        Assert.Equal("— FPS  — ms  GPU —°  CPU —°", OverlayPreview.Strip(all, null, null, null, null));
+    }
+
+    [Fact]
+    public void The_panel_lists_one_reading_per_line()
+    {
+        var s = new Settings { ShowFrameTime = true, ShowGpu = true, ShowCpu = true, ShowRam = false };
+        Assert.Equal("OPTIFRAME\n144 FPS\n6.9 ms\nGPU  71°\nCPU  84°", OverlayPreview.Panel(s, 144, 6.9, 71, 84, 31.2));
+    }
+}
+
+public class HealthTests
+{
+    [Fact]
+    public void The_summary_counts_what_needs_a_look()
+    {
+        Assert.Equal("All 3 checks look fine.", Health.Summary(new[] { DiagLevel.Ok, DiagLevel.Info, DiagLevel.Ok }));
+        Assert.Equal("7 of 8 checks look fine; 1 needs a look.",
+            Health.Summary(new[] { DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Info, DiagLevel.Warn }));
+        Assert.Equal("0 of 2 checks look fine; 2 need a look.", Health.Summary(new[] { DiagLevel.Warn, DiagLevel.Error }));
+    }
+
+    [Fact]
+    public void Each_level_has_a_word() =>
+        Assert.Equal(new[] { "OK", "Note", "Check", "Problem" },
+            new[] { DiagLevel.Ok, DiagLevel.Info, DiagLevel.Warn, DiagLevel.Error }.Select(Health.Word));
+}
+
+public class RecommendedValueTests : TempDataTest
+{
+    [Fact]
+    public void A_tweak_shows_now_and_recommended_side_by_side()
+    {
+        var journal = new ChangeJournal(new AppState(), TimeProvider.System);
+        var t = new Tweak(new FakeSetting(), "fast", "Speed", "Goes faster.", v => v == "fast" ? "Fast" : "Slow", journal);
+        t.Refresh();
+        Assert.Equal(("Slow", "Fast", ""), (t.Status, t.Recommended, t.Detail));
+    }
+}
+
+public class PageStyleTests
+{
+    private static readonly string Theme = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Theme.xaml"));
+
+    [Fact]
+    public void The_page_styles_exist_and_use_tokens_only()
+    {
+        foreach (var key in new[] { "PageTitle", "Key", "Mono", "LedgerRow", "Seg", "LayoutCard", "CornerTarget", "ScaleHandle" })
+            Assert.Contains($"x:Key=\"{key}\"", Theme);
+        var added = Theme[Theme.IndexOf("Page parts (stage 4)", StringComparison.Ordinal)..];
+        Assert.DoesNotMatch("#[0-9A-Fa-f]{6}", added);
+    }
+
+    [Fact]
+    public void The_scale_control_drags_and_steps_through_the_tested_math()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Controls/TempScaleControl.cs"));
+        foreach (var call in new[] { "TempScale.MoveWarn(", "TempScale.MoveHot(", "TempScale.ValueAt(", "TempScale.Fraction(", "Key.PageUp", "AutomationProperties.SetName(" })
+            Assert.Contains(call, code);
+    }
+}
+
+public class OptimizerPageTests
+{
+    private static string Page => PageXaml.Tab("Optimizer");
+
+    [Fact]
+    public void The_optimizer_is_one_ledger_with_now_and_recommended_columns()
+    {
+        foreach (var part in new[] { "Text=\"SETTING\"", "Text=\"NOW\"", "Text=\"RECOMMENDED\"", "Text=\"EFFECT AND DRAWBACK\"",
+                     "{Binding Recommended}", "x:Name=\"Edge\"", "x:Name=\"Mark\"", "x:Name=\"FixAllButton\"", "x:Name=\"AppList\"",
+                     "StaticResource LedgerRow", "StaticResource PageTitle" })
+            Assert.Contains(part, Page);
+        foreach (var gone in new[] { "CardBox", "\"H1\"", "\"Lead\"", "AccentSoft", "Ellipse" })
+            Assert.DoesNotContain(gone, Page);
+    }
+
+    [Fact]
+    public void Now_and_recommended_values_wrap_instead_of_trimming()
+    {
+        foreach (var binding in new[] { "{Binding Status}", "{Binding Recommended}" })
+        {
+            var cell = Element.Containing(Page, $"Text=\"{binding}\"");
+            Assert.Contains("TextWrapping=\"Wrap\"", cell);
+            Assert.Contains("TextTrimming=\"None\"", cell);
+        }
+    }
+}
+
+/// <summary>The opening tag of the one XAML element that carries a given attribute.</summary>
+internal static class Element
+{
+    public static string Containing(string xaml, string attribute)
+    {
+        var at = xaml.IndexOf(attribute, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"No element with {attribute}");
+        Assert.Equal(at, xaml.LastIndexOf(attribute, StringComparison.Ordinal));
+        var start = xaml.LastIndexOf('<', at);
+        return xaml[start..(xaml.IndexOf('>', at) + 1)];
+    }
+}
+
+/// <summary>Reads one page (TabItem) out of the control center's XAML.</summary>
+internal static class PageXaml
+{
+    public static string Tab(string header)
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        var start = xaml.IndexOf($"<TabItem Header=\"{header}\"", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"No {header} page");
+        var end = xaml.IndexOf("</TabItem>", start, StringComparison.Ordinal);
+        return xaml[start..end];
+    }
+}
+
+public class GamingPageTests
+{
+    [Fact]
+    public void Gaming_shows_the_four_steps_and_a_status_bar()
+    {
+        var page = PageXaml.Tab("Gaming");
+        foreach (var part in new[] { "Text=\"01\"", "Text=\"Detect\"", "Text=\"02\"", "Text=\"Power\"", "Text=\"03\"", "Text=\"Boost\"",
+                     "Text=\"04\"", "Text=\"Restore\"", "x:Name=\"GamingBar\"", "x:Name=\"GamingBarText\"", "x:Name=\"GamingPause\"",
+                     "x:Name=\"GamingResume\"", "x:Name=\"RuleList\"", "x:Name=\"RecentList\"", "x:Name=\"EnterSlider\"", "x:Name=\"ExitSlider\"",
+                     "{Binding AutoGamingMode}", "{Binding GamingPowerMode}", "{Binding GamingProcessPriority}", "{Binding GameBoost}",
+                     "{Binding DetectFullscreenGames}", "{Binding OptimizeFullscreenGames}" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "CardBox", "GamingStatusLine", "\"H1\"" })
+            Assert.DoesNotContain(gone, page);
+        Assert.Contains("AutomationProperties.Name=\"Pause optimizations\"", Element.Containing(page, "x:Name=\"GamingPause\""));
+    }
+}
+
+public class OverlayPageTests
+{
+    [Fact]
+    public void The_overlay_page_leads_with_a_live_preview()
+    {
+        var page = PageXaml.Tab("Overlay");
+        foreach (var part in new[] { "x:Name=\"PreviewScreen\"", "x:Name=\"PreviewOverlay\"", "x:Name=\"PreviewText\"", "x:Name=\"PreviewCaption\"",
+                     "x:Name=\"CornerTopLeft\"", "x:Name=\"CornerTopRight\"", "x:Name=\"CornerBottomLeft\"", "x:Name=\"CornerBottomRight\"",
+                     "Click=\"OnCornerTarget\"", "x:Name=\"StripCard\"", "x:Name=\"PanelCard\"", "Checked=\"OnLayoutCard\"", "Click=\"OnMoveOverlay\"",
+                     "x:Name=\"DisplayBox\"", "x:Name=\"ShowOverlay\"", "{Binding OverlayTheme}", "{Binding GpuRendering}" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "PositionBox", "CardBox", "\"H1\"" })
+            Assert.DoesNotContain(gone, page);
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("OverlayPreview.Strip(", code);
+        Assert.Contains("OverlayPlacement.Place(", code);
+    }
+
+    [Fact]
+    public void Corner_targets_tell_screen_readers_which_is_in_use()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("AutomationProperties.SetItemStatus(target, on ? \"Current position\" : \"\")", code);
+    }
+}
+
+public class AlertsPageTests
+{
+    [Fact]
+    public void Alerts_has_a_scale_per_sensor_and_ledger_notifications()
+    {
+        var page = PageXaml.Tab("Alerts");
+        foreach (var part in new[] { "controls:TempScaleControl x:Name=\"GpuScale\"", "controls:TempScaleControl x:Name=\"CpuScale\"",
+                     "x:Name=\"GpuNow\"", "x:Name=\"CpuNow\"", "x:Name=\"GpuSource\"", "x:Name=\"CpuSource\"",
+                     "{Binding Alerts}", "x:Name=\"AfterSlider\"", "x:Name=\"CooldownSlider\"" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "x:Name=\"GpuWarn\"", "x:Name=\"GpuHot\"", "x:Name=\"CpuWarn\"", "x:Name=\"CpuHot\"", "CardBox" })
+            Assert.DoesNotContain(gone, page);
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("GpuScale.LevelsChanged +=", code);
+        Assert.Contains("CpuScale.SetCurrent(", code);
+    }
+}
+
+public class SettingsPageTests
+{
+    [Fact]
+    public void Settings_opens_with_a_status_strip()
+    {
+        var page = PageXaml.Tab("Settings");
+        foreach (var part in new[] { "Text=\"VERSION\"", "Text=\"STARTUP\"", "Text=\"APPEARANCE\"", "x:Name=\"VersionValue\"", "x:Name=\"UpdateStatus\"",
+                     "x:Name=\"CheckUpdatesButton\"", "x:Name=\"InstallUpdateButton\"", "x:Name=\"StartupSwitch\"", "x:Name=\"StartupValue\"",
+                     "x:Name=\"AppearanceLight\"", "x:Name=\"AppearanceDark\"", "x:Name=\"AppearanceMatch\"", "x:Name=\"AppearanceValue\"",
+                     "Checked=\"OnAppearance\"", "x:Name=\"HotkeyBox\"", "{Binding CheckForUpdates}", "x:Name=\"SleepSwitch\"",
+                     "x:Name=\"RetentionSlider\"", "x:Name=\"SessionList\"", "Click=\"OnResetSettings\"" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "AppearanceBox", "UpdateVersion", "CardBox", "\"H1\"" })
+            Assert.DoesNotContain(gone, page);
+    }
+
+    [Fact]
+    public void Appearance_icons_take_the_segment_color()
+    {
+        var page = PageXaml.Tab("Settings");
+        foreach (var icon in new[] { "Icon.Sun", "Icon.Moon", "Icon.Monitor" })
+            Assert.Contains("Foreground=\"{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}\"",
+                Element.Containing(page, $"{{StaticResource {icon}}}"));
+    }
+
+    [Fact]
+    public void Segment_focus_changes_color_not_size()
+    {
+        var theme = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Theme.xaml"));
+        var start = theme.IndexOf("x:Key=\"Seg\"", StringComparison.Ordinal);
+        var seg = theme[start..theme.IndexOf("</Style>", start, StringComparison.Ordinal)];
+        Assert.DoesNotContain("Property=\"BorderThickness\"", seg);
+    }
+}
+
+public class RadioGroupSaveTests
+{
+    private static readonly string Code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+
+    [Fact]
+    public void Layout_and_appearance_save_on_checked_so_screen_readers_can_change_them()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        Assert.DoesNotContain("Click=\"OnLayoutCard\"", xaml);
+        Assert.DoesNotContain("Click=\"OnAppearance\"", xaml);
+        foreach (var handler in new[] { "OnLayoutCard", "OnAppearance" })
+        {
+            var start = Code.IndexOf($"private void {handler}(", StringComparison.Ordinal);
+            Assert.True(start >= 0, handler);
+            var body = Code[start..Code.IndexOf('}', start)];
+            Assert.Contains("if (_loading) return;", body);
+        }
+    }
+}
+
+public class DiagnosticsPageTests
+{
+    [Fact]
+    public void Diagnostics_is_a_health_grid_and_a_change_journal()
+    {
+        var page = PageXaml.Tab("Diagnostics");
+        foreach (var part in new[] { "x:Name=\"StatusGrid\"", "x:Name=\"HealthText\"", "x:Name=\"JournalList\"", "x:Name=\"JournalEmpty\"",
+                     "Click=\"OnUndoChange\"", "Click=\"OnCopyReport\"", "Click=\"OnOpenLog\"", "Click=\"OnOpenData\"", "Click=\"OnUndoEverything\"",
+                     "x:Name=\"ActionResult\"", "Text=\"CHANGE JOURNAL\"" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "LogList", "StatusList", "LevelBrush", "CardBox", "\"H1\"" })
+            Assert.DoesNotContain(gone, page);
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        foreach (var call in new[] { "JournalRows.Build(", "Health.Summary(", "_engine.UndoChange(", "DiagnosticReport.ChangesCheck" })
+            Assert.Contains(call, code);
+        Assert.DoesNotContain("class LevelBrush", code);
+    }
+
+    [Fact]
+    public void Undoing_one_change_shows_only_its_outcome()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("_engine.UndoChange(row.Id).LastOrDefault() ?? \"This change was already undone.\"", code);
+    }
+
+    [Fact]
+    public void Health_cells_leave_names_to_their_text()
+    {
+        var cell = Element.Containing(PageXaml.Tab("Diagnostics"), "ToolTip=\"{Binding Detail}\"");
+        Assert.DoesNotContain("AutomationProperties", cell);
+    }
+}
+
+public class PageSweepTests
+{
+    private static readonly string Xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+    private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
+
+    [Fact]
+    public void Every_input_has_a_screen_reader_name()
+    {
+        var unnamed = XDocument.Parse(Xaml).Descendants()
+            .Where(e => e.Name.LocalName is "Slider" or "ComboBox" or "TextBox" or "RadioButton" or "ToggleButton"
+                        || (e.Name.LocalName == "Button" && e.Attribute("Content") is null)
+                        || (e.Name.LocalName == "CheckBox" && e.Attribute("Content") is null && !e.Elements().Any()))
+            .Where(e => e.Attribute("AutomationProperties.Name") is null)
+            .Select(e => $"{e.Name.LocalName} {e.Attribute(X + "Name")?.Value}")
+            .ToList();
+        Assert.Empty(unnamed);
+    }
+
+    [Fact]
+    public void Pages_use_only_the_instrument_tokens()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        foreach (var key in new[] { "Window", "Sidebar", "Card", "CardBorder", "Input", "InputBorder", "Accent", "AccentHover", "AccentSoft", "Warn", "Info" })
+        {
+            Assert.DoesNotContain($"{{DynamicResource {key}}}", Xaml);
+            Assert.DoesNotContain($"FindResource(\"{key}\")", code);
+            Assert.DoesNotContain($"\"{key}\" :", code);
+            Assert.DoesNotContain($": \"{key}\"", code);
+        }
+    }
+
+    [Fact]
+    public void Red_is_only_for_hot_readings_and_errors()
+    {
+        Assert.DoesNotContain("Danger", Xaml);
+        Assert.DoesNotContain("Danger", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Theme.xaml")));
+    }
+}

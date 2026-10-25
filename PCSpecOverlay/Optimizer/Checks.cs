@@ -14,8 +14,11 @@ public abstract class Check : INotifyPropertyChanged
     public string Description { get; }
     public CheckState State { get; private set; }
     public string Status { get; private set; } = "";
-    /// <summary>Extra line under the description, e.g. "Recommended: Best performance".</summary>
+    /// <summary>Why the setting can't be checked or changed on this PC (empty when it's available); shown under the title.</summary>
     public string Detail { get; protected set; } = "";
+
+    /// <summary>The value the app suggests, shown beside the current one ("—" when not applicable).</summary>
+    public string Recommended { get; protected set; } = "—";
     public string ActionLabel { get; private set; } = "";
     public bool HasAction => ActionLabel.Length > 0;
     public bool HasDetail => Detail.Length > 0;
@@ -64,10 +67,12 @@ public class Tweak(IReversibleSetting setting, string optimal, string title, str
         if (setting.Unsupported is { } why)
         {
             Detail = why;
+            Recommended = "—";
             return (CheckState.Info, "Not available");
         }
         var current = setting.Read() ?? missingMeans; // an absent value means the Windows default
-        Detail = current == optimal ? "" : $"Recommended: {describe(optimal)}";
+        Detail = "";
+        Recommended = describe(optimal);
         return (current == optimal ? CheckState.Good : CheckState.Warn, describe(current));
     }
 
