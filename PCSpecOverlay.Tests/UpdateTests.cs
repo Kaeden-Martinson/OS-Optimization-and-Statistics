@@ -106,3 +106,22 @@ public class UpdateTests
             throw new InvalidOperationException("no network call expected");
     }
 }
+
+public class ReleaseNotesTests
+{
+    [Fact]
+    public void Version_2_1_0_has_whats_new_and_the_script_includes_it()
+    {
+        var csproj = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/PCSpecOverlay.csproj"));
+        Assert.Contains("<Version>2.1.0</Version>", csproj);
+
+        var notes = File.ReadAllText(SourceFiles.Path("docs/releases/2.1.0.md"));
+        foreach (var topic in new[] { "Optiframe", "light", "Strip", "pin", "Undo", "30", "100 °C", "Start menu", "settings" })
+            Assert.Contains(topic, notes, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotMatch(@"SHA-?256\s*[:=]", notes); // the script adds the one checksum line the updater reads
+
+        var script = File.ReadAllText(SourceFiles.Path("build-release.ps1"));
+        Assert.Contains(@"docs\releases\$version.md", script);
+        Assert.Contains("SHA256: $hash", script);
+    }
+}
