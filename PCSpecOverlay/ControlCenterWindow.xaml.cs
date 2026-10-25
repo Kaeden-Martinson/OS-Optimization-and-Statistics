@@ -537,7 +537,7 @@ public partial class ControlCenterWindow : Window
     {
         var pending = _checks.OfType<Tweak>().Where(t => t.NeedsFix).ToList();
         if (pending.Count == 0) return;
-        if (!Confirm("Apply these recommendations?\n\n" + string.Join("\n", pending.Select(t => $"• {t.Title}: {t.Status} → {t.Detail.Replace("Recommended: ", "")}")) +
+        if (!Confirm("Apply these recommendations?\n\n" + string.Join("\n", pending.Select(t => $"• {t.Title}: {t.Status} → {t.Recommended}")) +
                      "\n\nEach can be undone individually afterwards.", "Apply recommendations"))
             return;
         var failed = new List<string>();

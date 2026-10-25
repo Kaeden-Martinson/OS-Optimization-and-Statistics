@@ -150,4 +150,29 @@ public class ChangeJournalTests : TempDataTest
         Assert.Equal("good", state.Changes[0].Id);
         Assert.Empty(state.Priorities);
     }
+
+    [Fact]
+    public void Release_all_lets_go_for_every_owner()
+    {
+        var s = new FakeSetting();
+        _journal.Apply(s, "fast", "optimizer");
+        _journal.Apply(s, "fast", "gaming");
+
+        var results = _journal.ReleaseAll(s);
+
+        Assert.Equal(new[] { ReleaseOutcome.StillNeeded, ReleaseOutcome.Restored }, results.Select(r => r.Outcome));
+        Assert.Equal("original", s.Value);
+        Assert.Null(_journal.Entry(s.Id));
+    }
+
+    [Fact]
+    public void Release_all_keeps_a_newer_user_choice()
+    {
+        var s = new FakeSetting();
+        _journal.Apply(s, "fast", "gaming");
+        s.Value = "user-picked";
+
+        Assert.Equal(new[] { ReleaseOutcome.ChangedElsewhere }, _journal.ReleaseAll(s).Select(r => r.Outcome));
+        Assert.Equal("user-picked", s.Value);
+    }
 }

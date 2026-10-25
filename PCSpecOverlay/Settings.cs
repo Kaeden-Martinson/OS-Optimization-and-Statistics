@@ -139,10 +139,10 @@ public sealed class Settings
         FpsRefreshMs = Math.Clamp(FpsRefreshMs, 250, 2000);
         StatsRefreshMs = Math.Clamp(StatsRefreshMs, 500, 5000);
 
-        GpuTempWarn = Math.Clamp(GpuTempWarn, 50, 105);
-        GpuTempHot = Math.Clamp(GpuTempHot, GpuTempWarn, 110);
-        CpuTempWarn = Math.Clamp(CpuTempWarn, 50, 105);
-        CpuTempHot = Math.Clamp(CpuTempHot, CpuTempWarn, 110);
+        GpuTempWarn = Math.Clamp(GpuTempWarn, TempScale.Min, TempScale.Max - 1);
+        GpuTempHot = Math.Clamp(GpuTempHot, GpuTempWarn + 1, TempScale.Max);
+        CpuTempWarn = Math.Clamp(CpuTempWarn, TempScale.Min, TempScale.Max - 1);
+        CpuTempHot = Math.Clamp(CpuTempHot, CpuTempWarn + 1, TempScale.Max);
 
         AlertAfterSeconds = Math.Clamp(AlertAfterSeconds, 5, 300);
         AlertCooldownMinutes = Math.Clamp(AlertCooldownMinutes, 1, 240);

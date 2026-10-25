@@ -1,0 +1,134 @@
+using PCSpecOverlay.Core;
+using PCSpecOverlay.Optimizer;
+
+namespace PCSpecOverlay.Tests;
+
+public class TempScaleTests
+{
+    [Theory]
+    [InlineData(30.0, 0.0)]
+    [InlineData(65.0, 0.5)]
+    [InlineData(100.0, 1.0)]
+    [InlineData(10.0, 0.0)]
+    [InlineData(120.0, 1.0)]
+    public void Celsius_maps_onto_the_scale(double c, double fraction) =>
+        Assert.Equal(fraction, TempScale.Fraction(c), 6);
+
+    [Theory]
+    [InlineData(0.0, 30)]
+    [InlineData(0.5, 65)]
+    [InlineData(1.0, 100)]
+    [InlineData(-1.0, 30)]
+    [InlineData(double.NaN, 30)]
+    public void A_position_reads_back_in_whole_degrees(double fraction, int c) =>
+        Assert.Equal(c, TempScale.ValueAt(fraction));
+
+    [Theory]
+    [InlineData(30)]
+    [InlineData(71)]
+    [InlineData(100)]
+    public void Degrees_round_trip_through_the_scale(int c) =>
+        Assert.Equal(c, TempScale.ValueAt(TempScale.Fraction(c)));
+
+    [Fact]
+    public void Warning_stays_below_hot()
+    {
+        Assert.Equal((84, 85), TempScale.MoveWarn(75, 85, 92));
+        Assert.Equal((30, 85), TempScale.MoveWarn(75, 85, 5));
+        Assert.Equal((75, 76), TempScale.MoveHot(75, 85, 60));
+        Assert.Equal((75, 100), TempScale.MoveHot(75, 85, 130));
+    }
+
+    [Fact]
+    public void Saved_levels_fit_the_scale()
+    {
+        var s = new Settings { GpuTempWarn = 105, GpuTempHot = 110, CpuTempWarn = 10, CpuTempHot = 10 };
+        s.Validate();
+        Assert.Equal((99, 100), (s.GpuTempWarn, s.GpuTempHot));
+        Assert.Equal((30, 31), (s.CpuTempWarn, s.CpuTempHot));
+    }
+}
+
+public class JournalRowTests
+{
+    [Fact]
+    public void Rows_read_newest_first_in_words()
+    {
+        var now = new DateTime(2026, 10, 24, 20, 0, 0, DateTimeKind.Local);
+        var entries = new[]
+        {
+            new JournalEntry
+            {
+                Id = "bg-recording", Original = "1", Applied = "0", Owners = new List<string> { "optimizer" },
+                AppliedUtc = new DateTime(2026, 10, 23, 14, 2, 0, DateTimeKind.Local).ToUniversalTime(),
+            },
+            new JournalEntry
+            {
+                Id = "game-mode", Original = "0", Applied = "1", Owners = new List<string> { "gaming", "optimizer" },
+                AppliedUtc = new DateTime(2026, 10, 24, 19, 38, 0, DateTimeKind.Local).ToUniversalTime(),
+            },
+        };
+
+        var rows = JournalRows.Build(entries, id => SettingCatalog.Resolve(id)?.Name, SettingCatalog.DescribeValue, now);
+
+        Assert.Equal(new JournalRow("game-mode", "Today 19:38", "Game Mode", "Off → On", "Gaming mode, Optimizer"), rows[0]);
+        Assert.Equal(new JournalRow("bg-recording", "Oct 23 14:02", "Background recording", "On → Off", "Optimizer"), rows[1]);
+    }
+
+    [Fact]
+    public void An_unknown_setting_falls_back_to_its_id_and_raw_values()
+    {
+        var row = JournalRows.Build(
+            new[] { new JournalEntry { Id = "x", Original = "a", Applied = "b", Owners = new List<string> { "lab" } } },
+            _ => null, SettingCatalog.DescribeValue, DateTime.Now)[0];
+        Assert.Equal(("x", "a → b", "lab"), (row.Setting, row.Change, row.Owners));
+    }
+}
+
+public class OverlayPreviewTests
+{
+    [Fact]
+    public void The_strip_follows_the_metric_switches()
+    {
+        var s = new Settings { ShowFrameTime = false, ShowGpu = true, ShowCpu = false };
+        Assert.Equal("144 FPS  GPU 71°", OverlayPreview.Strip(s, 144, 6.9, 71, 84));
+        var all = new Settings { ShowFrameTime = true, ShowGpu = true, ShowCpu = true };
+        Assert.Equal("— FPS  — ms  GPU —°  CPU —°", OverlayPreview.Strip(all, null, null, null, null));
+    }
+
+    [Fact]
+    public void The_panel_lists_one_reading_per_line()
+    {
+        var s = new Settings { ShowFrameTime = true, ShowGpu = true, ShowCpu = true, ShowRam = false };
+        Assert.Equal("OPTIFRAME\n144 FPS\n6.9 ms\nGPU  71°\nCPU  84°", OverlayPreview.Panel(s, 144, 6.9, 71, 84, 31.2));
+    }
+}
+
+public class HealthTests
+{
+    [Fact]
+    public void The_summary_counts_what_needs_a_look()
+    {
+        Assert.Equal("All 3 checks look fine.", Health.Summary(new[] { DiagLevel.Ok, DiagLevel.Info, DiagLevel.Ok }));
+        Assert.Equal("7 of 8 checks look fine; 1 needs a look.",
+            Health.Summary(new[] { DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Ok, DiagLevel.Info, DiagLevel.Warn }));
+        Assert.Equal("0 of 2 checks look fine; 2 need a look.", Health.Summary(new[] { DiagLevel.Warn, DiagLevel.Error }));
+    }
+
+    [Fact]
+    public void Each_level_has_a_word() =>
+        Assert.Equal(new[] { "OK", "Note", "Check", "Problem" },
+            new[] { DiagLevel.Ok, DiagLevel.Info, DiagLevel.Warn, DiagLevel.Error }.Select(Health.Word));
+}
+
+public class RecommendedValueTests : TempDataTest
+{
+    [Fact]
+    public void A_tweak_shows_now_and_recommended_side_by_side()
+    {
+        var journal = new ChangeJournal(new AppState(), TimeProvider.System);
+        var t = new Tweak(new FakeSetting(), "fast", "Speed", "Goes faster.", v => v == "fast" ? "Fast" : "Slow", journal);
+        t.Refresh();
+        Assert.Equal(("Slow", "Fast", ""), (t.Status, t.Recommended, t.Detail));
+    }
+}

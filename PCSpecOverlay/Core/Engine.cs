@@ -248,11 +248,16 @@ internal sealed class Engine : IDisposable
         foreach (var entry in Journal.Entries.ToList())
         {
             if (SettingCatalog.Resolve(entry.Id) is not { } setting) continue;
-            foreach (var owner in entry.Owners.ToList())
-                report.Add(Journal.Release(setting, owner).Message);
+            report.AddRange(Journal.ReleaseAll(setting).Select(r => r.Message));
         }
         return report;
     }
+
+    /// <summary>Undoes one change for all its owners (Diagnostics journal); restored only if it's still what the app set.</summary>
+    public List<string> UndoChange(string id) =>
+        SettingCatalog.Resolve(id) is { } setting
+            ? Journal.ReleaseAll(setting).Select(r => r.Message).ToList()
+            : new List<string> { "This change can't be undone from here (its setting isn't available on this PC)." };
 
     private static string? ProcessName(int pid) => Native.ProcessName(pid);
 

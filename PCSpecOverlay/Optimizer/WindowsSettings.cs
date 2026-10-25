@@ -130,6 +130,16 @@ public sealed class GpuPreferenceSetting(string appName, string exePath) : IReve
 /// <summary>Every setting the app knows how to change, so journal entries can be resolved after a restart.</summary>
 public static class SettingCatalog
 {
+    /// <summary>A stored journal value in words, e.g. "Best performance" or "Off".</summary>
+    public static string DescribeValue(string id, string? value)
+    {
+        if (id == Power.Id) return PowerMode.Name(Guid.TryParse(value, out var g) ? g : null);
+        if (id == GameMode.Id) return value is null or "1" ? "On" : "Off";
+        if (id == BackgroundRecording.Id) return value is null or "0" ? "Off" : "On";
+        if (id.StartsWith("gpu-pref:", StringComparison.Ordinal)) return GpuPreferenceSetting.Describe(value);
+        return value ?? "default";
+    }
+
     public static readonly PowerModeSetting Power = new();
 
     public static readonly RegistryDwordSetting GameMode = new("game-mode", "Game Mode",

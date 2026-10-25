@@ -148,6 +148,10 @@ public sealed class ChangeJournal(AppState state, TimeProvider time)
         return new(ReleaseOutcome.Restored, $"{setting.Name} restored");
     }
 
+    /// <summary>Lets go of a change for every owner (the Diagnostics journal's Undo); each release follows the rules above.</summary>
+    public List<ChangeResult<ReleaseOutcome>> ReleaseAll(IReversibleSetting setting) =>
+        (Entry(setting.Id)?.Owners.ToList() ?? new List<string>()).Select(owner => Release(setting, owner)).ToList();
+
     /// <summary>
     /// At startup: releases ownership held by temporary features (gaming mode) that can't still be
     /// active, e.g. after a crash. Settings that were changed since are left alone.
