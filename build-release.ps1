@@ -4,15 +4,16 @@
   certificate is available, and writes release notes containing the SHA-256 the in-app updater requires.
 
 .EXAMPLE
-  .\build-release.ps1 -UpdateRepository "yourname/PCSpecOverlay"
-  .\build-release.ps1 -UpdateRepository "yourname/PCSpecOverlay" -CertificateThumbprint ABC123...
-  .\build-release.ps1 -UpdateRepository "yourname/PCSpecOverlay" -PfxPath cert.pfx   # asks for the password
+  .\build-release.ps1                                  # checks the repository set in PCSpecOverlay.csproj
+  .\build-release.ps1 -CertificateThumbprint ABC123...
+  .\build-release.ps1 -PfxPath cert.pfx               # asks for the password
+  .\build-release.ps1 -UpdateRepository "owner/name"  # a fork checking its own releases
 
   Then create a GitHub release tagged v<version>, attach artifacts\release\PCSpecOverlay-Setup-<version>.exe,
   and paste artifacts\release\release-notes.md as the description.
 #>
 param(
-    # GitHub "owner/name" the app should check for updates; empty builds an app without update checks
+    # GitHub "owner/name" the app should check for updates; empty uses the one in PCSpecOverlay.csproj
     [string]$UpdateRepository = "",
     # Code-signing certificate in your certificate store (Cert:\CurrentUser\My)
     [string]$CertificateThumbprint = "",
@@ -24,7 +25,13 @@ param(
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
-$version = ([xml](Get-Content PCSpecOverlay\PCSpecOverlay.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+$project = [xml](Get-Content PCSpecOverlay\PCSpecOverlay.csproj)
+$version = $project.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+# An empty -p:UpdateRepository= would override the project's default, so pass it only when given
+$repoArgs = if ($UpdateRepository) { @("-p:UpdateRepository=$UpdateRepository") } else { @() }
+if (-not $UpdateRepository) {
+    $UpdateRepository = ($project.Project.PropertyGroup.UpdateRepository | ForEach-Object { if ($_ -is [string]) { $_ } else { $_.'#text' } } | Where-Object { $_ } | Select-Object -First 1)
+}
 Write-Host "Building PC Spec Overlay $version" -ForegroundColor Green
 
 if (-not $SkipTests) {
@@ -34,7 +41,7 @@ if (-not $SkipTests) {
 
 $out = "artifacts\release"
 Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
-dotnet publish PCSpecOverlay\PCSpecOverlay.csproj -c Release -p:PublishSingleFile=true "-p:UpdateRepository=$UpdateRepository" -o "$out\publish" --nologo -v q
+dotnet publish PCSpecOverlay\PCSpecOverlay.csproj -c Release -p:PublishSingleFile=true @repoArgs -o "$out\publish" --nologo -v q
 if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 $setup = "$out\PCSpecOverlay-Setup-$version.exe"
 Move-Item "$out\publish\PCSpecOverlay.exe" $setup
