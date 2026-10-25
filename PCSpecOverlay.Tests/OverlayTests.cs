@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using PCSpecOverlay.Core;
 using PCSpecOverlay.Monitors;
@@ -290,9 +292,14 @@ public class OverlayWidthTests
         Limits = Limit.GpuThermal | Limit.CpuThermal | Limit.GpuPower | Limit.CpuPower,
     };
 
-    private static double Width(string layout, Telemetry t)
+    // The Strip holds its width up to 999 FPS and 99.9 ms; beyond that (rare) a cell may grow
+    private static readonly Telemetry StripWide = Wide with { Fps = new FpsSample(999, 99.9, 999, 99.9) };
+
+    private static double Width(string layout, Telemetry t) => Lay(layout, t).DesiredSize.Width;
+
+    private static UIElement Lay(string layout, Telemetry t, OverlayWindow? w = null)
     {
-        var w = new OverlayWindow();
+        w ??= new OverlayWindow();
         w.SetGpuName("NVIDIA GeForce RTX 5060 Laptop GPU");
         w.ApplySettings(new Settings { Layout = layout });
         w.ShowStatus(new OverlayStatus(false, false, false));
@@ -302,7 +309,7 @@ public class OverlayWidthTests
         root.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         root.Arrange(new Rect(root.DesiredSize));
         root.UpdateLayout();
-        return root.DesiredSize.Width;
+        return root;
     }
 
     [Theory]
@@ -310,9 +317,71 @@ public class OverlayWidthTests
     [InlineData(Settings.Compact)]
     public void Readings_never_change_the_width(string layout) => Sta.Run(() =>
     {
+        var wide = layout == Settings.Compact ? StripWide : Wide;
         var narrow = Width(layout, Narrow);
-        Assert.Equal(narrow, Width(layout, Wide));
-        Assert.Equal(narrow, Width(layout, Wide with { Limits = Limit.GpuPower })); // "POWER" rather than "HEAT"
+        Assert.Equal(narrow, Width(layout, wide));
+        Assert.Equal(narrow, Width(layout, wide with { Limits = Limit.GpuPower })); // "POWER" rather than "HEAT"
+        if (layout == Settings.Compact) // the Strip says "sleeping" in the GPU cell's own width
+            Assert.Equal(narrow, Width(layout, wide with { Gpu = wide.Gpu with { Status = GpuStatus.Sleeping } }));
+    });
+
+    /// <summary>
+    /// The Strip's cells: content starts at the cell's 10 DIP padding (any slack at its right end), and the gaps are
+    /// the same in every cell: label to value 6, number to unit 3, number to ° or % 2, between values 8.
+    /// </summary>
+    [Fact]
+    public void Strip_cells_are_evenly_spaced() => Sta.Run(() =>
+    {
+        var w = new OverlayWindow();
+        var t = Narrow with
+        {
+            Fps = new FpsSample(20, 49.7, 15, 60),
+            Gpu = Narrow.Gpu with { TempC = 64, Load = 4 },
+            CpuTempC = 94, CpuLoad = 16,
+        };
+        var root = Lay(Settings.Compact, t, w);
+        var strip = (StackPanel)w.FindName("CompactLayout");
+
+        Rect Box(TextElement e) => new(e.ContentStart.GetCharacterRect(LogicalDirection.Forward).TopLeft,
+                                       e.ContentEnd.GetCharacterRect(LogicalDirection.Backward).BottomRight);
+        Run R(string name) => (Run)w.FindName(name);
+        // Each cell's text lines (by run name or literal text, in order)
+        TextBlock Line(string name) => (TextBlock)w.FindName(name);
+        IEnumerable<Inline> Runs(TextBlock b) => b.Inlines.Where(i => i is Run run && run.Text.Length > 0 && run.Text != "​");
+        double Gap(Inline a, Inline b) => Box(b).Left - Box(a).Right;
+        // Layout rounds to whole device pixels (0.8 DIP at 125% scaling)
+        void Near(double expected, double actual) => Assert.InRange(actual, expected - 0.5, expected + 0.5);
+
+        foreach (var cell in strip.Children.OfType<Border>().Where(c => c.Visibility == Visibility.Visible && c.Child is Grid))
+        {
+            Assert.Equal(new Thickness(10, 4, 10, 4), cell.Padding);
+            var line = ((Grid)cell.Child).Children.OfType<TextBlock>().Single(b => b.Visibility == Visibility.Visible);
+            Near(cell.BorderThickness.Left + 10, line.TranslatePoint(new Point(), cell).X);
+            Near(0, Box(Runs(line).First()).Left);
+        }
+        // The divider comes before every cell but the first; the last element has no trailing margin of its own
+        Assert.Equal(0, ((Border)strip.Children[0]).BorderThickness.Left);
+
+        var fps = Runs(Line("CFpsText")).ToList();
+        Near(3, Gap(fps[0], fps[1]));                        // 20 FPS
+        var ms = Runs(Line("CFrameTimeText")).ToList();
+        Near(3, Gap(ms[0], ms[1]));                          // 49.7 ms
+        foreach (var p in new[] { "CGpu", "CCpu" })
+        {
+            var label = Runs(Line(p + "Text")).First();
+            Near(6, Gap(label, R(p + "Temp")));              // GPU 64
+            Near(2, Gap(R(p + "Temp"), R(p + "Deg")));       // 64°
+            Near(8, Gap(R(p + "Deg"), R(p + "Load")));       // ° 4
+            Near(2, Gap(R(p + "Load"), R(p + "Pct")));       // 4%
+        }
+
+        // One baseline: every cell's line has the same height and sits at the same height
+        var lines = new[] { "CFpsText", "CFrameTimeText", "CGpuText", "CCpuText" }.Select(Line).ToList();
+        foreach (var l in lines)
+        {
+            Near(lines[0].ActualHeight, l.ActualHeight);
+            Near(lines[0].TranslatePoint(new Point(), root).Y, l.TranslatePoint(new Point(), root).Y);
+        }
     });
 
     [Fact]
