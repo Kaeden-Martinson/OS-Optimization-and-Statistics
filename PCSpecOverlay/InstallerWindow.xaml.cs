@@ -10,12 +10,18 @@ public partial class InstallerWindow : Window
 
     private readonly Mode _mode;
     private bool _done;
+    private readonly ThemeManager _theme = new(Application.Current.Resources);
 
     public InstallerWindow(Mode mode)
     {
         InitializeComponent();
         _mode = mode;
-        SourceInitialized += (_, _) => TitleBar.Apply(this, dark: true);
+        // Setup can't read the installed copy's settings, so it follows Windows. Uninstall is run by the installed
+        // copy (Settings › Apps), whose data folder holds the user's settings: use their Appearance.
+        _theme.Apply(mode == Mode.Uninstall ? SavedAppearance() : Settings.MatchWindows);
+        SourceInitialized += (_, _) => TitleBar.Apply(this, _theme.Current == AppTheme.Dark);
+        _theme.Changed += theme => TitleBar.Apply(this, theme == AppTheme.Dark);
+        Closed += (_, _) => _theme.Dispose();
 
         if (mode == Mode.Install)
         {
@@ -26,20 +32,30 @@ public partial class InstallerWindow : Window
                   "No administrator rights are needed. You can remove it any time from Settings › Apps."
                 : $"Version {installed} is installed; this will replace it with {Installer.Version}. Your settings are kept, " +
                   "and the previous version is kept as a fallback. A running copy will be closed first (it puts back any changes it made).";
-            Option1.Content = "Start with Windows";
+            Option1.Content = Wrapped("Start with Windows");
             Option1.IsChecked = installed is null || StartupTask.Status().Enabled;
-            Option2.Visibility = Visibility.Collapsed;
+            Option2Row.Visibility = Visibility.Collapsed;
             Primary.Content = installed is null ? "Install" : "Update";
         }
         else
         {
             Heading.Text = $"Uninstall {AppIdentity.ProductName}";
             Intro.Text = "This removes the app, its Start menu shortcut, its Apps entry and Start with Windows.";
-            Option1.Content = "Undo Windows changes the app made (power mode, browser graphics settings, Game Mode, …) — recommended";
-            Option2.Content = "Also delete my settings and gaming history";
+            Option1.Content = Wrapped("Undo Windows changes the app made (power mode, browser graphics settings, Game Mode, …) — recommended");
+            Option2.Content = Wrapped("Also delete my settings and gaming history");
             Primary.Content = "Uninstall";
-            Primary.Tag = "Danger";
         }
+    }
+
+    // Plain string content stays on one line and is clipped at the card's width; a wrapping TextBlock inherits the
+    // Switch's Foreground, and AccessibleName.FromContent still names the control after its first TextBlock.
+    private static System.Windows.Controls.TextBlock Wrapped(string text) =>
+        new() { Text = text, TextWrapping = TextWrapping.Wrap };
+
+    private static string SavedAppearance()
+    {
+        try { return Settings.Load().Appearance; }
+        catch { return Settings.MatchWindows; }
     }
 
     private void OnPrimary(object sender, RoutedEventArgs e)
