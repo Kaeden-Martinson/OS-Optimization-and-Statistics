@@ -87,6 +87,7 @@ public partial class App : Application
         _overlay.EnsureHandle();
         _overlay.Moved += SaveSettings;
         _overlay.Moved += () => _controlCenter?.OverlayMoved();
+        _overlay.LayoutButtonClicked += ToggleLayout;
         _overlay.Pinned += () => Log.Info("Overlay", "Overlay pinned. It stays here and clicks pass through to your game. Use Move overlay in the tray to move it again.");
         HwndSource.FromHwnd(_overlay.Handle).AddHook(WndProc);
 
@@ -210,12 +211,39 @@ public partial class App : Application
         Settings.Save();
     }
 
+    /// <summary>
+    /// The overlay's layout button: switches Strip and Panel, keeping the overlay's anchored edges. While a game with its
+    /// own layout is in front, that game's layout is switched (and kept in the games list) instead.
+    /// </summary>
+    public void ToggleLayout()
+    {
+        var (forGame, next) = LayoutToggle.Flip(Settings.Layout, _layoutOverride);
+        var rule = forGame ? _engine.Game?.Rule : null;
+        if (forGame && rule is null) (_, next) = LayoutToggle.Flip(Settings.Layout, null); // the game just left
+        void Change()
+        {
+            if (rule is null) Settings.Layout = next;
+            else rule.Layout = _layoutOverride = next;
+        }
+        if (_controlCenter is { } cc) cc.ChangeQuietly(Change); // its controls follow without counting as an edit
+        else Change();
+        Log.Info("Overlay", rule is null
+            ? $"Layout button: switched to {LayoutName(next)}"
+            : $"Layout button: switched to {LayoutName(next)} for {rule.Match}");
+        SaveSettings(keepEdges: true);
+        _controlCenter?.LayoutChanged();
+    }
+
+    private static string LayoutName(string layout) => layout == Settings.Expanded ? "Panel" : "Strip";
+
     /// <summary>Validates, saves and applies settings after any change in the control center.</summary>
-    public void SaveSettings()
+    public void SaveSettings() => SaveSettings(keepEdges: false);
+
+    private void SaveSettings(bool keepEdges)
     {
         Settings.Validate();
         Settings.Save();
-        _overlay.ApplySettings(Settings, _layoutOverride);
+        _overlay.ApplySettings(Settings, _layoutOverride, keepEdges);
         _fpsTimer.Interval = TimeSpan.FromMilliseconds(Settings.FpsRefreshMs);
         _statsTimer.Interval = TimeSpan.FromMilliseconds(Settings.StatsRefreshMs);
         if (_engine.Gpu != null) _engine.Gpu.LetSleep = Settings.LetGpuSleep;

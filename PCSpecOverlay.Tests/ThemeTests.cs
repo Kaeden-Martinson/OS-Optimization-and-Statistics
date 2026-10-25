@@ -142,7 +142,7 @@ public class IconTests
     [
         "Mark", "Overview", "Optimizer", "Gaming", "Overlay", "Temperature", "Settings", "Diagnostics", "Sun", "Moon",
         "Monitor", "Check", "Warning", "Info", "Undo", "Pause", "Plus", "Close", "Chevron", "ChevronDown", "Refresh",
-        "Copy", "File", "Folder", "Pointer", "Power", "Grip", "Window",
+        "Copy", "File", "Folder", "Pointer", "Power", "Grip", "Window", "Layout",
     ];
 
     [Fact]

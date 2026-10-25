@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using PCSpecOverlay.Core;
 using PCSpecOverlay.Monitors;
@@ -55,6 +56,13 @@ public partial class OverlayWindow : Window
     /// <summary>Raised when the user drops the overlay after dragging it, or pins it.</summary>
     public event Action? Moved;
 
+    /// <summary>Raised when the user clicks the Strip ⇄ Panel icon.</summary>
+    public event Action? LayoutButtonClicked;
+
+    /// <summary>The click target over the layout icon; made the first time it is shown.</summary>
+    private LayoutButtonWindow? _layoutButton;
+    private bool _layoutHover;
+
     public OverlayWindow()
     {
         InitializeComponent();
@@ -64,6 +72,7 @@ public partial class OverlayWindow : Window
             HwndSource.FromHwnd(Handle)?.AddHook(PlaceWhileResizing);
             ApplyWindowStyles();
         };
+        IsVisibleChanged += (_, _) => SyncLayoutButton();
         // PlaceWhileResizing moves the window in the same step WPF resizes it; these passes run once layout has settled
         SizeChanged += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Reposition));
         DpiChanged += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Reposition));
@@ -74,7 +83,9 @@ public partial class OverlayWindow : Window
     public void EnsureHandle() => Handle = new WindowInteropHelper(this).EnsureHandle();
 
     /// <param name="layoutOverride">A per-game layout, or null for the user's normal one.</param>
-    public void ApplySettings(Settings s, string? layoutOverride = null)
+    /// <param name="keepEdges">Only the layout changed (the layout button): keep the edges the overlay is anchored to
+    /// rather than placing it again from its corner or pinned spot.</param>
+    public void ApplySettings(Settings s, string? layoutOverride = null, bool keepEdges = false)
     {
         _settings = s;
         _layout = layoutOverride ?? s.Layout;
@@ -88,11 +99,13 @@ public partial class OverlayWindow : Window
         LowRow.Visibility = Show(s.ShowOnePercentLow);
         CpuRow.Visibility = CCpuBox.Visibility = Show(s.ShowCpu);
         RamRow.Visibility = Show(s.ShowRam);
+        CLayoutBox.Visibility = PLayoutIcon.Visibility = Show(s.ShowLayoutButton);
         _shownLimits = (Limit)(-1); // re-render limit chips
 
         ApplyTheme();
         ApplyWindowStyles();
-        PlaceFromSettings();
+        if (keepEdges) Reposition();
+        else PlaceFromSettings();
         DrawTrace();
     }
 
@@ -143,6 +156,48 @@ public partial class OverlayWindow : Window
         SetHandleSide(spot.Below, spot.Right);
         if (spot.Left != r.Left || spot.Top != r.Top)
             Native.SetWindowPos(Handle, Native.HWND_TOPMOST, spot.Left, spot.Top, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+        SyncLayoutButton();
+    }
+
+    /// <summary>
+    /// Shows the layout button's click target exactly over the icon drawn in the overlay, or hides it: when the
+    /// button is off, the overlay is hidden, or in move mode (the whole overlay takes the mouse then, for dragging).
+    /// Runs when the overlay is placed, shown or hidden, not per reading; the target only moves when its rectangle changes.
+    /// </summary>
+    private void SyncLayoutButton()
+    {
+        FrameworkElement icon = _layout == Settings.Expanded ? PLayoutIcon : CLayoutIcon;
+        (int Left, int Top, int Width, int Height)? rect = null;
+        if (_settings.ShowLayoutButton && !_moving && IsVisible && Handle != IntPtr.Zero && icon.IsVisible
+            && Native.GetWindowRect(Handle, out var r))
+        {
+            var b = icon.TransformToAncestor(this).TransformBounds(new Rect(icon.RenderSize));
+            rect = OverlayPlacement.HitRect((b.X, b.Y, b.Width, b.Height), r.Left, r.Top, PixelsPerDip(r.Right - r.Left));
+        }
+        if (rect is not { } place)
+        {
+            _layoutButton?.Hide();
+            SetLayoutHover(false);
+            return;
+        }
+        if (_layoutButton is null)
+        {
+            _layoutButton = new LayoutButtonWindow(Handle);
+            _layoutButton.Clicked += () => LayoutButtonClicked?.Invoke();
+            _layoutButton.Hover += SetLayoutHover;
+        }
+        _layoutButton.SetLayout(_layout);
+        _layoutButton.Place(place);
+    }
+
+    /// <summary>The icon brightens while the pointer is over its click target.</summary>
+    private void SetLayoutHover(bool over)
+    {
+        if (over == _layoutHover) return;
+        _layoutHover = over;
+        var key = over ? "O.Text" : "O.Muted";
+        CLayoutPath.SetResourceReference(Shape.StrokeProperty, key);
+        PLayoutPath.SetResourceReference(Shape.StrokeProperty, key);
     }
 
     /// <summary>
@@ -309,6 +364,7 @@ public partial class OverlayWindow : Window
     {
         if (Handle != IntPtr.Zero && IsVisible)
             Native.SetWindowPos(Handle, Native.HWND_TOPMOST, 0, 0, 0, 0, Native.SWP_NOMOVE | Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+        _layoutButton?.KeepOnTop(); // the layout button's click target stays above the overlay
     }
 
     public void SetGpuName(string? name) =>

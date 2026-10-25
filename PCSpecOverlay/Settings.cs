@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 using PCSpecOverlay.Core;
 
@@ -6,8 +7,12 @@ namespace PCSpecOverlay;
 public enum GameMatchKind { WindowTitle, ProcessName }
 
 /// <summary>A user rule that marks an app as a game, with per-game options.</summary>
-public sealed class GameRule
+public sealed class GameRule : INotifyPropertyChanged
 {
+    private string? _layout;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     public string Match { get; set; } = "";
     public GameMatchKind Kind { get; set; } = GameMatchKind.WindowTitle;
     public bool Enabled { get; set; } = true;
@@ -16,7 +21,18 @@ public sealed class GameRule
     public bool Optimize { get; set; } = true;
 
     /// <summary>Overlay layout while this game is in front: null = your normal layout.</summary>
-    public string? Layout { get; set; }
+    public string? Layout
+    {
+        get => _layout;
+        set
+        {
+            if (_layout == value) return;
+            _layout = value;
+            // The overlay's layout button can change it while the games list shows it
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Layout)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LayoutChoice)));
+        }
+    }
 
     /// <summary>For the dropdown: "Default" stands for null.</summary>
     [JsonIgnore]
@@ -24,6 +40,20 @@ public sealed class GameRule
     {
         get => Layout ?? "Default";
         set => Layout = value == "Default" ? null : value;
+    }
+}
+
+/// <summary>The overlay's layout button: which layout a click switches to, and where that choice is kept.</summary>
+public static class LayoutToggle
+{
+    /// <param name="layout">The user's normal layout.</param>
+    /// <param name="gameLayout">The layout of the game in front, or null when none is in effect.</param>
+    /// <returns>ForGame: change the game's rule rather than the normal layout (else the click would seem to do nothing
+    /// while that game is in front); Layout: the other layout.</returns>
+    public static (bool ForGame, string Layout) Flip(string layout, string? gameLayout)
+    {
+        var shown = gameLayout ?? layout;
+        return (gameLayout is not null, shown == Settings.Expanded ? Settings.Compact : Settings.Expanded);
     }
 }
 
@@ -62,6 +92,8 @@ public sealed class Settings
     public bool ShowCpu { get; set; } = true;
     public bool ShowRam { get; set; } = true;
     public bool ShowSlowdowns { get; set; } = true;
+    /// <summary>A small Strip ⇄ Panel button at the end of the overlay (settings from before it load as on).</summary>
+    public bool ShowLayoutButton { get; set; } = true;
     /// <summary>Draw with the graphics chip instead of the CPU (applies after the app restarts).</summary>
     public bool GpuRendering { get; set; }
     public int FpsRefreshMs { get; set; } = 500;

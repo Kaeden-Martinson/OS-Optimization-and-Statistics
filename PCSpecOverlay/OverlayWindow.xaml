@@ -95,6 +95,22 @@
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="Visibility" Value="Collapsed" />
             </Style>
+            <!-- The Strip ⇄ Panel icon (Icon.Layout): a fixed 16 DIP box; a tiny window of its own over it takes the click -->
+            <Style x:Key="LayoutIconBox" TargetType="Border">
+                <Setter Property="Width" Value="16" />
+                <Setter Property="Height" Value="16" />
+                <Setter Property="Padding" Value="2" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="LayoutIcon" TargetType="Path">
+                <Setter Property="Data" Value="M3.5,4 H20.5 V9.5 H3.5 Z M3.5,14.5 H20.5 M3.5,19.5 H20.5" />
+                <Setter Property="Stroke" Value="{DynamicResource O.Muted}" />
+                <Setter Property="StrokeThickness" Value="1.4" />
+                <Setter Property="StrokeLineJoin" Value="Round" />
+                <Setter Property="StrokeStartLineCap" Value="Round" />
+                <Setter Property="StrokeEndLineCap" Value="Round" />
+                <Setter Property="Stretch" Value="Uniform" />
+            </Style>
             <Style x:Key="BadgeText" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="FontWeight" Value="SemiBold" />
@@ -152,6 +168,9 @@
                     <!-- The readings below set the panel's width; the header fits in it (the GPU name trims) -->
                     <local:FollowWidth>
                     <DockPanel Margin="10,5,10,5">
+                        <Border x:Name="PLayoutIcon" DockPanel.Dock="Right" Style="{StaticResource LayoutIconBox}" Margin="8,-2,-2,-2">
+                            <Path x:Name="PLayoutPath" Style="{StaticResource LayoutIcon}" />
+                        </Border>
                         <Border x:Name="Badge" DockPanel.Dock="Right" Style="{StaticResource Badge}" Margin="8,0,0,0">
                             <TextBlock x:Name="BadgeText" Style="{StaticResource BadgeText}" />
                         </Border>
@@ -303,6 +322,11 @@
                     <Border x:Name="CBadgeBox" Style="{StaticResource Cell}" Visibility="Collapsed">
                         <Border x:Name="CBadge" Style="{StaticResource Badge}" Visibility="Visible">
                             <TextBlock x:Name="CBadgeText" Style="{StaticResource BadgeText}" />
+                        </Border>
+                    </Border>
+                    <Border x:Name="CLayoutBox" Style="{StaticResource Cell}">
+                        <Border x:Name="CLayoutIcon" Style="{StaticResource LayoutIconBox}">
+                            <Path x:Name="CLayoutPath" Style="{StaticResource LayoutIcon}" />
                         </Border>
                     </Border>
                 </StackPanel>

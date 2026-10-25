@@ -86,4 +86,19 @@ public static class OverlayPlacement
         var bottom = custom ? customY >= 0.5 : position.StartsWith("Bottom");
         return Clamp(right ? last.Right - width : last.Left, bottom ? last.Bottom - height : last.Top, width, height, work);
     }
+
+    /// <summary>
+    /// The screen rectangle in physical pixels of an element at <paramref name="icon"/> (DIPs from the window's top-left
+    /// corner) in a window whose top-left corner is at (windowLeft, windowTop) pixels, drawn at
+    /// <paramref name="pixelsPerDip"/>. Each edge is rounded on its own, as WPF's layout rounding does, so the rectangle
+    /// covers the pixels the element is drawn on. Null when there is nothing to cover.
+    /// </summary>
+    public static (int Left, int Top, int Width, int Height)? HitRect((double X, double Y, double Width, double Height) icon,
+        int windowLeft, int windowTop, double pixelsPerDip)
+    {
+        if (icon.Width <= 0 || icon.Height <= 0 || pixelsPerDip <= 0 || !double.IsFinite(pixelsPerDip)) return null;
+        int Px(double dip) => (int)Math.Round(dip * pixelsPerDip, MidpointRounding.AwayFromZero);
+        int left = Px(icon.X), top = Px(icon.Y);
+        return (windowLeft + left, windowTop + top, Px(icon.X + icon.Width) - left, Px(icon.Y + icon.Height) - top);
+    }
 }

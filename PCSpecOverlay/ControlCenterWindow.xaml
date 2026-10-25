@@ -681,6 +681,14 @@
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,12">
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowLayoutButton}">
+                                    <StackPanel>
+                                        <TextBlock Text="Layout button on the overlay" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Body}" Text="A small button at the end of the overlay switches Strip and Panel. Clicks on it don't reach your game." />
+                                    </StackPanel>
+                                </CheckBox>
+                            </Border>
                             <Border Style="{StaticResource LedgerRow}" Padding="20,10">
                                 <DockPanel>
                                     <ComboBox x:Name="FpsRefreshBox" DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding FpsRefreshMs}"
