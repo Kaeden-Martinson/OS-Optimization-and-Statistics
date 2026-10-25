@@ -90,6 +90,7 @@ public partial class ControlCenterWindow : Window
     {
         if (_loading || e.OriginalSource is TabControl) return;
         if (e.OriginalSource == ShowOverlay || e.OriginalSource == StartupSwitch) return; // handled by their own clicks
+        if (e.OriginalSource == LightButton || e.OriginalSource == DarkButton) return; // saved by ChooseTheme
         _saveSoon.Stop();
         _saveSoon.Start();
     }
