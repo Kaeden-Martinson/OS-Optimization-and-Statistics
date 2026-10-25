@@ -546,6 +546,7 @@ public partial class ControlCenterWindow : Window
             : "It closes the way Windows does at shutdown, saving every window and tab, then reopens them. You'll be asked first.";
         RestartButton.Visibility = ok.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         RestartButton.Content = $"Restart {Names(ok)}";
+        System.Windows.Automation.AutomationProperties.SetName(RestartButton, $"Restart {Names(ok)}");
         RestartButton.IsEnabled = true;
     }
 
@@ -567,6 +568,7 @@ public partial class ControlCenterWindow : Window
         _restarting = true;
         RestartButton.IsEnabled = false;
         RestartButton.Content = "Restarting…";
+        System.Windows.Automation.AutomationProperties.SetName(RestartButton, "Restarting…");
         var messages = new List<string>();
         foreach (var b in browsers)
         {
