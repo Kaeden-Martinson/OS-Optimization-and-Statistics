@@ -1,0 +1,199 @@
+<style>
+  .pc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .pc-seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .pc-seg button { all:unset; cursor:pointer; padding:.4rem .8rem; font-size:.8rem; color:var(--text-secondary); display:inline-flex; gap:.4rem; align-items:center; }
+  .pc-seg button[aria-pressed="true"] { background:var(--bg-tertiary); color:var(--text-primary); }
+  .pc-ico { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .grp { margin:0 0 2.5rem; }
+  .grp > h3 { margin-bottom:.25rem; }
+  .three { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; }
+  @media (max-width:1000px){ .three { grid-template-columns:1fr; } }
+  .three .option { display:flex; flex-direction:column; align-items:stretch; padding:.9rem; gap:.6rem; }
+  .three .option .head { display:flex; gap:.6rem; align-items:baseline; }
+  .three .option .head h3 { margin:0; font-size:.95rem; }
+  .three .option p.note { color:var(--text-secondary); font-size:.82rem; margin:0; }
+  .stage { position:relative; height:330px; border:1px solid var(--border); border-radius:6px; overflow:hidden; background:#2b3a4a; }
+  .stage.light { background:#c9d6e2; }
+
+  .ins { --bg:#0B0B0C; --pan:#111113; --line:#262629; --line2:#1A1A1C; --tx:#E9E9E6; --mu:#87878A; --fa:#57575B; --sig:#E8A33D; --ok:#9BCB58;
+         font-family:"Segoe UI",system-ui,sans-serif; font-size:12px; line-height:1.4; background:var(--bg); color:var(--tx); border:1px solid var(--line); cursor:default; font-variant-numeric:tabular-nums; }
+  .ins[data-theme="light"] { --bg:#F3F2EE; --pan:#FBFAF7; --line:#D9D7D0; --line2:#E6E4DD; --tx:#141414; --mu:#66665F; --fa:#9C9A92; --sig:#B4730F; --ok:#4E7A12; }
+  .ins .mono { font-family:"Cascadia Mono","Cascadia Code",Consolas,monospace; }
+  .ins .mu { color:var(--mu); } .ins .sig { color:var(--sig); } .ins .ok { color:var(--ok); }
+  .ins .k { font-size:10px; color:var(--mu); letter-spacing:.08em; text-transform:uppercase; }
+  .ins .sw { display:inline-block; width:26px; height:14px; border:1px solid var(--line); position:relative; background:var(--pan); flex-shrink:0; }
+  .ins .sw::after { content:""; position:absolute; top:2px; left:2px; width:8px; height:8px; background:var(--mu); }
+  .ins .sw.on { background:var(--tx); border-color:var(--tx); }
+  .ins .sw.on::after { left:14px; background:var(--bg); }
+  .ins .btn { all:unset; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:5px 12px; border:1px solid var(--line); font-size:12px; white-space:nowrap; }
+  .ins .btn.pri { background:var(--tx); color:var(--bg); border-color:var(--tx); }
+  .ins .led { display:inline-block; width:6px; height:6px; background:var(--ok); }
+
+  /* taskbar */
+  .taskbar { position:absolute; left:0; right:0; bottom:0; height:30px; background:rgba(20,20,22,.92); border-top:1px solid rgba(255,255,255,.08); display:flex; justify-content:flex-end; align-items:center; gap:10px; padding:0 10px; color:#ddd; font:11px "Segoe UI",sans-serif; }
+  .stage.light .taskbar { background:rgba(240,240,238,.95); color:#222; border-top-color:rgba(0,0,0,.1); }
+  .taskbar .tray { width:22px; height:22px; display:flex; align-items:center; justify-content:center; outline:1px solid rgba(255,255,255,.35); }
+  .stage.light .taskbar .tray { outline-color:rgba(0,0,0,.35); }
+
+  /* tray menus */
+  .menu { position:absolute; right:14px; bottom:38px; width:232px; }
+  .menu .it { display:grid; grid-template-columns:18px 1fr auto; gap:8px; align-items:center; padding:6px 10px; }
+  .menu .it.hl { background:var(--pan); box-shadow:inset 2px 0 0 var(--tx); }
+  .menu .sep { height:1px; background:var(--line); margin:3px 0; }
+  .menu .kb { font-family:"Cascadia Mono",Consolas,monospace; font-size:10.5px; color:var(--mu); }
+  .fly { position:absolute; right:14px; bottom:38px; width:258px; }
+  .fly .hd { display:flex; justify-content:space-between; align-items:center; padding:7px 10px; border-bottom:1px solid var(--line); }
+  .fly .rd { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--line); }
+  .fly .rd div { padding:7px 8px; border-right:1px solid var(--line2); }
+  .fly .rd div:last-child { border-right:0; }
+  .fly .rd b { display:block; font-weight:400; font-size:16px; font-family:"Cascadia Mono",Consolas,monospace; }
+  .fly .tg { display:flex; justify-content:space-between; align-items:center; padding:7px 10px; border-bottom:1px solid var(--line2); }
+  .fly .ft { display:flex; gap:6px; padding:8px 10px; }
+  .fly .ft .btn { flex:1; }
+
+  /* installer */
+  .inst { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:320px; }
+  .inst .tb { display:flex; justify-content:space-between; padding:7px 10px; border-bottom:1px solid var(--line); color:var(--mu); font-size:11px; }
+  .inst .bd { padding:14px; }
+  .inst h4 { margin:0 0 4px; font-size:15px; font-weight:600; }
+  .inst p { margin:0; color:var(--mu); font-size:11.5px; }
+  .inst .row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-top:1px solid var(--line2); margin-top:10px; }
+  .inst .acts { display:flex; justify-content:flex-end; gap:6px; padding:10px 14px; border-top:1px solid var(--line); }
+  .inst .spec { display:grid; grid-template-columns:90px 1fr; gap:4px 10px; margin-top:10px; font-size:11.5px; }
+  .inst .spec dt { color:var(--mu); } .inst .spec dd { margin:0; }
+  .inst .prog { height:3px; background:var(--line); margin:12px 0 8px; }
+  .inst .prog i { display:block; height:100%; width:64%; background:var(--tx); }
+  .inst .log { font-family:"Cascadia Mono",Consolas,monospace; font-size:10.5px; color:var(--mu); }
+  .inst .log div { padding:1px 0; }
+  .inst .steps { display:flex; border-bottom:1px solid var(--line); }
+  .inst .steps span { flex:1; padding:6px 10px; font-size:11px; color:var(--mu); border-right:1px solid var(--line2); }
+  .inst .steps span.on { color:var(--tx); box-shadow:inset 0 -2px 0 var(--tx); }
+  .inst .steps span:last-child { border-right:0; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path d="M4 20V13M9 20V8M14 20V11M19 20V4"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-overlay" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><rect x="13" y="6.5" width="5.5" height="4" rx="1"/><path d="M8 21h8"/></symbol>
+  <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18"/></symbol>
+  <symbol id="i-gaming" viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4.4l-.5 3.9a2.4 2.4 0 0 1-4.3 1.1L14.5 15h-5l-1.7 2.4a2.4 2.4 0 0 1-4.3-1.1L3 12.4A4 4 0 0 1 7 8z"/><path d="M8 11v3M6.5 12.5h3"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="i-pointer" viewBox="0 0 24 24"><path d="M6 3l12 9-5 1 3 6-2 1-3-6-4 4z"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.5 7a7.5 7.5 0 1 0 11 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+</defs></svg>
+
+<h2>Tray menu and installer</h2>
+<p class="subtitle">The last two pieces. Pick one tray menu and one installer (you can select one in each row). Readings shown are examples.</p>
+
+<div class="pc-toolbar">
+  <span class="label" style="margin:0">Theme for everything on this page</span>
+  <div class="pc-seg" role="group" aria-label="Theme"><button type="button" data-all="dark" aria-pressed="true"><svg class="pc-ico"><use href="#i-moon"/></svg>Dark</button><button type="button" data-all="light" aria-pressed="false"><svg class="pc-ico"><use href="#i-sun"/></svg>Light</button></div>
+</div>
+
+<div class="grp">
+  <h3>Tray menu</h3>
+  <p class="subtitle">What appears when you click the PC Spec icon by the clock.</p>
+  <div class="three options" data-multiselect>
+    <div class="option" data-choice="tray-a-menu" onclick="toggleSelect(this)">
+      <div class="head"><div class="letter">A</div><h3>Plain menu</h3></div>
+      <p class="note">A restyled version of today's right-click menu, with shortcuts on the right. Familiar, quick, and the smallest change.</p>
+      <div class="stage"><div class="ins menu" data-theme="dark">
+        <div class="it"><svg class="pc-ico"><use href="#i-window"/></svg><span><b style="font-weight:600">Open PC Spec</b></span><span></span></div>
+        <div class="sep"></div>
+        <div class="it hl"><svg class="pc-ico"><use href="#i-overlay"/></svg><span>Hide overlay</span><span class="kb">Alt+Shift+O</span></div>
+        <div class="it"><svg class="pc-ico"><use href="#i-pointer"/></svg><span>Click-through</span><svg class="pc-ico"><use href="#i-check"/></svg></div>
+        <div class="it"><svg class="pc-ico"><use href="#i-pause"/></svg><span>Pause gaming mode 30 min</span><span></span></div>
+        <div class="sep"></div>
+        <div class="it"><svg class="pc-ico"><use href="#i-power"/></svg><span>Exit</span><span></span></div>
+      </div><div class="taskbar"><span class="tray"><svg class="pc-ico"><use href="#i-mark"/></svg></span><span>19:42</span></div></div>
+    </div>
+    <div class="option" data-choice="tray-b-flyout" onclick="toggleSelect(this)">
+      <div class="head"><div class="letter">B</div><h3>Status flyout</h3></div>
+      <p class="note">Left-click opens a small panel: the four readings, the switches you use most, and a button to open the app. Right-click still gives the plain menu. The most useful, and it needs a new small window.</p>
+      <div class="stage"><div class="ins fly" data-theme="dark">
+        <div class="hd"><span style="display:flex;gap:7px;align-items:center;font-weight:600"><svg class="pc-ico"><use href="#i-mark"/></svg>PC SPEC</span><span class="mu" style="display:flex;gap:6px;align-items:center"><span class="led"></span>Gaming mode</span></div>
+        <div class="rd"><div><span class="k">FPS</span><b>144</b></div><div><span class="k">GPU</span><b>71°</b></div><div><span class="k">CPU</span><b class="sig">84°</b></div><div><span class="k">RAM</span><b>22.6</b></div></div>
+        <div class="tg"><span>Overlay</span><span class="sw on"></span></div>
+        <div class="tg"><span>Click-through</span><span class="sw on"></span></div>
+        <div class="tg"><span>Gaming mode</span><span class="sw on"></span></div>
+        <div class="ft"><button class="btn pri" type="button">Open PC Spec</button><button class="btn" type="button"><svg class="pc-ico"><use href="#i-power"/></svg></button></div>
+      </div><div class="taskbar"><span class="tray"><svg class="pc-ico"><use href="#i-mark"/></svg></span><span>19:42</span></div></div>
+    </div>
+    <div class="option" data-choice="tray-c-menu-readout" onclick="toggleSelect(this)">
+      <div class="head"><div class="letter">C</div><h3>Menu with a readout line</h3></div>
+      <p class="note">The plain menu with one line of live readings at the top, in the Strip style. A middle ground: it still uses the standard menu control, so it's cheap to build.</p>
+      <div class="stage"><div class="ins menu" data-theme="dark" style="width:250px">
+        <div style="display:flex;border-bottom:1px solid var(--line)" class="mono"><span style="padding:6px 9px;border-right:1px solid var(--line2)"><span style="font-size:15px">144</span> <span class="mu" style="font-size:10px">FPS</span></span><span style="padding:6px 9px;border-right:1px solid var(--line2)"><span class="mu" style="font-size:10px">GPU</span> 71°</span><span style="padding:6px 9px"><span class="mu" style="font-size:10px">CPU</span> <span class="sig">84°</span></span></div>
+        <div class="it"><svg class="pc-ico"><use href="#i-window"/></svg><span><b style="font-weight:600">Open PC Spec</b></span><span></span></div>
+        <div class="it hl"><svg class="pc-ico"><use href="#i-overlay"/></svg><span>Hide overlay</span><span class="kb">Alt+Shift+O</span></div>
+        <div class="it"><svg class="pc-ico"><use href="#i-pointer"/></svg><span>Click-through</span><svg class="pc-ico"><use href="#i-check"/></svg></div>
+        <div class="it"><svg class="pc-ico"><use href="#i-pause"/></svg><span>Pause gaming mode 30 min</span><span></span></div>
+        <div class="sep"></div>
+        <div class="it"><svg class="pc-ico"><use href="#i-power"/></svg><span>Exit</span><span></span></div>
+      </div><div class="taskbar"><span class="tray"><svg class="pc-ico"><use href="#i-mark"/></svg></span><span>19:42</span></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="grp">
+  <h3>Installer</h3>
+  <p class="subtitle">The window you see when running PCSpecOverlay-Setup. Shown as an update from 2.0.13 to 2.0.14.</p>
+  <div class="three options" data-multiselect>
+    <div class="option" data-choice="installer-a-card" onclick="toggleSelect(this)">
+      <div class="head"><div class="letter">A</div><h3>One card</h3></div>
+      <p class="note">Today's installer restyled: what will happen, one switch, two buttons. Nothing to read that you don't need.</p>
+      <div class="stage"><div class="ins inst" data-theme="dark">
+        <div class="tb"><span>PC Spec Setup</span><span>×</span></div>
+        <div class="bd">
+          <h4>Update PC Spec to 2.0.14</h4>
+          <p>Replaces 2.0.13. Your settings are kept and the previous version is saved as a fallback. The running copy closes first and puts back any changes it made.</p>
+          <div class="row"><span>Start with Windows</span><span class="sw on"></span></div>
+        </div>
+        <div class="acts"><button class="btn" type="button">Cancel</button><button class="btn pri" type="button">Update</button></div>
+      </div></div>
+    </div>
+    <div class="option" data-choice="installer-b-spec" onclick="toggleSelect(this)">
+      <div class="head"><div class="letter">B</div><h3>Spec sheet</h3></div>
+      <p class="note">The same card, plus a short ruled list of facts: where it installs, that it needs no admin rights, the size, and that it's unsigned (so Windows' warning isn't a surprise).</p>
+      <div class="stage"><div class="ins inst" data-theme="dark">
+        <div class="tb"><span>PC Spec Setup</span><span>×</span></div>
+        <div class="bd">
+          <h4>Update PC Spec to 2.0.14</h4>
+          <p>Your settings are kept; 2.0.13 is saved as a fallback.</p>
+          <dl class="spec mono"><dt>Location</dt><dd>%LocalAppData%\Programs</dd><dt>Rights</dt><dd>Your account only</dd><dt>Size</dt><dd>9.1 MB</dd><dt>Publisher</dt><dd>Unsigned</dd></dl>
+          <div class="row"><span>Start with Windows</span><span class="sw on"></span></div>
+        </div>
+        <div class="acts"><button class="btn" type="button">Cancel</button><button class="btn pri" type="button">Update</button></div>
+      </div></div>
+    </div>
+    <div class="option" data-choice="installer-c-steps" onclick="toggleSelect(this)">
+      <div class="head"><div class="letter">C</div><h3>Steps with a live log</h3></div>
+      <p class="note">Shown mid-install: three steps across the top and a log of exactly what it's doing. The most reassuring while it runs, and it's more to build.</p>
+      <div class="stage"><div class="ins inst" data-theme="dark">
+        <div class="tb"><span>PC Spec Setup</span><span>×</span></div>
+        <div class="steps"><span>1 Review</span><span class="on">2 Install</span><span>3 Done</span></div>
+        <div class="bd">
+          <h4>Installing 2.0.14</h4>
+          <div class="prog"><i></i></div>
+          <div class="log"><div>Closed PC Spec 2.0.13, changes put back</div><div>Saved 2.0.13 as fallback</div><div style="color:var(--tx)">Copying PCSpecOverlay.exe</div><div>Updating Start menu shortcut</div></div>
+        </div>
+        <div class="acts"><button class="btn" type="button" style="opacity:.5">Cancel</button></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('[data-all]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.getAttribute('data-all');
+      document.querySelectorAll('[data-all]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      document.querySelectorAll('.ins').forEach(function (w) { w.setAttribute('data-theme', t); });
+      document.querySelectorAll('.stage').forEach(function (s) { s.classList.toggle('light', t === 'light'); });
+    });
+  });
+})();
+</script>

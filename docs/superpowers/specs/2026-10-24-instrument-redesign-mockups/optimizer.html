@@ -1,0 +1,222 @@
+<style>
+  .pc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .pc-seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .pc-seg button { all:unset; cursor:pointer; padding:.4rem .8rem; font-size:.8rem; color:var(--text-secondary); display:inline-flex; gap:.4rem; align-items:center; }
+  .pc-seg button[aria-pressed="true"] { background:var(--bg-tertiary); color:var(--text-primary); }
+  .pc-ico { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .pc-dir { margin-bottom:2rem; }
+  .pc-dir .option { display:block; padding:1rem; overflow-x:auto; }
+  .pc-dir .option > .ins, .pc-dir .option > .pc-win { min-width:760px; }
+  .pc-dir-head { display:flex; align-items:baseline; gap:.75rem; margin-bottom:.25rem; }
+  .pc-dir-head h3 { margin:0; }
+  .pc-dir-note { color:var(--text-secondary); font-size:.85rem; margin:0 0 .9rem 2.75rem; max-width:72ch; }
+
+  /* Instrument tokens */
+  .ins { --bg:#0B0B0C; --pan:#111113; --line:#262629; --line2:#1A1A1C; --tx:#E9E9E6; --mu:#87878A; --fa:#57575B; --sig:#E8A33D; --ok:#9BCB58;
+         font-family:"Segoe UI",system-ui,sans-serif; font-size:12.5px; line-height:1.4; background:var(--bg); color:var(--tx); border:1px solid var(--line); cursor:default; font-variant-numeric:tabular-nums; }
+  .ins[data-theme="light"] { --bg:#F3F2EE; --pan:#FBFAF7; --line:#D9D7D0; --line2:#E6E4DD; --tx:#141414; --mu:#66665F; --fa:#9C9A92; --sig:#B4730F; --ok:#4E7A12; }
+  .ins .mono { font-family:"Cascadia Mono","Cascadia Code",Consolas,monospace; }
+  .ins .bar1 { display:flex; align-items:center; gap:18px; padding:0 14px; height:38px; border-bottom:1px solid var(--line); }
+  .ins .name { display:flex; align-items:center; gap:8px; font-weight:600; letter-spacing:.02em; font-size:12px; }
+  .ins .tabs { display:flex; gap:2px; height:100%; }
+  .ins .tab { display:flex; align-items:center; gap:7px; padding:0 10px; color:var(--mu); font-size:12px; border-bottom:2px solid transparent; }
+  .ins .tab.on { color:var(--tx); border-bottom-color:var(--tx); }
+  .ins .right { margin-left:auto; display:flex; align-items:center; gap:12px; font-size:11px; color:var(--mu); }
+  .ins .theme { display:inline-flex; border:1px solid var(--line); }
+  .ins .theme button { all:unset; cursor:pointer; padding:4px 6px; color:var(--mu); display:flex; }
+  .ins .theme button[aria-pressed="true"] { color:var(--tx); background:var(--pan); }
+  .ins .pagehd { display:flex; align-items:flex-end; justify-content:space-between; padding:14px 14px 12px; border-bottom:1px solid var(--line); gap:16px; }
+  .ins .pagehd h4 { margin:0; font-size:16px; font-weight:600; }
+  .ins .pagehd p { margin:3px 0 0; color:var(--mu); font-size:12px; max-width:62ch; }
+  .ins .btn { all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border:1px solid var(--line); font-size:12px; white-space:nowrap; }
+  .ins .btn.pri { background:var(--tx); color:var(--bg); border-color:var(--tx); }
+  .ins .btn.sm { padding:3px 8px; font-size:11.5px; }
+  .ins .k { font-size:10.5px; color:var(--mu); letter-spacing:.08em; text-transform:uppercase; }
+  .ins .mark { display:inline-flex; width:14px; height:14px; align-items:center; justify-content:center; }
+  .ins .ok { color:var(--ok); } .ins .sig { color:var(--sig); } .ins .mu { color:var(--mu); }
+
+  /* A: Ledger */
+  .led table { width:100%; border-collapse:collapse; }
+  .led th { text-align:left; font-weight:400; padding:7px 14px; border-bottom:1px solid var(--line); }
+  .led td { padding:9px 14px; border-bottom:1px solid var(--line2); vertical-align:top; }
+  .led td.eff { color:var(--mu); max-width:300px; }
+  .led tr.need td:first-child { box-shadow:inset 2px 0 0 var(--sig); }
+  .led .sect { padding:10px 14px 6px; display:flex; justify-content:space-between; border-bottom:1px solid var(--line); border-top:1px solid var(--line); }
+
+  /* B: Split */
+  .spl { display:grid; grid-template-columns:260px 1fr; min-height:300px; }
+  .spl .list { border-right:1px solid var(--line); }
+  .spl .it { display:grid; grid-template-columns:16px 1fr auto; gap:8px; padding:9px 14px; border-bottom:1px solid var(--line2); align-items:center; }
+  .spl .it.sel { background:var(--pan); box-shadow:inset 2px 0 0 var(--tx); }
+  .spl .it small { display:block; color:var(--mu); font-size:11px; }
+  .spl .det { padding:16px 18px; }
+  .spl .det h5 { margin:0; font-size:15px; font-weight:600; }
+  .spl dl { display:grid; grid-template-columns:110px 1fr; gap:8px 14px; margin:14px 0; }
+  .spl dt { color:var(--mu); } .spl dd { margin:0; }
+  .spl .acts { display:flex; gap:8px; margin-top:6px; }
+  .spl .hist { margin-top:18px; border-top:1px solid var(--line); padding-top:10px; font-size:11.5px; }
+  .spl .hist div { display:grid; grid-template-columns:52px 1fr; gap:8px; padding:3px 0; color:var(--mu); }
+
+  /* C: Triage */
+  .tri .grp { padding:10px 14px 4px; display:flex; justify-content:space-between; align-items:center; }
+  .tri .tcard { margin:6px 14px; border:1px solid var(--line); padding:12px; display:grid; grid-template-columns:1fr auto; gap:6px 16px; }
+  .tri .tcard h5 { margin:0; font-size:13.5px; font-weight:600; display:flex; gap:8px; align-items:center; }
+  .tri .tcard p { margin:0; color:var(--mu); grid-column:1; }
+  .tri .tcard .cost { grid-column:1; font-size:11.5px; color:var(--mu); }
+  .tri .tcard .cost b { color:var(--tx); font-weight:400; }
+  .tri .tcard .act { grid-row:1 / span 3; grid-column:2; align-self:center; }
+  .tri .good { margin:4px 14px 12px; border-top:1px solid var(--line2); }
+  .tri .good div { display:grid; grid-template-columns:16px 1fr auto; gap:8px; padding:7px 0; border-bottom:1px solid var(--line2); }
+  .tri .proc { border-top:1px solid var(--line); padding:10px 14px; display:flex; justify-content:space-between; align-items:center; color:var(--mu); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path d="M4 20V13M9 20V8M14 20V11M19 20V4"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-optimizer" viewBox="0 0 24 24"><path d="M4.5 16a8 8 0 1 1 15 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.4"/></symbol>
+  <symbol id="i-gaming" viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4.4l-.5 3.9a2.4 2.4 0 0 1-4.3 1.1L14.5 15h-5l-1.7 2.4a2.4 2.4 0 0 1-4.3-1.1L3 12.4A4 4 0 0 1 7 8z"/><path d="M8 11v3M6.5 12.5h3"/></symbol>
+  <symbol id="i-overlay" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><rect x="13" y="6.5" width="5.5" height="4" rx="1"/><path d="M8 21h8"/></symbol>
+  <symbol id="i-temp" viewBox="0 0 24 24"><path d="M14 14.5V5a2 2 0 0 0-4 0v9.5a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></symbol>
+  <symbol id="i-general" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+</defs></svg>
+
+<h2>Optimizer page</h2>
+<p class="subtitle">Three ways to lay out the system checks, using the checks the app really runs. The values are examples, not readings from your PC: two checks are set to need action (Background recording on, Edge on the Intel graphics) so you can see how each layout handles that. Light/dark switches are in each window's corner, or flip them all at once.</p>
+
+<div class="pc-toolbar">
+  <span class="label" style="margin:0">Theme for all three</span>
+  <div class="pc-seg" role="group" aria-label="Theme"><button type="button" data-all="dark" aria-pressed="true"><svg class="pc-ico"><use href="#i-moon"/></svg>Dark</button><button type="button" data-all="light" aria-pressed="false"><svg class="pc-ico"><use href="#i-sun"/></svg>Light</button></div>
+</div>
+
+<template id="chrome">
+  <div class="bar1">
+    <div class="name"><svg class="pc-ico"><use href="#i-mark"/></svg>PC SPEC</div>
+    <nav class="tabs">
+      <div class="tab"><svg class="pc-ico"><use href="#i-overview"/></svg>Overview</div>
+      <div class="tab on"><svg class="pc-ico"><use href="#i-optimizer"/></svg>Optimizer</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-gaming"/></svg>Gaming</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-overlay"/></svg>Overlay</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-temp"/></svg>Alerts</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-general"/></svg>Settings</div>
+    </nav>
+    <div class="right"><span class="mono">2.0.13</span>
+      <div class="theme" role="group" aria-label="Theme"><button type="button" data-t="light" aria-pressed="false" title="Light"><svg class="pc-ico"><use href="#i-sun"/></svg></button><button type="button" data-t="dark" aria-pressed="true" title="Dark"><svg class="pc-ico"><use href="#i-moon"/></svg></button></div>
+    </div>
+  </div>
+</template>
+
+<!-- A -->
+<div class="pc-dir"><div class="option" data-choice="optimizer-a-ledger" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">A</div><h3>Ledger: one table, every setting on a line</h3></div>
+  <p class="pc-dir-note">Setting, current value, recommended value, what it costs you, and a button, all in one ruled table. Rows that need action get an amber edge. You can compare everything at a glance; the explanations are short to fit.</p>
+  <div class="ins led" data-theme="dark"><div data-chrome></div>
+    <div class="pagehd"><div><h4>Optimizer</h4><p>Nothing changes until you press a button. Every change is recorded and can be undone.</p></div><button class="btn pri" type="button">Apply 2 recommendations</button></div>
+    <table>
+      <thead><tr class="k"><th style="width:22px"></th><th>Setting</th><th>Now</th><th>Recommended</th><th>Effect and drawback</th><th></th></tr></thead>
+      <tbody>
+        <tr class="need"><td><span class="mark sig"><svg class="pc-ico"><use href="#i-warn"/></svg></span></td><td>Background recording</td><td class="mono">On</td><td class="mono">Off</td><td class="eff">Game Bar keeps encoding video, which costs FPS. You lose "record what happened".</td><td><button class="btn sm" type="button">Turn off</button></td></tr>
+        <tr class="need"><td><span class="mark sig"><svg class="pc-ico"><use href="#i-warn"/></svg></span></td><td>Edge graphics chip</td><td class="mono">Intel Iris Xe</td><td class="mono">RTX 5060</td><td class="eff">Browser games run on the NVIDIA GPU. Uses more battery. Edge must restart.</td><td><button class="btn sm" type="button">Switch</button></td></tr>
+        <tr><td><span class="mark ok"><svg class="pc-ico"><use href="#i-check"/></svg></span></td><td>Power mode</td><td class="mono">Balanced</td><td class="mono">Balanced</td><td class="eff">Gaming mode switches to Best performance while you play.</td><td></td></tr>
+        <tr><td><span class="mark ok"><svg class="pc-ico"><use href="#i-check"/></svg></span></td><td>Game Mode</td><td class="mono">On</td><td class="mono">On</td><td class="eff">Windows gives the game priority for CPU and GPU time.</td><td></td></tr>
+        <tr><td><span class="mark mu"><svg class="pc-ico"><use href="#i-info"/></svg></span></td><td>Power source</td><td class="mono">Plugged in</td><td class="mono">Plugged in</td><td class="eff">On battery, the GPU is held back to save power.</td><td></td></tr>
+        <tr><td><span class="mark mu"><svg class="pc-ico"><use href="#i-info"/></svg></span></td><td>Acer NitroSense</td><td class="mono">Installed</td><td class="mono">-</td><td class="eff">Fan and turbo modes are set in NitroSense.</td><td><button class="btn sm" type="button">Open</button></td></tr>
+      </tbody>
+    </table>
+    <div class="sect"><span class="k">What's using your PC</span><span class="k">Lower during games</span></div>
+    <table><tbody class="mono">
+      <tr><td>Microsoft Edge</td><td>18% CPU</td><td>41% GPU</td><td>3.2 GB</td><td class="mu">game</td></tr>
+      <tr><td>Discord</td><td>3% CPU</td><td>2% GPU</td><td>612 MB</td><td>On</td></tr>
+      <tr><td>python (training)</td><td>9% CPU</td><td>22% GPU</td><td>6.8 GB</td><td>Off</td></tr>
+    </tbody></table>
+  </div>
+</div></div>
+
+<!-- B -->
+<div class="pc-dir"><div class="option" data-choice="optimizer-b-split" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">B</div><h3>Split: list on the left, full explanation on the right</h3></div>
+  <p class="pc-dir-note">A short list of checks with status marks. Selecting one shows the whole story: what it does, the drawback, whether a restart is needed, and when the app last changed it. This explains the most, but takes one click per setting.</p>
+  <div class="ins" data-theme="dark"><div data-chrome></div>
+    <div class="pagehd"><div><h4>Optimizer</h4><p>2 of 6 checks need attention.</p></div><button class="btn pri" type="button">Apply 2 recommendations</button></div>
+    <div class="spl">
+      <div class="list">
+        <div class="it sel"><span class="mark sig"><svg class="pc-ico"><use href="#i-warn"/></svg></span><span>Background recording<small>On, recommended off</small></span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+        <div class="it"><span class="mark sig"><svg class="pc-ico"><use href="#i-warn"/></svg></span><span>Edge graphics chip<small>Intel Iris Xe</small></span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+        <div class="it"><span class="mark ok"><svg class="pc-ico"><use href="#i-check"/></svg></span><span>Power mode<small>Balanced</small></span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+        <div class="it"><span class="mark ok"><svg class="pc-ico"><use href="#i-check"/></svg></span><span>Game Mode<small>On</small></span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+        <div class="it"><span class="mark mu"><svg class="pc-ico"><use href="#i-info"/></svg></span><span>Power source<small>Plugged in</small></span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+        <div class="it"><span class="mark mu"><svg class="pc-ico"><use href="#i-info"/></svg></span><span>What's using your PC<small>3 apps you can lower</small></span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+      </div>
+      <div class="det">
+        <div class="k">Windows setting</div>
+        <h5>Background recording</h5>
+        <dl>
+          <dt>Now</dt><dd class="mono">On</dd>
+          <dt>Recommended</dt><dd class="mono">Off</dd>
+          <dt>What it does</dt><dd>Xbox Game Bar's "record what happened" keeps encoding the last few minutes of video all the time, which costs frames.</dd>
+          <dt>Drawback</dt><dd>You can't save a clip of something that already happened. Recording on demand still works.</dd>
+          <dt>Restart needed</dt><dd>No</dd>
+        </dl>
+        <div class="acts"><button class="btn pri" type="button">Turn off</button><button class="btn" type="button">Open Windows setting</button></div>
+        <div class="hist mono"><div class="k" style="display:block;padding-bottom:4px">History</div><div><span>Oct 23</span><span>Turned off by the app, then turned back on by you. Your choice is kept.</span></div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- C -->
+<div class="pc-dir"><div class="option" data-choice="optimizer-c-triage" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">C</div><h3>Triage: what needs action first, the rest folded away</h3></div>
+  <p class="pc-dir-note">Only the checks that need action get space, each with a plain sentence and its cost. Everything already fine collapses into one quiet list, and "What's using your PC" moves to its own view. This is the quickest to act on, and it shows the least when everything is fine.</p>
+  <div class="ins tri" data-theme="dark"><div data-chrome></div>
+    <div class="pagehd"><div><h4>Optimizer</h4><p>Two changes would help. Nothing changes until you press a button.</p></div><button class="btn pri" type="button">Apply both</button></div>
+    <div class="grp"><span class="k">Needs attention</span><span class="k mono">2</span></div>
+    <div class="tcard">
+      <h5><span class="mark sig"><svg class="pc-ico"><use href="#i-warn"/></svg></span>Turn off background recording</h5>
+      <p>Game Bar is recording the last few minutes all the time, which costs frames.</p>
+      <div class="cost">Cost: <b>you can't clip something after it happens</b> · no restart</div>
+      <div class="act"><button class="btn" type="button">Turn off</button></div>
+    </div>
+    <div class="tcard">
+      <h5><span class="mark sig"><svg class="pc-ico"><use href="#i-warn"/></svg></span>Run Edge on the RTX 5060</h5>
+      <p>Edge is drawing browser games with the Intel graphics.</p>
+      <div class="cost">Cost: <b>more battery use</b> · Edge restarts with your tabs</div>
+      <div class="act"><button class="btn" type="button">Switch</button></div>
+    </div>
+    <div class="grp" style="padding-top:14px"><span class="k">Already good</span><span class="k mono">4</span></div>
+    <div class="good">
+      <div><span class="mark ok"><svg class="pc-ico"><use href="#i-check"/></svg></span><span>Power mode: Balanced, Best performance during games</span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+      <div><span class="mark ok"><svg class="pc-ico"><use href="#i-check"/></svg></span><span>Game Mode is on</span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+      <div><span class="mark mu"><svg class="pc-ico"><use href="#i-info"/></svg></span><span>Plugged in</span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+      <div><span class="mark mu"><svg class="pc-ico"><use href="#i-info"/></svg></span><span>Fan and turbo modes are set in Acer NitroSense</span><svg class="pc-ico mu"><use href="#i-chev"/></svg></div>
+    </div>
+    <div class="proc"><span>What's using your PC: Edge, python, Discord and 41 more</span><button class="btn sm" type="button">Open</button></div>
+  </div>
+</div></div>
+
+<script>
+(function () {
+  var tpl = document.getElementById('chrome');
+  document.querySelectorAll('[data-chrome]').forEach(function (slot) { slot.replaceWith(tpl.content.cloneNode(true)); });
+  function setTheme(win, t) {
+    win.setAttribute('data-theme', t);
+    win.querySelectorAll('[data-t]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-t') === t)); });
+  }
+  document.querySelectorAll('.ins [data-t]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.stopPropagation(); setTheme(b.closest('.ins'), b.getAttribute('data-t')); });
+  });
+  document.querySelectorAll('[data-all]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.getAttribute('data-all');
+      document.querySelectorAll('[data-all]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      document.querySelectorAll('.ins').forEach(function (w) { setTheme(w, t); });
+    });
+  });
+})();
+</script>

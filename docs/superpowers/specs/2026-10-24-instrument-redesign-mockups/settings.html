@@ -1,0 +1,167 @@
+<style>
+  .pc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .pc-seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .pc-seg button { all:unset; cursor:pointer; padding:.4rem .8rem; font-size:.8rem; color:var(--text-secondary); display:inline-flex; gap:.4rem; align-items:center; }
+  .pc-seg button[aria-pressed="true"] { background:var(--bg-tertiary); color:var(--text-primary); }
+  .pc-ico { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .pc-dir { margin-bottom:2rem; }
+  .pc-dir .option { display:block; padding:1rem; overflow-x:auto; }
+  .pc-dir .option > .ins { min-width:760px; }
+  .pc-dir-head { display:flex; align-items:baseline; gap:.75rem; margin-bottom:.25rem; }
+  .pc-dir-head h3 { margin:0; }
+  .pc-dir-note { color:var(--text-secondary); font-size:.85rem; margin:0 0 .9rem 2.75rem; max-width:72ch; }
+
+  .ins { --bg:#0B0B0C; --pan:#111113; --line:#262629; --line2:#1A1A1C; --tx:#E9E9E6; --mu:#87878A; --fa:#57575B; --sig:#E8A33D; --ok:#9BCB58;
+         font-family:"Segoe UI",system-ui,sans-serif; font-size:12.5px; line-height:1.4; background:var(--bg); color:var(--tx); border:1px solid var(--line); cursor:default; font-variant-numeric:tabular-nums; }
+  .ins[data-theme="light"] { --bg:#F3F2EE; --pan:#FBFAF7; --line:#D9D7D0; --line2:#E6E4DD; --tx:#141414; --mu:#66665F; --fa:#9C9A92; --sig:#B4730F; --ok:#4E7A12; }
+  .ins .mono { font-family:"Cascadia Mono","Cascadia Code",Consolas,monospace; }
+  .ins .bar1 { display:flex; align-items:center; gap:18px; padding:0 14px; height:38px; border-bottom:1px solid var(--line); }
+  .ins .name { display:flex; align-items:center; gap:8px; font-weight:600; letter-spacing:.02em; font-size:12px; }
+  .ins .tabs { display:flex; gap:2px; height:100%; }
+  .ins .tab { display:flex; align-items:center; gap:7px; padding:0 10px; color:var(--mu); font-size:12px; border-bottom:2px solid transparent; }
+  .ins .tab.on { color:var(--tx); border-bottom-color:var(--tx); }
+  .ins .right { margin-left:auto; display:flex; align-items:center; gap:12px; font-size:11px; color:var(--mu); }
+  .ins .theme { display:inline-flex; border:1px solid var(--line); }
+  .ins .theme button { all:unset; cursor:pointer; padding:4px 6px; color:var(--mu); display:flex; }
+  .ins .theme button[aria-pressed="true"] { color:var(--tx); background:var(--pan); }
+  .ins .btn { all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border:1px solid var(--line); font-size:12px; white-space:nowrap; }
+  .ins .btn.pri { background:var(--tx); color:var(--bg); border-color:var(--tx); }
+  .ins .btn.sm { padding:3px 8px; font-size:11.5px; }
+  .ins .k { font-size:10.5px; color:var(--mu); letter-spacing:.08em; text-transform:uppercase; }
+  .ins .mu { color:var(--mu); } .ins .ok { color:var(--ok); }
+  .ins .sw { display:inline-block; width:30px; height:16px; border:1px solid var(--line); position:relative; background:var(--pan); flex-shrink:0; }
+  .ins .sw::after { content:""; position:absolute; top:2px; left:2px; width:10px; height:10px; background:var(--mu); }
+  .ins .sw.on { background:var(--tx); border-color:var(--tx); }
+  .ins .sw.on::after { left:16px; background:var(--bg); }
+  .ins .fld { display:inline-flex; align-items:center; border:1px solid var(--line); padding:3px 8px; gap:6px; background:var(--pan); }
+  .ins .segc { display:inline-flex; border:1px solid var(--line); }
+  .ins .segc span { padding:3px 10px; color:var(--mu); border-right:1px solid var(--line); display:inline-flex; gap:6px; align-items:center; }
+  .ins .segc span:last-child { border-right:0; }
+  .ins .segc span.on { background:var(--tx); color:var(--bg); }
+  .ins .key { display:inline-flex; gap:4px; }
+  .ins .key b { font-weight:400; border:1px solid var(--line); border-bottom-width:2px; padding:1px 6px; background:var(--pan); font-family:"Cascadia Mono",Consolas,monospace; font-size:11.5px; }
+  .ins .row { display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center; padding:9px 14px; border-bottom:1px solid var(--line2); }
+  .ins .row small { display:block; color:var(--mu); font-size:11.5px; margin-top:1px; max-width:64ch; }
+  .ins .sect { padding:12px 14px 6px; border-bottom:1px solid var(--line); }
+  .ins .pagehd { padding:14px 14px 12px; border-bottom:1px solid var(--line); }
+  .ins .pagehd h4 { margin:0; font-size:16px; font-weight:600; }
+  .ins .pagehd p { margin:3px 0 0; color:var(--mu); font-size:12px; }
+  .ins .led { display:inline-block; width:6px; height:6px; background:var(--ok); margin-right:6px; vertical-align:middle; }
+
+  /* B */
+  .sub { display:grid; grid-template-columns:180px 1fr; min-height:340px; }
+  .sub nav { border-right:1px solid var(--line); padding:8px 0; }
+  .sub nav div { padding:7px 14px; color:var(--mu); }
+  .sub nav div.on { color:var(--tx); background:var(--pan); box-shadow:inset 2px 0 0 var(--tx); }
+  /* C */
+  .stat { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--line); }
+  .stat > div { padding:12px 14px; border-right:1px solid var(--line); }
+  .stat > div:last-child { border-right:0; }
+  .stat .v { font-size:18px; margin-top:4px; }
+  .stat .s { color:var(--mu); font-size:11.5px; margin-top:2px; }
+  .stat .a { margin-top:10px; display:flex; gap:6px; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; }
+  .cols > div:first-child { border-right:1px solid var(--line); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path d="M4 20V13M9 20V8M14 20V11M19 20V4"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-optimizer" viewBox="0 0 24 24"><path d="M4.5 16a8 8 0 1 1 15 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.4"/></symbol>
+  <symbol id="i-gaming" viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4.4l-.5 3.9a2.4 2.4 0 0 1-4.3 1.1L14.5 15h-5l-1.7 2.4a2.4 2.4 0 0 1-4.3-1.1L3 12.4A4 4 0 0 1 7 8z"/><path d="M8 11v3M6.5 12.5h3"/></symbol>
+  <symbol id="i-overlay" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><rect x="13" y="6.5" width="5.5" height="4" rx="1"/><path d="M8 21h8"/></symbol>
+  <symbol id="i-temp" viewBox="0 0 24 24"><path d="M14 14.5V5a2 2 0 0 0-4 0v9.5a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></symbol>
+  <symbol id="i-general" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20v-4h-4"/></symbol>
+</defs></svg>
+
+<h2>Settings page</h2>
+<p class="subtitle">Everything from today's General page (startup, updates, shortcut, power and history, reset) plus a new Appearance choice: Light, Dark, or Match Windows. The sun/moon switch in the title bar stays as a quick toggle. Session data shown is an example.</p>
+
+<div class="pc-toolbar">
+  <span class="label" style="margin:0">Theme for all three</span>
+  <div class="pc-seg" role="group" aria-label="Theme"><button type="button" data-all="dark" aria-pressed="true"><svg class="pc-ico"><use href="#i-moon"/></svg>Dark</button><button type="button" data-all="light" aria-pressed="false"><svg class="pc-ico"><use href="#i-sun"/></svg>Light</button></div>
+</div>
+
+<template id="chrome">
+  <div class="bar1">
+    <div class="name"><svg class="pc-ico"><use href="#i-mark"/></svg>PC SPEC</div>
+    <nav class="tabs">
+      <div class="tab"><svg class="pc-ico"><use href="#i-overview"/></svg>Overview</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-optimizer"/></svg>Optimizer</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-gaming"/></svg>Gaming</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-overlay"/></svg>Overlay</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-temp"/></svg>Alerts</div>
+      <div class="tab on"><svg class="pc-ico"><use href="#i-general"/></svg>Settings</div>
+    </nav>
+    <div class="right"><span class="mono">2.0.13</span>
+      <div class="theme" role="group" aria-label="Theme"><button type="button" data-t="light" aria-pressed="false" title="Light"><svg class="pc-ico"><use href="#i-sun"/></svg></button><button type="button" data-t="dark" aria-pressed="true" title="Dark"><svg class="pc-ico"><use href="#i-moon"/></svg></button></div>
+    </div>
+  </div>
+</template>
+<template id="appearance"><div class="row"><div>Appearance<small>Applies to this window and the overlay.</small></div><span class="segc"><span><svg class="pc-ico"><use href="#i-sun"/></svg>Light</span><span class="on"><svg class="pc-ico"><use href="#i-moon"/></svg>Dark</span><span><svg class="pc-ico"><use href="#i-monitor"/></svg>Match Windows</span></span></div></template>
+<template id="shortcut"><div class="row"><div>Show or hide the overlay<small>Click the box and press the keys you want. If another app uses them, your current shortcut stays.</small></div><span class="key"><b>Alt</b><b>Shift</b><b>O</b></span></div></template>
+<template id="updates"><div class="row"><div><span class="led"></span>You have the latest version, <span class="mono">2.0.13</span><small>Checked today 19:19 on GitHub. Nothing personal is sent; updates install only when you choose, after the checksum is verified.</small></div><button class="btn sm" type="button"><svg class="pc-ico"><use href="#i-refresh"/></svg>Check now</button></div><div class="row"><div>Check automatically once a day</div><span class="sw on"></span></div></template>
+<template id="power"><div class="row"><div>Let the laptop GPU sleep<small>Don't wake the NVIDIA GPU just to read its sensors. The overlay shows it as sleeping.</small></div><span class="sw on"></span></div><div class="row"><div>Keep performance history<small>Graphs use the last 10 minutes in memory. Session summaries stay on this PC.</small></div><span class="sw on"></span></div><div class="row"><div>Keep session summaries for</div><span class="fld mono">30 days<svg class="pc-ico mu"><use href="#i-down"/></svg></span></div></template>
+<template id="reset"><div class="row" style="border-bottom:0"><div>Restore default settings<small>Your games list and lowered apps are kept. Windows settings the app changed aren't touched.</small></div><button class="btn sm" type="button">Restore defaults</button></div></template>
+
+<!-- A -->
+<div class="pc-dir"><div class="option" data-choice="settings-a-rows" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">A</div><h3>One long ledger, grouped by heading</h3></div>
+  <p class="pc-dir-note">Every setting on one scrolling page under small section headings, the same rows as the Optimizer and Gaming pages. Nothing is hidden, but it's long and you scroll to reach Reset.</p>
+  <div class="ins" data-theme="dark"><div data-chrome></div>
+    <div class="sect"><span class="k">Appearance</span></div><div data-appearance></div>
+    <div class="sect"><span class="k">Startup</span></div><div class="row"><div>Start with Windows<small>Runs at sign-in without administrator rights.</small></div><span class="sw on"></span></div>
+    <div class="sect"><span class="k">Updates</span></div><div data-updates></div>
+    <div class="sect"><span class="k">Shortcut</span></div><div data-shortcut></div>
+    <div class="sect"><span class="k">Power and history</span></div><div data-power></div>
+    <div class="sect"><span class="k">Reset</span></div><div data-reset></div>
+  </div>
+</div></div>
+
+<!-- B -->
+<div class="pc-dir"><div class="option" data-choice="settings-b-subnav" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">B</div><h3>Sections on the left, one at a time</h3></div>
+  <p class="pc-dir-note">A short list of sections on the left and only the chosen one on the right, like Windows Settings. Each section is short, but finding a setting means guessing its section first. Shown here: Updates.</p>
+  <div class="ins" data-theme="dark"><div data-chrome></div>
+    <div class="sub">
+      <nav><div>Appearance</div><div>Startup</div><div class="on">Updates</div><div>Shortcut</div><div>Power and history</div><div>Reset</div></nav>
+      <div>
+        <div class="pagehd"><h4>Updates</h4><p>From github.com/Kaeden-Martinson/OS-Optimization-and-Statistics</p></div>
+        <div data-updates></div>
+        <div class="row" style="border-bottom:0"><div>What's new in 2.0.13<small>Checks GitHub releases from this repository; release script fix.</small></div><button class="btn sm" type="button">Open notes</button></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- C -->
+<div class="pc-dir"><div class="option" data-choice="settings-c-status" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">C</div><h3>Status strip on top, settings in two columns</h3></div>
+  <p class="pc-dir-note">The three things you check (version, startup, theme) as a ruled status strip like the Overview readings, each with its action. The remaining settings sit in two columns underneath. Shortest page, and it matches the Overview.</p>
+  <div class="ins" data-theme="dark"><div data-chrome></div>
+    <div class="stat">
+      <div><div class="k">Version</div><div class="v mono">2.0.13</div><div class="s"><span class="led"></span>Latest · checked 19:19</div><div class="a"><button class="btn sm" type="button"><svg class="pc-ico"><use href="#i-refresh"/></svg>Check now</button></div></div>
+      <div><div class="k">Startup</div><div class="v">With Windows</div><div class="s">At sign-in, no admin rights</div><div class="a"><span class="sw on"></span></div></div>
+      <div><div class="k">Appearance</div><div class="v">Dark</div><div class="s">Window and overlay</div><div class="a"><span class="segc"><span><svg class="pc-ico"><use href="#i-sun"/></svg></span><span class="on"><svg class="pc-ico"><use href="#i-moon"/></svg></span><span><svg class="pc-ico"><use href="#i-monitor"/></svg></span></span></div></div>
+    </div>
+    <div class="cols">
+      <div><div class="sect"><span class="k">Shortcut and updates</span></div><div data-shortcut></div><div class="row"><div>Check for updates once a day</div><span class="sw on"></span></div></div>
+      <div><div class="sect"><span class="k">Power and history</span></div><div data-power></div></div>
+    </div>
+    <div style="border-top:1px solid var(--line)"><div data-reset></div></div>
+  </div>
+</div></div>
+
+<script>
+(function () {
+  ['chrome','appearance','shortcut','updates','power','reset'].forEach(function (k) { var tpl = document.getElementById(k); document.querySelectorAll('[data-' + k + ']').forEach(function (s) { var d = document.createElement('div'); d.appendChild(tpl.content.cloneNode(true)); s.replaceWith(d); }); });
+  function setTheme(win, t) { win.setAttribute('data-theme', t); win.querySelectorAll('[data-t]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-t') === t)); }); }
+  document.querySelectorAll('.ins [data-t]').forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); setTheme(b.closest('.ins'), b.getAttribute('data-t')); }); });
+  document.querySelectorAll('[data-all]').forEach(function (b) { b.addEventListener('click', function () { var t = b.getAttribute('data-all'); document.querySelectorAll('[data-all]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); document.querySelectorAll('.ins').forEach(function (w) { setTheme(w, t); }); }); });
+})();
+</script>

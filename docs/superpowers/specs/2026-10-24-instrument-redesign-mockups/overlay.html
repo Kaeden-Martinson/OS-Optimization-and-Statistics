@@ -1,0 +1,181 @@
+<style>
+  .pc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .pc-seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .pc-seg button { all:unset; cursor:pointer; padding:.4rem .8rem; font-size:.8rem; color:var(--text-secondary); display:inline-flex; gap:.4rem; align-items:center; }
+  .pc-seg button[aria-pressed="true"] { background:var(--bg-tertiary); color:var(--text-primary); }
+  .pc-ico { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .pc-dir { margin-bottom:2rem; }
+  .pc-dir .option { display:block; padding:1rem; overflow-x:auto; }
+  .pc-dir .option > .ins, .pc-dir .option > .pc-win { min-width:760px; }
+  .pc-dir-head { display:flex; align-items:baseline; gap:.75rem; margin-bottom:.25rem; }
+  .pc-dir-head h3 { margin:0; }
+  .pc-dir-note { color:var(--text-secondary); font-size:.85rem; margin:0 0 .9rem 2.75rem; max-width:72ch; }
+  .scenes { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:800px){ .scenes { grid-template-columns:1fr; } }
+  .scene { position:relative; aspect-ratio:16/9; border-radius:8px; overflow:hidden; border:1px solid var(--border); cursor:default; }
+  .scene svg.bg { position:absolute; inset:0; width:100%; height:100%; }
+  .scene .cap { position:absolute; left:10px; bottom:8px; font-size:11px; color:rgba(255,255,255,.75); font-family:"Segoe UI",sans-serif; }
+  .scene.snow .cap { color:rgba(20,30,40,.7); }
+
+  /* Overlay tokens: Instrument */
+  .ov { --o-bg:rgba(11,11,12,.86); --o-line:rgba(255,255,255,.14); --o-line2:rgba(255,255,255,.08); --o-tx:#ECECE8; --o-mu:#9A9A9C; --o-sig:#E8A33D;
+        position:absolute; top:10px; right:10px; font-family:"Segoe UI",sans-serif; color:var(--o-tx); font-variant-numeric:tabular-nums; }
+  .ov[data-theme="light"] { --o-bg:rgba(250,249,246,.92); --o-line:rgba(0,0,0,.16); --o-line2:rgba(0,0,0,.08); --o-tx:#141414; --o-mu:#5F5F59; --o-sig:#A8690A; }
+  .ov .mono { font-family:"Cascadia Mono","Cascadia Code",Consolas,monospace; }
+
+  /* A: Panel */
+  .ovA { background:var(--o-bg); border:1px solid var(--o-line); width:178px; }
+  .ovA .hd { display:flex; justify-content:space-between; padding:5px 8px; border-bottom:1px solid var(--o-line); font-size:9px; letter-spacing:.1em; color:var(--o-mu); }
+  .ovA .fps { padding:6px 8px 4px; display:flex; align-items:baseline; gap:6px; }
+  .ovA .fps b { font-size:30px; font-weight:400; line-height:1; letter-spacing:-.02em; }
+  .ovA .fps span { font-size:10px; color:var(--o-mu); }
+  .ovA .sub { padding:0 8px 6px; font-size:10px; color:var(--o-mu); display:flex; justify-content:space-between; }
+  .ovA .ft { display:block; width:100%; height:22px; border-top:1px solid var(--o-line2); border-bottom:1px solid var(--o-line); }
+  .ovA .rows { padding:3px 0; }
+  .ovA .r { display:grid; grid-template-columns:30px 1fr auto; align-items:center; gap:6px; padding:3px 8px; font-size:11px; }
+  .ovA .r .k { font-size:9px; letter-spacing:.1em; color:var(--o-mu); }
+  .ovA .r .m { color:var(--o-mu); font-size:10px; }
+  .ovA .r .v.sig { color:var(--o-sig); }
+
+  /* B: Strip */
+  .ovB { background:var(--o-bg); border:1px solid var(--o-line); display:flex; align-items:stretch; font-size:11.5px; }
+  .ovB .c { padding:5px 9px; border-right:1px solid var(--o-line2); display:flex; align-items:baseline; gap:5px; white-space:nowrap; }
+  .ovB .c:last-child { border-right:0; }
+  .ovB .k { font-size:9px; letter-spacing:.1em; color:var(--o-mu); }
+  .ovB .big { font-size:17px; line-height:1; }
+  .ovB .u { color:var(--o-mu); font-size:10px; }
+  .ovB .sig { color:var(--o-sig); }
+
+  /* C: Bare */
+  .ovC { text-align:right; text-shadow:0 1px 2px rgba(0,0,0,.65), 0 0 1px rgba(0,0,0,.9); }
+  .ov[data-theme="light"].ovC { text-shadow:0 1px 2px rgba(255,255,255,.7), 0 0 1px rgba(255,255,255,.9); }
+  .ovC .fps { font-size:34px; line-height:1; letter-spacing:-.02em; }
+  .ovC .fps span { font-size:11px; color:var(--o-mu); margin-left:4px; letter-spacing:.08em; }
+  .ovC .l { font-size:11.5px; margin-top:3px; }
+  .ovC .l .k { color:var(--o-mu); font-size:9.5px; letter-spacing:.1em; margin-right:6px; }
+  .ovC .l .sig { color:var(--o-sig); }
+  .ovC .rule { height:1px; background:var(--o-line); margin:5px 0 4px auto; width:120px; box-shadow:none; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <!-- game backdrops (stand-ins for a real game frame) -->
+  <symbol id="bg-night" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+    <rect width="320" height="180" fill="#1d2a1f"/><rect y="0" width="320" height="70" fill="#162019"/>
+    <g fill="#24382a"><circle cx="40" cy="120" r="28"/><circle cx="250" cy="140" r="34"/><circle cx="150" cy="60" r="18"/><circle cx="300" cy="40" r="22"/></g>
+    <g fill="#0f1711"><circle cx="40" cy="120" r="10"/><circle cx="250" cy="140" r="12"/></g>
+    <circle cx="160" cy="105" r="9" fill="#c9a36b"/><rect x="152" y="112" width="16" height="4" fill="#7a5b33"/>
+    <g fill="#3b5a40"><rect x="90" y="150" width="14" height="14" rx="2"/><rect x="200" y="80" width="10" height="10" rx="2"/></g>
+  </symbol>
+  <symbol id="bg-snow" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+    <rect width="320" height="180" fill="#e9eff3"/><rect y="0" width="320" height="60" fill="#f6f9fb"/>
+    <g fill="#d3dee6"><circle cx="60" cy="130" r="26"/><circle cx="270" cy="120" r="30"/><circle cx="190" cy="50" r="16"/></g>
+    <g fill="#ffffff"><circle cx="60" cy="126" r="12"/><circle cx="270" cy="116" r="14"/></g>
+    <circle cx="160" cy="105" r="9" fill="#c9a36b"/><rect x="152" y="112" width="16" height="4" fill="#7a5b33"/>
+  </symbol>
+</defs></svg>
+
+<h2>In-game overlay</h2>
+<p class="subtitle">The overlay that sits top-right while you play, in the Instrument style. Each option is shown over a dark scene and a bright snow scene (Starve.io has both), because that's where readability breaks. The amber CPU value is the warning color doing its job.</p>
+
+<div class="pc-toolbar">
+  <span class="label" style="margin:0">Overlay theme</span>
+  <div class="pc-seg" role="group" aria-label="Overlay theme">
+    <button type="button" data-all="dark" aria-pressed="true"><svg class="pc-ico"><use href="#i-moon"/></svg>Dark</button>
+    <button type="button" data-all="light" aria-pressed="false"><svg class="pc-ico"><use href="#i-sun"/></svg>Light</button>
+  </div>
+</div>
+
+<div class="pc-dir"><div class="option" data-choice="overlay-a-panel" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">A</div><h3>Panel: the full readout with a frame-time trace</h3></div>
+  <p class="pc-dir-note">A small ruled box like the app's grid. Large FPS, then a live frame-time trace (spikes show as stutter), then GPU, CPU and memory rows. It shows the most, and it's the tallest.</p>
+  <div class="scenes">
+    <div class="scene"><svg class="bg"><use href="#bg-night"/></svg><span class="cap">Dark scene</span>
+      <div class="ov ovA" data-theme="dark">
+        <div class="hd mono"><span>PC SPEC</span><span>DXGI</span></div>
+        <div class="fps"><b class="mono">144</b><span>FPS</span></div>
+        <div class="sub mono"><span>6.9 ms</span><span>1% 118</span></div>
+        <svg class="ft" viewBox="0 0 178 22" preserveAspectRatio="none"><path d="M0 14 L10 13 L20 14 L30 12 L40 13 L50 14 L60 13 L70 12 L80 13 L90 4 L95 13 L105 14 L115 13 L125 12 L135 14 L145 13 L155 12 L165 13 L178 13" fill="none" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>
+        <div class="rows mono">
+          <div class="r"><span class="k">GPU</span><span class="m">64%  62W</span><span class="v">71°</span></div>
+          <div class="r"><span class="k">CPU</span><span class="m">31%  4.6G</span><span class="v sig">84°</span></div>
+          <div class="r"><span class="k">MEM</span><span class="m">VRAM 5.1</span><span class="v">22.6G</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="scene snow"><svg class="bg"><use href="#bg-snow"/></svg><span class="cap">Bright scene</span>
+      <div class="ov ovA" data-theme="dark">
+        <div class="hd mono"><span>PC SPEC</span><span>DXGI</span></div>
+        <div class="fps"><b class="mono">144</b><span>FPS</span></div>
+        <div class="sub mono"><span>6.9 ms</span><span>1% 118</span></div>
+        <svg class="ft" viewBox="0 0 178 22" preserveAspectRatio="none"><path d="M0 14 L10 13 L20 14 L30 12 L40 13 L50 14 L60 13 L70 12 L80 13 L90 4 L95 13 L105 14 L115 13 L125 12 L135 14 L145 13 L155 12 L165 13 L178 13" fill="none" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>
+        <div class="rows mono">
+          <div class="r"><span class="k">GPU</span><span class="m">64%  62W</span><span class="v">71°</span></div>
+          <div class="r"><span class="k">CPU</span><span class="m">31%  4.6G</span><span class="v sig">84°</span></div>
+          <div class="r"><span class="k">MEM</span><span class="m">VRAM 5.1</span><span class="v">22.6G</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<div class="pc-dir"><div class="option" data-choice="overlay-b-strip" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">B</div><h3>Strip: one line across the top</h3></div>
+  <p class="pc-dir-note">Everything in a single ruled row, like a status bar. It barely covers the game, and your eye only has to go to one place. It has no trace, and it's wide.</p>
+  <div class="scenes">
+    <div class="scene"><svg class="bg"><use href="#bg-night"/></svg><span class="cap">Dark scene</span>
+      <div class="ov ovB mono" data-theme="dark">
+        <div class="c"><span class="big">144</span><span class="u">FPS</span></div>
+        <div class="c"><span>6.9</span><span class="u">ms</span></div>
+        <div class="c"><span class="k">GPU</span><span>71°</span><span class="u">64%</span></div>
+        <div class="c"><span class="k">CPU</span><span class="sig">84°</span><span class="u">31%</span></div>
+      </div>
+    </div>
+    <div class="scene snow"><svg class="bg"><use href="#bg-snow"/></svg><span class="cap">Bright scene</span>
+      <div class="ov ovB mono" data-theme="dark">
+        <div class="c"><span class="big">144</span><span class="u">FPS</span></div>
+        <div class="c"><span>6.9</span><span class="u">ms</span></div>
+        <div class="c"><span class="k">GPU</span><span>71°</span><span class="u">64%</span></div>
+        <div class="c"><span class="k">CPU</span><span class="sig">84°</span><span class="u">31%</span></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<div class="pc-dir"><div class="option" data-choice="overlay-c-bare" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">C</div><h3>Bare: numbers only, no box</h3></div>
+  <p class="pc-dir-note">Right-aligned numbers floating on the game with a thin outline for contrast, like a camera viewfinder. It's the least intrusive, but on busy or bright scenes it is the hardest to read. Compare the two scenes.</p>
+  <div class="scenes">
+    <div class="scene"><svg class="bg"><use href="#bg-night"/></svg><span class="cap">Dark scene</span>
+      <div class="ov ovC mono" data-theme="dark">
+        <div class="fps">144<span>FPS</span></div>
+        <div class="l"><span class="k">FT</span>6.9 ms <span class="k" style="margin-left:6px">1%</span>118</div>
+        <div class="rule"></div>
+        <div class="l"><span class="k">GPU</span>71°  64%</div>
+        <div class="l"><span class="k">CPU</span><span class="sig">84°</span>  31%</div>
+      </div>
+    </div>
+    <div class="scene snow"><svg class="bg"><use href="#bg-snow"/></svg><span class="cap">Bright scene</span>
+      <div class="ov ovC mono" data-theme="dark">
+        <div class="fps">144<span>FPS</span></div>
+        <div class="l"><span class="k">FT</span>6.9 ms <span class="k" style="margin-left:6px">1%</span>118</div>
+        <div class="rule"></div>
+        <div class="l"><span class="k">GPU</span>71°  64%</div>
+        <div class="l"><span class="k">CPU</span><span class="sig">84°</span>  31%</div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<script>
+(function () {
+  document.querySelectorAll('[data-all]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.getAttribute('data-all');
+      document.querySelectorAll('[data-all]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      document.querySelectorAll('.ov').forEach(function (o) { o.setAttribute('data-theme', t); });
+    });
+  });
+})();
+</script>

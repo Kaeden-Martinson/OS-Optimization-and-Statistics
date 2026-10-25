@@ -1,0 +1,328 @@
+<style>
+  /* ---------- shared mock scaffolding ---------- */
+  .pc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .pc-seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .pc-seg button { all:unset; cursor:pointer; padding:.4rem .8rem; font-size:.8rem; color:var(--text-secondary); display:inline-flex; gap:.4rem; align-items:center; }
+  .pc-seg button[aria-pressed="true"] { background:var(--bg-tertiary); color:var(--text-primary); }
+  .pc-seg svg { width:14px; height:14px; }
+  .pc-dir { margin-bottom:2.25rem; }
+  .pc-dir .option { display:block; padding:1rem; overflow-x:auto; }
+  .pc-dir .option > .ins, .pc-dir .option > .pc-win { min-width:760px; }
+  .pc-dir-head { display:flex; align-items:baseline; gap:.75rem; margin-bottom:.25rem; }
+  .pc-dir-head .letter { display:inline-flex; }
+  .pc-dir-head h3 { margin:0; }
+  .pc-dir-note { color:var(--text-secondary); font-size:.85rem; margin:0 0 .9rem 2.75rem; max-width:70ch; }
+  .pc-ico { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .pc-win { border-radius:10px; overflow:hidden; font-size:13px; line-height:1.35; cursor:default; }
+  .pc-win * { box-sizing:border-box; }
+  .pc-num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- A: Refined Green ---------- */
+  .dA { --bg:#0E1013; --side:#121418; --card:#16191D; --line:#23272D; --tx:#EEF0F2; --mu:#8D959D; --fa:#5D646C; --ac:#76B900; --acs:rgba(118,185,0,.12); --warn:#E5A93B; --hot:#F0574F;
+        font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--tx); border:1px solid var(--line); display:grid; grid-template-columns:188px 1fr; }
+  .dA[data-theme="light"] { --bg:#F6F6F4; --side:#EEEEEB; --card:#FFFFFF; --line:#E1E1DC; --tx:#17191C; --mu:#636A71; --fa:#9A9FA4; --ac:#4F7F00; --acs:rgba(79,127,0,.10); --warn:#B07614; --hot:#C8372F; }
+  .dA .side { background:var(--side); border-right:1px solid var(--line); padding:14px 10px; display:flex; flex-direction:column; gap:2px; }
+  .dA .brandrow { display:flex; align-items:center; gap:8px; padding:4px 8px 16px; font-weight:600; font-size:13.5px; }
+  .dA .brandrow .mark { width:18px; height:18px; color:var(--ac); }
+  .dA .nav { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; color:var(--mu); position:relative; }
+  .dA .nav.on { color:var(--tx); background:var(--acs); }
+  .dA .nav.on::before { content:""; position:absolute; left:0; top:8px; bottom:8px; width:2px; border-radius:2px; background:var(--ac); }
+  .dA .nav.on .pc-ico { color:var(--ac); }
+  .dA .side .foot { margin-top:auto; padding:8px 10px; font-size:11px; color:var(--fa); }
+  .dA .main { padding:18px 20px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .dA .top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .dA h4 { font-family:"Segoe UI Variable Display","Segoe UI",sans-serif; font-size:20px; font-weight:600; margin:0; letter-spacing:-.01em; }
+  .dA .sub { color:var(--mu); font-size:12px; margin-top:2px; }
+  .dA .theme { display:inline-flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+  .dA .theme button { all:unset; cursor:pointer; padding:5px 7px; color:var(--mu); display:flex; }
+  .dA .theme button[aria-pressed="true"] { background:var(--card); color:var(--tx); }
+  .dA .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .dA .tile { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:11px 12px; }
+  .dA .lab { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--mu); font-weight:600; }
+  .dA .big { font-family:"Segoe UI Variable Display","Segoe UI",sans-serif; font-size:26px; font-weight:600; margin-top:4px; }
+  .dA .big small { font-size:12px; color:var(--mu); font-weight:400; margin-left:2px; }
+  .dA .meta { font-size:11.5px; color:var(--mu); margin-top:2px; }
+  .dA .bar { height:3px; background:var(--line); border-radius:2px; margin-top:8px; overflow:hidden; }
+  .dA .bar i { display:block; height:100%; background:var(--ac); border-radius:2px; }
+  .dA .bar i.w { background:var(--warn); }
+  .dA .row2 { display:grid; grid-template-columns:1.6fr 1fr; gap:10px; }
+  .dA .panel { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; }
+  .dA .phead { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .dA .phead span { font-weight:600; font-size:12.5px; }
+  .dA .phead em { font-style:normal; font-size:11px; color:var(--mu); }
+  .dA .chart { width:100%; height:92px; display:block; }
+  .dA .state { display:flex; align-items:center; gap:8px; font-size:12.5px; }
+  .dA .dot { width:7px; height:7px; border-radius:50%; background:var(--ac); box-shadow:0 0 0 3px var(--acs); }
+  .dA dl { display:grid; grid-template-columns:auto 1fr; gap:5px 14px; margin:10px 0 0; font-size:12px; }
+  .dA dt { color:var(--mu); } .dA dd { margin:0; text-align:right; }
+  .dA .btn { all:unset; cursor:pointer; margin-top:12px; display:inline-flex; gap:6px; align-items:center; font-size:12px; padding:6px 10px; border:1px solid var(--line); border-radius:6px; }
+
+  /* ---------- B: Instrument ---------- */
+  .dB { --bg:#0B0B0C; --pan:#111113; --line:#262629; --line2:#1A1A1C; --tx:#E9E9E6; --mu:#87878A; --fa:#57575B; --sig:#E8A33D; --ok:#9BCB58;
+        font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--tx); border:1px solid var(--line); }
+  .dB[data-theme="light"] { --bg:#F3F2EE; --pan:#FBFAF7; --line:#D9D7D0; --line2:#E6E4DD; --tx:#141414; --mu:#66665F; --fa:#9C9A92; --sig:#B4730F; --ok:#4E7A12; }
+  .dB .mono { font-family:"Cascadia Mono","Cascadia Code",Consolas,monospace; }
+  .dB .bar1 { display:flex; align-items:center; gap:18px; padding:0 14px; height:40px; border-bottom:1px solid var(--line); }
+  .dB .bar1 .name { display:flex; align-items:center; gap:8px; font-weight:600; letter-spacing:.02em; font-size:12.5px; }
+  .dB .tabs { display:flex; gap:2px; height:100%; }
+  .dB .tab { display:flex; align-items:center; gap:7px; padding:0 10px; color:var(--mu); font-size:12px; border-bottom:2px solid transparent; }
+  .dB .tab.on { color:var(--tx); border-bottom-color:var(--tx); }
+  .dB .bar1 .right { margin-left:auto; display:flex; align-items:center; gap:12px; font-size:11px; color:var(--mu); }
+  .dB .theme { display:inline-flex; border:1px solid var(--line); }
+  .dB .theme button { all:unset; cursor:pointer; padding:4px 6px; color:var(--mu); display:flex; }
+  .dB .theme button[aria-pressed="true"] { color:var(--tx); background:var(--pan); }
+  .dB .grid { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--line); }
+  .dB .cell { padding:12px 14px; border-right:1px solid var(--line); }
+  .dB .cell:last-child { border-right:0; }
+  .dB .k { font-size:10.5px; color:var(--mu); letter-spacing:.08em; text-transform:uppercase; display:flex; justify-content:space-between; }
+  .dB .v { font-size:30px; line-height:1.1; margin-top:6px; letter-spacing:-.02em; }
+  .dB .v small { font-size:12px; color:var(--mu); margin-left:3px; letter-spacing:0; }
+  .dB .v.sig { color:var(--sig); }
+  .dB .s { font-size:11px; color:var(--mu); margin-top:4px; }
+  .dB .ticks { display:flex; gap:2px; margin-top:8px; }
+  .dB .ticks i { flex:1; height:6px; background:var(--line2); }
+  .dB .ticks i.f { background:var(--tx); } .dB .ticks i.s2 { background:var(--sig); }
+  .dB .lower { display:grid; grid-template-columns:1.7fr 1fr; }
+  .dB .chartbox { padding:12px 14px; border-right:1px solid var(--line); }
+  .dB .ch { display:flex; justify-content:space-between; font-size:10.5px; color:var(--mu); letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
+  .dB .chart { width:100%; height:110px; display:block; }
+  .dB .log { padding:12px 14px; font-size:11.5px; }
+  .dB .log .ln { display:grid; grid-template-columns:52px 1fr; gap:8px; padding:5px 0; border-bottom:1px dashed var(--line2); }
+  .dB .log .ln:last-child { border-bottom:0; }
+  .dB .log .t { color:var(--fa); }
+  .dB .log b { font-weight:600; }
+  .dB .log .warn { color:var(--sig); }
+  .dB .status { display:flex; gap:16px; padding:8px 14px; border-top:1px solid var(--line); font-size:11px; color:var(--mu); }
+  .dB .status span { display:flex; gap:6px; align-items:center; }
+  .dB .led { width:6px; height:6px; background:var(--ok); }
+
+  /* ---------- C: Calm Studio ---------- */
+  .dC { --bg:#111315; --rail:#0C0D0F; --tx:#F1F1EF; --mu:#8F949A; --fa:#5B6066; --line:#22252A; --ac:#5FBF8F; --acs:rgba(95,191,143,.14); --warn:#E3A13F;
+        font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--tx); border:1px solid var(--line); display:grid; grid-template-columns:56px 1fr; }
+  .dC[data-theme="light"] { --bg:#FBFBFA; --rail:#F0F0EE; --tx:#121416; --mu:#5F656B; --fa:#A1A5AA; --line:#E4E4E1; --ac:#23845A; --acs:rgba(35,132,90,.10); --warn:#A86C10; }
+  .dC .rail { background:var(--rail); border-right:1px solid var(--line); display:flex; flex-direction:column; align-items:center; padding:14px 0; gap:6px; }
+  .dC .rail .r { width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:8px; color:var(--mu); }
+  .dC .rail .r.on { background:var(--acs); color:var(--ac); }
+  .dC .rail .mark { color:var(--ac); margin-bottom:12px; }
+  .dC .rail .grow { flex:1; }
+  .dC .main { padding:22px 26px; display:grid; grid-template-columns:1.25fr 1fr; gap:26px; }
+  .dC .hero .lab { font-size:12px; color:var(--mu); display:flex; align-items:center; gap:8px; }
+  .dC .pill { font-size:11px; color:var(--ac); border:1px solid var(--ac); border-radius:999px; padding:1px 8px; }
+  .dC .huge { font-size:76px; font-weight:600; line-height:1; letter-spacing:-.03em; margin-top:8px; }
+  .dC .huge small { font-size:16px; font-weight:400; color:var(--mu); letter-spacing:0; margin-left:6px; }
+  .dC .heroMeta { display:flex; gap:22px; margin-top:10px; font-size:12.5px; color:var(--mu); }
+  .dC .heroMeta b { color:var(--tx); font-weight:600; }
+  .dC .chart { width:100%; height:96px; display:block; margin-top:14px; }
+  .dC .game { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:12.5px; color:var(--mu); display:flex; justify-content:space-between; align-items:center; }
+  .dC .game b { color:var(--tx); font-weight:600; }
+  .dC .side { display:flex; flex-direction:column; }
+  .dC .sideTop { display:flex; justify-content:flex-end; margin-bottom:6px; }
+  .dC .theme { display:inline-flex; gap:2px; background:var(--rail); border:1px solid var(--line); border-radius:999px; padding:2px; }
+  .dC .theme button { all:unset; cursor:pointer; padding:4px 7px; border-radius:999px; color:var(--mu); display:flex; }
+  .dC .theme button[aria-pressed="true"] { background:var(--bg); color:var(--tx); }
+  .dC .m { display:grid; grid-template-columns:1fr auto; align-items:baseline; padding:12px 0; border-bottom:1px solid var(--line); }
+  .dC .m .n { font-size:13px; } .dC .m .n span { display:block; font-size:11.5px; color:var(--mu); font-family:"Segoe UI",sans-serif; }
+  .dC .m .val { font-size:24px; font-weight:600; letter-spacing:-.01em; }
+  .dC .m .val small { font-size:12px; color:var(--mu); font-weight:400; margin-left:2px; }
+  .dC .m .val.w { color:var(--warn); }
+  .dC .m .track { grid-column:1 / -1; height:2px; background:var(--line); margin-top:9px; }
+  .dC .m .track i { display:block; height:100%; background:var(--tx); opacity:.75; }
+  .dC .m .track i.w { background:var(--warn); opacity:1; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-mark" viewBox="0 0 24 24"><path d="M4 20V13M9 20V8M14 20V11M19 20V4"/></symbol>
+    <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-optimizer" viewBox="0 0 24 24"><path d="M4.5 16a8 8 0 1 1 15 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.4"/></symbol>
+    <symbol id="i-gaming" viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4.4l-.5 3.9a2.4 2.4 0 0 1-4.3 1.1L14.5 15h-5l-1.7 2.4a2.4 2.4 0 0 1-4.3-1.1L3 12.4A4 4 0 0 1 7 8z"/><path d="M8 11v3M6.5 12.5h3"/><path d="M16 12h.01M17.5 13.5h.01"/></symbol>
+    <symbol id="i-overlay" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><rect x="13" y="6.5" width="5.5" height="4" rx="1"/><path d="M8 21h8"/></symbol>
+    <symbol id="i-temp" viewBox="0 0 24 24"><path d="M14 14.5V5a2 2 0 0 0-4 0v9.5a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></symbol>
+    <symbol id="i-general" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+    <symbol id="i-diag" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6h4"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  </defs>
+</svg>
+
+<h2>Pick a visual direction</h2>
+<p class="subtitle">The same Overview page in three directions, with real readings from your PC. Each window has its own light/dark switch in its corner, or use the switch on the right to flip all three. Click a direction to choose it; you can also tell me what to mix (for example, "B's numbers with A's sidebar").</p>
+
+<div class="pc-toolbar">
+  <span class="label" style="margin:0">Everything below is a static mockup</span>
+  <div class="pc-seg" role="group" aria-label="Theme for all mockups">
+    <button type="button" data-all="dark" aria-pressed="true"><svg class="pc-ico"><use href="#i-moon"/></svg>All dark</button>
+    <button type="button" data-all="light" aria-pressed="false"><svg class="pc-ico"><use href="#i-sun"/></svg>All light</button>
+  </div>
+</div>
+
+<!-- ===================== A ===================== -->
+<div class="pc-dir">
+  <div class="option" data-choice="a-refined-green" onclick="toggleSelect(this)">
+    <div class="pc-dir-head"><div class="letter">A</div><h3>Refined Green: the current app, done properly</h3></div>
+    <p class="pc-dir-note">Keeps the NVIDIA green, but only on live data and the active page. Hairline borders, no shadows, labeled sidebar. The least risky change, and the closest to what you asked for originally.</p>
+
+    <div class="pc-win dA" data-theme="dark">
+      <aside class="side">
+        <div class="brandrow"><svg class="pc-ico mark"><use href="#i-mark"/></svg>PC Spec</div>
+        <div class="nav on"><svg class="pc-ico"><use href="#i-overview"/></svg>Overview</div>
+        <div class="nav"><svg class="pc-ico"><use href="#i-optimizer"/></svg>Optimizer</div>
+        <div class="nav"><svg class="pc-ico"><use href="#i-gaming"/></svg>Gaming</div>
+        <div class="nav"><svg class="pc-ico"><use href="#i-overlay"/></svg>Overlay</div>
+        <div class="nav"><svg class="pc-ico"><use href="#i-temp"/></svg>Temperatures</div>
+        <div class="nav"><svg class="pc-ico"><use href="#i-general"/></svg>General</div>
+        <div class="nav"><svg class="pc-ico"><use href="#i-diag"/></svg>Diagnostics</div>
+        <div class="foot pc-num">Version 2.0.13</div>
+      </aside>
+      <section class="main">
+        <div class="top">
+          <div><h4>Overview</h4><div class="sub">Starve.io is running. Gaming mode switched on 4 minutes ago.</div></div>
+          <div class="theme" role="group" aria-label="Theme">
+            <button type="button" data-t="light" aria-pressed="false" title="Light"><svg class="pc-ico"><use href="#i-sun"/></svg></button>
+            <button type="button" data-t="dark" aria-pressed="true" title="Dark"><svg class="pc-ico"><use href="#i-moon"/></svg></button>
+          </div>
+        </div>
+        <div class="tiles pc-num">
+          <div class="tile"><div class="lab">Frame rate</div><div class="big">144<small>fps</small></div><div class="meta">6.9 ms · 1% low 118</div><div class="bar"><i style="width:72%"></i></div></div>
+          <div class="tile"><div class="lab">RTX 5060 Laptop</div><div class="big">71<small>°C</small></div><div class="meta">64% busy · 62 W</div><div class="bar"><i style="width:64%"></i></div></div>
+          <div class="tile"><div class="lab">i9-13900H</div><div class="big">84<small>°C</small></div><div class="meta">31% busy · 4.6 GHz</div><div class="bar"><i class="w" style="width:84%"></i></div></div>
+          <div class="tile"><div class="lab">Memory</div><div class="big">22.6<small>GB</small></div><div class="meta">of 64 GB · VRAM 5.1 / 8</div><div class="bar"><i style="width:35%"></i></div></div>
+        </div>
+        <div class="row2">
+          <div class="panel">
+            <div class="phead"><span>Frame rate, last 10 minutes</span><em class="pc-num">avg 141 · low 96</em></div>
+            <svg class="chart" viewBox="0 0 400 92" preserveAspectRatio="none">
+              <path d="M0 30H400M0 61H400" stroke="var(--line)" stroke-width="1" fill="none"/>
+              <path d="M0 40 L20 38 L40 42 L60 35 L80 37 L100 33 L120 39 L140 36 L160 70 L170 44 L190 38 L210 36 L230 40 L250 34 L270 37 L290 35 L310 41 L330 36 L350 34 L370 38 L400 36 L400 92 L0 92Z" fill="var(--acs)"/>
+              <path d="M0 40 L20 38 L40 42 L60 35 L80 37 L100 33 L120 39 L140 36 L160 70 L170 44 L190 38 L210 36 L230 40 L250 34 L270 37 L290 35 L310 41 L330 36 L350 34 L370 38 L400 36" fill="none" stroke="var(--ac)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+            </svg>
+          </div>
+          <div class="panel">
+            <div class="phead"><span>Gaming mode</span></div>
+            <div class="state"><span class="dot"></span>On for Starve.io in Edge</div>
+            <dl class="pc-num"><dt>Power mode</dt><dd>Best performance</dd><dt>Game Boost</dt><dd>Edge, 2 helpers</dd><dt>Power source</dt><dd>Plugged in</dd></dl>
+            <button class="btn" type="button"><svg class="pc-ico"><use href="#i-pause"/></svg>Pause for 30 minutes</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== B ===================== -->
+<div class="pc-dir">
+  <div class="option" data-choice="b-instrument" onclick="toggleSelect(this)">
+    <div class="pc-dir-head"><div class="letter">B</div><h3>Instrument: a measuring tool, not a dashboard</h3></div>
+    <p class="pc-dir-note">Monochrome, with monospaced numbers on a ruled grid, like a bench oscilloscope. There is no brand color; amber appears only when something needs attention (here the CPU is hot). Tabs across the top, plus an event log of what the app did and why.</p>
+
+    <div class="pc-win dB" data-theme="dark">
+      <div class="bar1">
+        <div class="name"><svg class="pc-ico"><use href="#i-mark"/></svg>PC SPEC</div>
+        <nav class="tabs">
+          <div class="tab on"><svg class="pc-ico"><use href="#i-overview"/></svg>Overview</div>
+          <div class="tab"><svg class="pc-ico"><use href="#i-optimizer"/></svg>Optimizer</div>
+          <div class="tab"><svg class="pc-ico"><use href="#i-gaming"/></svg>Gaming</div>
+          <div class="tab"><svg class="pc-ico"><use href="#i-overlay"/></svg>Overlay</div>
+          <div class="tab"><svg class="pc-ico"><use href="#i-temp"/></svg>Alerts</div>
+          <div class="tab"><svg class="pc-ico"><use href="#i-general"/></svg>Settings</div>
+        </nav>
+        <div class="right">
+          <span class="mono">2.0.13</span>
+          <div class="theme" role="group" aria-label="Theme">
+            <button type="button" data-t="light" aria-pressed="false" title="Light"><svg class="pc-ico"><use href="#i-sun"/></svg></button>
+            <button type="button" data-t="dark" aria-pressed="true" title="Dark"><svg class="pc-ico"><use href="#i-moon"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="cell"><div class="k"><span>Frame rate</span><span>DXGI</span></div><div class="v mono">144<small>fps</small></div><div class="s mono">6.9 ms  /  1% low 118</div><div class="ticks"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i></div></div>
+        <div class="cell"><div class="k"><span>GPU</span><span>RTX 5060</span></div><div class="v mono">71<small>°C</small></div><div class="s mono">64%  /  62 W  /  2.4 GHz</div><div class="ticks"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i></div></div>
+        <div class="cell"><div class="k"><span>CPU</span><span>i9-13900H</span></div><div class="v mono sig">84<small>°C</small></div><div class="s mono">31%  /  4.6 GHz</div><div class="ticks"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="s2"></i><i></i><i></i></div></div>
+        <div class="cell"><div class="k"><span>Memory</span><span>64 GB</span></div><div class="v mono">22.6<small>GB</small></div><div class="s mono">VRAM 5.1 / 8 GB</div><div class="ticks"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+      </div>
+      <div class="lower">
+        <div class="chartbox">
+          <div class="ch"><span>Frame rate / 10 min</span><span class="mono">avg 141  low 96</span></div>
+          <svg class="chart" viewBox="0 0 400 110" preserveAspectRatio="none">
+            <g stroke="var(--line2)" stroke-width="1" vector-effect="non-scaling-stroke"><path d="M0 22H400M0 44H400M0 66H400M0 88H400"/><path d="M50 0V110M100 0V110M150 0V110M200 0V110M250 0V110M300 0V110M350 0V110"/></g>
+            <path d="M0 46 L20 44 L40 48 L60 40 L80 43 L100 38 L120 45 L140 41 L160 84 L170 51 L190 44 L210 41 L230 46 L250 39 L270 43 L290 40 L310 47 L330 41 L350 39 L370 44 L400 41" fill="none" stroke="var(--tx)" stroke-width="1.4" vector-effect="non-scaling-stroke"/>
+            <circle cx="160" cy="84" r="3" fill="var(--sig)"/>
+          </svg>
+        </div>
+        <div class="log">
+          <div class="ch"><span>Events</span><span></span></div>
+          <div class="ln"><span class="t mono">19:42</span><span class="warn">CPU 84 °C, clocks held back by heat</span></div>
+          <div class="ln"><span class="t mono">19:38</span><span>Gaming mode <b>on</b> for Starve.io</span></div>
+          <div class="ln"><span class="t mono">19:38</span><span>Power mode set to Best performance</span></div>
+          <div class="ln"><span class="t mono">19:37</span><span>Game Boost raised Edge priority</span></div>
+        </div>
+      </div>
+      <div class="status mono"><span><i class="led"></i>Monitoring</span><span>Plugged in</span><span>Overlay visible · Alt+Shift+O</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== C ===================== -->
+<div class="pc-dir">
+  <div class="option" data-choice="c-calm-studio" onclick="toggleSelect(this)">
+    <div class="pc-dir-head"><div class="letter">C</div><h3>Calm Studio: one number first, the rest as a list</h3></div>
+    <p class="pc-dir-note">An asymmetric layout. Frame rate is the hero and everything else is a quiet ranked list, so the important thing reads from across the room. A softer green, an icon-only rail for navigation, and plenty of space. Calmer, but it shows less at once.</p>
+
+    <div class="pc-win dC" data-theme="dark">
+      <nav class="rail">
+        <svg class="pc-ico mark" style="width:20px;height:20px"><use href="#i-mark"/></svg>
+        <div class="r on" title="Overview"><svg class="pc-ico"><use href="#i-overview"/></svg></div>
+        <div class="r" title="Optimizer"><svg class="pc-ico"><use href="#i-optimizer"/></svg></div>
+        <div class="r" title="Gaming"><svg class="pc-ico"><use href="#i-gaming"/></svg></div>
+        <div class="r" title="Overlay"><svg class="pc-ico"><use href="#i-overlay"/></svg></div>
+        <div class="r" title="Temperatures"><svg class="pc-ico"><use href="#i-temp"/></svg></div>
+        <div class="grow"></div>
+        <div class="r" title="Settings"><svg class="pc-ico"><use href="#i-general"/></svg></div>
+      </nav>
+      <section class="main">
+        <div class="hero">
+          <div class="lab">Starve.io in Edge <span class="pill">Gaming mode</span></div>
+          <div class="huge pc-num">144<small>fps</small></div>
+          <div class="heroMeta pc-num"><span><b>6.9</b> ms per frame</span><span><b>118</b> 1% low</span><span><b>141</b> 10-min average</span></div>
+          <svg class="chart" viewBox="0 0 400 96" preserveAspectRatio="none">
+            <path d="M0 40 L20 38 L40 42 L60 35 L80 37 L100 33 L120 39 L140 36 L160 74 L170 44 L190 38 L210 36 L230 40 L250 34 L270 37 L290 35 L310 41 L330 36 L350 34 L370 38 L400 36 L400 96 L0 96Z" fill="var(--acs)"/>
+            <path d="M0 40 L20 38 L40 42 L60 35 L80 37 L100 33 L120 39 L140 36 L160 74 L170 44 L190 38 L210 36 L230 40 L250 34 L270 37 L290 35 L310 41 L330 36 L350 34 L370 38 L400 36" fill="none" stroke="var(--ac)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div class="game"><span>Best performance · Game Boost on Edge</span><b>Pause</b></div>
+        </div>
+        <div class="side pc-num">
+          <div class="sideTop">
+            <div class="theme" role="group" aria-label="Theme">
+              <button type="button" data-t="light" aria-pressed="false" title="Light"><svg class="pc-ico"><use href="#i-sun"/></svg></button>
+              <button type="button" data-t="dark" aria-pressed="true" title="Dark"><svg class="pc-ico"><use href="#i-moon"/></svg></button>
+            </div>
+          </div>
+          <div class="m"><div class="n">CPU<span>i9-13900H · 31% · held back by heat</span></div><div class="val w">84<small>°C</small></div><div class="track"><i class="w" style="width:84%"></i></div></div>
+          <div class="m"><div class="n">GPU<span>RTX 5060 Laptop · 64% · 62 W</span></div><div class="val">71<small>°C</small></div><div class="track"><i style="width:71%"></i></div></div>
+          <div class="m"><div class="n">Memory<span>of 64 GB · VRAM 5.1 / 8 GB</span></div><div class="val">22.6<small>GB</small></div><div class="track"><i style="width:35%"></i></div></div>
+          <div class="m" style="border-bottom:0"><div class="n">Power<span>Plugged in · Best performance</span></div><div class="val" style="font-size:16px">AC</div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  function setTheme(win, t) {
+    win.setAttribute('data-theme', t);
+    win.querySelectorAll('[data-t]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-t') === t)); });
+  }
+  document.querySelectorAll('.pc-win [data-t]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.stopPropagation(); setTheme(b.closest('.pc-win'), b.getAttribute('data-t')); });
+  });
+  document.querySelectorAll('[data-all]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.getAttribute('data-all');
+      document.querySelectorAll('[data-all]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      document.querySelectorAll('.pc-win').forEach(function (w) { setTheme(w, t); });
+    });
+  });
+})();
+</script>

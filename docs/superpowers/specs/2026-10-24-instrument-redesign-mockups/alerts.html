@@ -1,0 +1,180 @@
+<style>
+  .pc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .pc-seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .pc-seg button { all:unset; cursor:pointer; padding:.4rem .8rem; font-size:.8rem; color:var(--text-secondary); display:inline-flex; gap:.4rem; align-items:center; }
+  .pc-seg button[aria-pressed="true"] { background:var(--bg-tertiary); color:var(--text-primary); }
+  .pc-ico { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+  .pc-dir { margin-bottom:2rem; }
+  .pc-dir .option { display:block; padding:1rem; overflow-x:auto; }
+  .pc-dir .option > .ins { min-width:760px; }
+  .pc-dir-head { display:flex; align-items:baseline; gap:.75rem; margin-bottom:.25rem; }
+  .pc-dir-head h3 { margin:0; }
+  .pc-dir-note { color:var(--text-secondary); font-size:.85rem; margin:0 0 .9rem 2.75rem; max-width:72ch; }
+
+  .ins { --bg:#0B0B0C; --pan:#111113; --line:#262629; --line2:#1A1A1C; --tx:#E9E9E6; --mu:#87878A; --fa:#57575B; --sig:#E8A33D; --hot:#E5534B; --ok:#9BCB58;
+         font-family:"Segoe UI",system-ui,sans-serif; font-size:12.5px; line-height:1.4; background:var(--bg); color:var(--tx); border:1px solid var(--line); cursor:default; font-variant-numeric:tabular-nums; }
+  .ins[data-theme="light"] { --bg:#F3F2EE; --pan:#FBFAF7; --line:#D9D7D0; --line2:#E6E4DD; --tx:#141414; --mu:#66665F; --fa:#9C9A92; --sig:#B4730F; --hot:#B8322B; --ok:#4E7A12; }
+  .ins .mono { font-family:"Cascadia Mono","Cascadia Code",Consolas,monospace; }
+  .ins .bar1 { display:flex; align-items:center; gap:18px; padding:0 14px; height:38px; border-bottom:1px solid var(--line); }
+  .ins .name { display:flex; align-items:center; gap:8px; font-weight:600; letter-spacing:.02em; font-size:12px; }
+  .ins .tabs { display:flex; gap:2px; height:100%; }
+  .ins .tab { display:flex; align-items:center; gap:7px; padding:0 10px; color:var(--mu); font-size:12px; border-bottom:2px solid transparent; }
+  .ins .tab.on { color:var(--tx); border-bottom-color:var(--tx); }
+  .ins .right { margin-left:auto; display:flex; align-items:center; gap:12px; font-size:11px; color:var(--mu); }
+  .ins .theme { display:inline-flex; border:1px solid var(--line); }
+  .ins .theme button { all:unset; cursor:pointer; padding:4px 6px; color:var(--mu); display:flex; }
+  .ins .theme button[aria-pressed="true"] { color:var(--tx); background:var(--pan); }
+  .ins .pagehd { padding:14px 14px 12px; border-bottom:1px solid var(--line); }
+  .ins .pagehd h4 { margin:0; font-size:16px; font-weight:600; }
+  .ins .pagehd p { margin:3px 0 0; color:var(--mu); font-size:12px; max-width:76ch; }
+  .ins .k { font-size:10.5px; color:var(--mu); letter-spacing:.08em; text-transform:uppercase; }
+  .ins .mu { color:var(--mu); } .ins .sig { color:var(--sig); } .ins .hot { color:var(--hot); }
+  .ins .sw { display:inline-block; width:30px; height:16px; border:1px solid var(--line); position:relative; background:var(--pan); flex-shrink:0; }
+  .ins .sw::after { content:""; position:absolute; top:2px; left:2px; width:10px; height:10px; background:var(--mu); }
+  .ins .sw.on { background:var(--tx); border-color:var(--tx); }
+  .ins .sw.on::after { left:16px; background:var(--bg); }
+  .ins .fld { display:inline-flex; align-items:center; border:1px solid var(--line); padding:3px 8px; gap:6px; background:var(--pan); }
+  .ins .row { display:grid; grid-template-columns:1fr auto; gap:16px; align-items:center; padding:9px 14px; border-bottom:1px solid var(--line2); }
+  .ins .row small { display:block; color:var(--mu); font-size:11.5px; margin-top:1px; max-width:68ch; }
+  .ins .sect { padding:10px 14px 6px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; }
+  .ins .note { padding:9px 14px; color:var(--mu); font-size:11.5px; border-bottom:1px solid var(--line2); }
+  .ins table { width:100%; border-collapse:collapse; }
+  .ins th { text-align:left; font-weight:400; padding:7px 14px; border-bottom:1px solid var(--line); }
+  .ins td { padding:8px 14px; border-bottom:1px solid var(--line2); }
+
+  /* B scales */
+  .scale { padding:14px 14px 10px; border-bottom:1px solid var(--line2); }
+  .scale .top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .scale .top b { font-weight:600; }
+  .scale .now { font-size:20px; }
+  .scale .trk { position:relative; height:10px; background:var(--line2); }
+  .scale .trk .z1 { position:absolute; top:0; bottom:0; background:color-mix(in srgb, var(--sig) 28%, transparent); }
+  .scale .trk .z2 { position:absolute; top:0; bottom:0; right:0; background:color-mix(in srgb, var(--hot) 32%, transparent); }
+  .scale .trk .cur { position:absolute; top:-4px; height:18px; width:2px; background:var(--tx); }
+  .scale .trk .h { position:absolute; top:-6px; width:10px; height:22px; margin-left:-5px; border:1px solid var(--tx); background:var(--bg); }
+  .scale .lbl { position:relative; height:30px; font-size:11px; }
+  .scale .lbl span { position:absolute; top:6px; transform:translateX(-50%); white-space:nowrap; }
+  .scale .axis { position:relative; height:14px; color:var(--fa); font-size:10px; }
+  .scale .axis span { position:absolute; top:0; }
+
+  /* C log */
+  .evt { display:grid; grid-template-columns:90px 1fr auto; gap:14px; padding:10px 14px; border-bottom:1px solid var(--line2); align-items:start; }
+  .evt .what b { font-weight:600; }
+  .evt .what small { display:block; color:var(--mu); font-size:11.5px; margin-top:2px; }
+  .evt .tag { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; border:1px solid currentColor; padding:1px 6px; }
+  .two { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--line); }
+  .two > div:first-child { border-right:1px solid var(--line); }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path d="M4 20V13M9 20V8M14 20V11M19 20V4"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-optimizer" viewBox="0 0 24 24"><path d="M4.5 16a8 8 0 1 1 15 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.4"/></symbol>
+  <symbol id="i-gaming" viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4.4l-.5 3.9a2.4 2.4 0 0 1-4.3 1.1L14.5 15h-5l-1.7 2.4a2.4 2.4 0 0 1-4.3-1.1L3 12.4A4 4 0 0 1 7 8z"/><path d="M8 11v3M6.5 12.5h3"/></symbol>
+  <symbol id="i-overlay" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><rect x="13" y="6.5" width="5.5" height="4" rx="1"/><path d="M8 21h8"/></symbol>
+  <symbol id="i-temp" viewBox="0 0 24 24"><path d="M14 14.5V5a2 2 0 0 0-4 0v9.5a4 4 0 1 0 4 0z"/><path d="M12 9v7"/></symbol>
+  <symbol id="i-general" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+</defs></svg>
+
+<h2>Temperatures &amp; alerts page</h2>
+<p class="subtitle">Warning and hot levels for the GPU and CPU, and when you get notified. Same settings as today; the levels and the alert history shown are examples. Amber is "warning", red is "hot", the only place red appears in the app.</p>
+
+<div class="pc-toolbar">
+  <span class="label" style="margin:0">Theme for all three</span>
+  <div class="pc-seg" role="group" aria-label="Theme"><button type="button" data-all="dark" aria-pressed="true"><svg class="pc-ico"><use href="#i-moon"/></svg>Dark</button><button type="button" data-all="light" aria-pressed="false"><svg class="pc-ico"><use href="#i-sun"/></svg>Light</button></div>
+</div>
+
+<template id="chrome">
+  <div class="bar1">
+    <div class="name"><svg class="pc-ico"><use href="#i-mark"/></svg>PC SPEC</div>
+    <nav class="tabs">
+      <div class="tab"><svg class="pc-ico"><use href="#i-overview"/></svg>Overview</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-optimizer"/></svg>Optimizer</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-gaming"/></svg>Gaming</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-overlay"/></svg>Overlay</div>
+      <div class="tab on"><svg class="pc-ico"><use href="#i-temp"/></svg>Alerts</div>
+      <div class="tab"><svg class="pc-ico"><use href="#i-general"/></svg>Settings</div>
+    </nav>
+    <div class="right"><span class="mono">2.0.13</span>
+      <div class="theme" role="group" aria-label="Theme"><button type="button" data-t="light" aria-pressed="false" title="Light"><svg class="pc-ico"><use href="#i-sun"/></svg></button><button type="button" data-t="dark" aria-pressed="true" title="Dark"><svg class="pc-ico"><use href="#i-moon"/></svg></button></div>
+    </div>
+  </div>
+</template>
+<template id="notify">
+  <div class="sect"><span class="k">Notifications</span></div>
+  <div class="row"><div>Notify me about slowdowns and high temperatures<small>Slowdowns are confirmed by the driver or Windows. High temperature alone isn't a fault.</small></div><span class="sw on"></span></div>
+  <div class="row"><div>Only if it lasts<small>Brief spikes are ignored.</small></div><span class="fld mono">10 s<svg class="pc-ico mu"><use href="#i-down"/></svg></span></div>
+  <div class="row" style="border-bottom:0"><div>At most once every<small>Per kind of alert. After the third reminder, hourly.</small></div><span class="fld mono">5 min<svg class="pc-ico mu"><use href="#i-down"/></svg></span></div>
+</template>
+
+<!-- A -->
+<div class="pc-dir"><div class="option" data-choice="alerts-a-table" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">A</div><h3>Table: levels as a small grid</h3></div>
+  <p class="pc-dir-note">GPU and CPU as rows, warning and hot as columns, with the current reading beside them. It's compact and matches the Optimizer ledger, but you have to read the numbers to see how close you are.</p>
+  <div class="ins" data-theme="dark"><div data-chrome></div>
+    <div class="pagehd"><h4>Temperatures &amp; alerts</h4><p>Warning levels turn the overlay amber; hot levels turn it red.</p></div>
+    <table>
+      <thead><tr class="k"><th>Sensor</th><th>Now</th><th>Warning at</th><th>Hot at</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>GPU · RTX 5060 Laptop</td><td class="mono">71 °C</td><td><span class="fld mono sig">80 °C<svg class="pc-ico mu"><use href="#i-down"/></svg></span></td><td><span class="fld mono hot">87 °C<svg class="pc-ico mu"><use href="#i-down"/></svg></span></td><td class="mu">NVIDIA driver</td></tr>
+        <tr><td>CPU · i9-13900H</td><td class="mono sig">84 °C</td><td><span class="fld mono sig">80 °C<svg class="pc-ico mu"><use href="#i-down"/></svg></span></td><td><span class="fld mono hot">95 °C<svg class="pc-ico mu"><use href="#i-down"/></svg></span></td><td class="mu">ACPI thermal zone</td></tr>
+      </tbody>
+    </table>
+    <div class="note">CPU temperature comes from the hottest ACPI thermal zone. On laptops it tracks the CPU package closely, but it isn't a per-core sensor.</div>
+    <div data-notify></div>
+  </div>
+</div></div>
+
+<!-- B -->
+<div class="pc-dir"><div class="option" data-choice="alerts-b-scales" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">B</div><h3>Scales: drag the levels along a thermometer</h3></div>
+  <p class="pc-dir-note">Each sensor gets a 30 to 100 °C scale with the warning and hot bands shaded, two handles to drag, and a line for the current reading. You can see at a glance how close you are to each level (the CPU here is already in the warning band).</p>
+  <div class="ins" data-theme="dark"><div data-chrome></div>
+    <div class="pagehd"><h4>Temperatures &amp; alerts</h4><p>Drag a handle to change a level. The line is the current reading.</p></div>
+    <div class="scale">
+      <div class="top"><span><b>GPU</b> <span class="mu">RTX 5060 Laptop · NVIDIA driver</span></span><span class="now mono">71 °C</span></div>
+      <div class="trk"><span class="z1" style="left:71.4%;width:10%"></span><span class="z2" style="left:81.4%"></span><span class="cur" style="left:58.6%"></span><span class="h" style="left:71.4%"></span><span class="h" style="left:81.4%"></span></div>
+      <div class="lbl mono"><span class="sig" style="left:71.4%">warn 80</span><span class="hot" style="left:81.4%">hot 87</span></div>
+      <div class="axis mono"><span style="left:0">30</span><span style="left:28.6%">50</span><span style="left:57.1%">70</span><span style="left:85.7%">90</span><span style="left:100%;transform:translateX(-100%)">100 °C</span></div>
+    </div>
+    <div class="scale">
+      <div class="top"><span><b>CPU</b> <span class="mu">i9-13900H · hottest ACPI thermal zone</span></span><span class="now mono sig">84 °C</span></div>
+      <div class="trk"><span class="z1" style="left:71.4%;width:21.5%"></span><span class="z2" style="left:92.9%"></span><span class="cur" style="left:77.1%"></span><span class="h" style="left:71.4%"></span><span class="h" style="left:92.9%"></span></div>
+      <div class="lbl mono"><span class="sig" style="left:71.4%">warn 80</span><span class="hot" style="left:92.9%">hot 95</span></div>
+      <div class="axis mono"><span style="left:0">30</span><span style="left:28.6%">50</span><span style="left:57.1%">70</span><span style="left:85.7%">90</span><span style="left:100%;transform:translateX(-100%)">100 °C</span></div>
+    </div>
+    <div data-notify></div>
+  </div>
+</div></div>
+
+<!-- C -->
+<div class="pc-dir"><div class="option" data-choice="alerts-c-history" onclick="toggleSelect(this)">
+  <div class="pc-dir-head"><div class="letter">C</div><h3>History first: what actually slowed you down</h3></div>
+  <p class="pc-dir-note">It leads with the last alerts and their causes, written plainly, because "why did my FPS drop?" is the question that brings you here. The level and notification settings sit underneath in two columns. It's the most useful after a bad session; it's new work, since the app would need to save an alert history with the FPS before and after.</p>
+  <div class="ins" data-theme="dark"><div data-chrome></div>
+    <div class="pagehd"><h4>Temperatures &amp; alerts</h4><p>Last 24 hours.</p></div>
+    <div class="evt"><span class="mono mu">Today 19:42</span><span class="what"><b>CPU held back by heat for 31 s</b><small>CPU reached 95 °C during Starve.io. FPS dropped from 144 to 96. Plugged in, Best performance on.</small></span><span class="tag hot">Slowdown</span></div>
+    <div class="evt"><span class="mono mu">Today 19:40</span><span class="what"><b>CPU above warning level, 84 °C</b><small>Lasted 2 min. No slowdown reported.</small></span><span class="tag sig">Warning</span></div>
+    <div class="evt"><span class="mono mu">Yesterday 22:10</span><span class="what"><b>GPU power limit reached</b><small>The NVIDIA driver capped power at 65 W for 12 s.</small></span><span class="tag hot">Slowdown</span></div>
+    <div class="two">
+      <div>
+        <div class="sect"><span class="k">Levels</span><span class="k">Warn / Hot</span></div>
+        <div class="row"><div>GPU<small>NVIDIA driver · now 71 °C</small></div><span class="mono"><span class="sig">80</span> / <span class="hot">87</span> °C</span></div>
+        <div class="row" style="border-bottom:0"><div>CPU<small>ACPI thermal zone · now 84 °C</small></div><span class="mono"><span class="sig">80</span> / <span class="hot">95</span> °C</span></div>
+      </div>
+      <div data-notify></div>
+    </div>
+  </div>
+</div></div>
+
+<script>
+(function () {
+  ['chrome','notify'].forEach(function (k) { var tpl = document.getElementById(k); document.querySelectorAll('[data-' + k + ']').forEach(function (s) { var d = document.createElement('div'); d.appendChild(tpl.content.cloneNode(true)); s.replaceWith(d); }); });
+  function setTheme(win, t) { win.setAttribute('data-theme', t); win.querySelectorAll('[data-t]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-t') === t)); }); }
+  document.querySelectorAll('.ins [data-t]').forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); setTheme(b.closest('.ins'), b.getAttribute('data-t')); }); });
+  document.querySelectorAll('[data-all]').forEach(function (b) { b.addEventListener('click', function () { var t = b.getAttribute('data-all'); document.querySelectorAll('[data-all]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); document.querySelectorAll('.ins').forEach(function (w) { setTheme(w, t); }); }); });
+})();
+</script>
