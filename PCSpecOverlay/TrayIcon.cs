@@ -26,6 +26,9 @@ internal sealed class TrayIcon : IDisposable
         var overlay = new Forms.ToolStripMenuItem("Show overlay");
         overlay.Click += (_, _) => _app.ToggleOverlay();
 
+        var move = new Forms.ToolStripMenuItem("Move overlay");
+        move.Click += (_, _) => _app.MoveOverlay();
+
         var gaming = new Forms.ToolStripMenuItem("Automatic gaming mode");
         gaming.Click += (_, _) =>
         {
@@ -50,7 +53,7 @@ internal sealed class TrayIcon : IDisposable
         var exit = new Forms.ToolStripMenuItem("Exit");
         exit.Click += (_, _) => _app.Shutdown();
 
-        menu.Items.AddRange([center, new Forms.ToolStripSeparator(), overlay, gaming, pause, startup,
+        menu.Items.AddRange([center, new Forms.ToolStripSeparator(), overlay, move, gaming, pause, startup,
                              new Forms.ToolStripSeparator(), exit]);
         menu.Opening += (_, _) =>
         {

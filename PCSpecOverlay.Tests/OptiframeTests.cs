@@ -188,3 +188,37 @@ public class NameTests
         Assert.Contains("DeleteLegacyShortcut()", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Installer.cs")));
     }
 }
+
+public class MovePinTests
+{
+    [Fact]
+    public void Click_through_is_no_longer_a_setting()
+    {
+        Assert.Null(typeof(Settings).GetProperty("ClickThrough"));
+        var s = JsonSerializer.Deserialize<Settings>("""{"ClickThrough":false,"Position":"TopLeft"}""")!;
+        s.Validate();
+        Assert.Equal("TopLeft", s.Position); // an older file still loads
+    }
+
+    [Fact]
+    public void The_overlay_has_a_move_handle_with_a_pin()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/OverlayWindow.xaml"));
+        foreach (var name in new[] { "MoveHandle", "PinButton", "MoveOutline" }) Assert.Contains($"x:Name=\"{name}\"", xaml);
+        Assert.Contains("Click=\"OnPin\"", xaml);
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/OverlayWindow.xaml.cs"));
+        Assert.Contains("OverlayPlacement.Place(", code);
+        Assert.Contains("OverlayPlacement.ToFractions(", code);
+        Assert.DoesNotContain("ClickThrough", code);
+    }
+
+    [Fact]
+    public void Move_overlay_is_offered_in_the_tray_and_the_control_center()
+    {
+        Assert.Contains("\"Move overlay\"", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/TrayIcon.cs")));
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        Assert.Contains("Click=\"OnMoveOverlay\"", xaml);
+        Assert.Contains("Tag=\"Custom\"", xaml);
+        Assert.DoesNotContain("ClickThrough", xaml);
+    }
+}

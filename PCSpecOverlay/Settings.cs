@@ -55,7 +55,6 @@ public sealed class Settings
     public string Layout { get; set; } = Compact;
     public double Opacity { get; set; } = 1.0;
     public double Scale { get; set; } = 1.0;
-    public bool ClickThrough { get; set; } = true;
     public bool ShowFrameTime { get; set; } = true;
     public bool ShowOnePercentLow { get; set; } = true;
     public bool ShowGpu { get; set; } = true;

@@ -14,8 +14,8 @@ public readonly record struct OverlayStatus(bool GamingMode, bool Boost, bool Pa
 
 /// <summary>
 /// The always-on-top performance panel. It only displays; all configuration lives in the control
-/// center. It never takes focus, stays out of Alt+Tab, and is click-through unless the user turns
-/// that off to drag it (it then snaps to the nearest corner of whichever monitor it's dropped on).
+/// center. It never takes focus, stays out of Alt+Tab, and is click-through except while the user moves it
+/// (tray or control center: Move overlay); Pin locks it where it was dropped.
 /// Positioning works in physical pixels per monitor, so mixed display scaling can't misplace it.
 /// Its colors come from Themes/Overlay.*.xaml merged into this window only, so the app theme never
 /// recolors it unless the overlay theme is "Same as app".
@@ -31,7 +31,14 @@ public partial class OverlayWindow : Window
     private AppTheme _shownTheme = AppTheme.Dark; // OverlayWindow.xaml merges the dark colors
     private readonly FrameTimeTrace _trace = new();
 
+    private bool _moving;
+
     public IntPtr Handle { get; private set; }
+
+    /// <summary>Raised when the user presses Pin after moving the overlay.</summary>
+    public event Action? Pinned;
+
+    public bool IsMoving => _moving;
 
     /// <summary>Raised after the user drags the overlay to a new corner or monitor.</summary>
     public event Action? Moved;
@@ -105,39 +112,72 @@ public partial class OverlayWindow : Window
     {
         if (Handle == IntPtr.Zero) return;
         var ex = Native.GetWindowLong(Handle, Native.GWL_EXSTYLE) | Native.WS_EX_LAYERED | Native.WS_EX_TOOLWINDOW | Native.WS_EX_NOACTIVATE;
-        ex = _settings.ClickThrough ? ex | Native.WS_EX_TRANSPARENT : ex & ~Native.WS_EX_TRANSPARENT;
+        ex = _moving ? ex & ~Native.WS_EX_TRANSPARENT : ex | Native.WS_EX_TRANSPARENT;
         Native.SetWindowLong(Handle, Native.GWL_EXSTYLE, ex);
-        Cursor = _settings.ClickThrough ? null : Cursors.SizeAll;
+        Cursor = _moving ? Cursors.SizeAll : null;
     }
 
-    /// <summary>Places the overlay in its corner of the chosen monitor (primary if that one is gone).</summary>
+    /// <summary>
+    /// Places the panel at its corner or pinned spot on the chosen display (the main display if that one is gone).
+    /// While moving, the handle bar sits above the panel, so the window starts that much higher.
+    /// </summary>
     public void Reposition()
     {
         if (Handle == IntPtr.Zero || Displays.Find(_settings.Monitor) is not { } display) return;
         if (!Native.GetWindowRect(Handle, out var r)) return;
-        int w = r.Right - r.Left, h = r.Bottom - r.Top;
+        var handle = HandlePixels(display.Dpi);
+        int w = r.Right - r.Left, h = r.Bottom - r.Top - handle;
         var m = (int)Math.Round(EdgeMarginDip * display.Dpi / 96.0);
         var work = display.WorkArea;
-        var x = _settings.Position.EndsWith("Left") ? work.Left + m : work.Right - w - m;
-        var y = _settings.Position.StartsWith("Bottom") ? work.Bottom - h - m : work.Top + m;
-        if (x != r.Left || y != r.Top)
-            Native.SetWindowPos(Handle, Native.HWND_TOPMOST, x, y, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+        var (x, y) = OverlayPlacement.Place(_settings.Position, _settings.CustomX, _settings.CustomY,
+            (work.Left, work.Top, work.Right, work.Bottom), w, h, m);
+        var top = y - handle; // near the top edge the handle may sit above the work area; the panel stays put
+        if (x != r.Left || top != r.Top)
+            Native.SetWindowPos(Handle, Native.HWND_TOPMOST, x, top, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
     }
 
+    /// <summary>Height of the move handle and its gap in physical pixels; 0 when pinned.</summary>
+    private int HandlePixels(uint dpi) =>
+        _moving ? (int)Math.Round((MoveHandle.ActualHeight + MoveHandle.Margin.Bottom) * dpi / 96.0) : 0;
+
+    /// <summary>Unlocks the overlay: outline and handle shown, clicks no longer pass through, dragging moves it.</summary>
+    public void BeginMove()
+    {
+        if (_moving) return;
+        _moving = true;
+        MoveHandle.Visibility = MoveOutline.Visibility = Visibility.Visible;
+        ApplyWindowStyles();
+        Reposition();
+    }
+
+    private void OnPin(object sender, RoutedEventArgs e)
+    {
+        _moving = false;
+        MoveHandle.Visibility = MoveOutline.Visibility = Visibility.Collapsed;
+        ApplyWindowStyles();
+        Reposition();
+        Moved?.Invoke();
+        Pinned?.Invoke();
+    }
+
+    /// <summary>In move mode, dragging pins the panel exactly where it's dropped, on the display under its center.</summary>
     private void OnDrag(object sender, MouseButtonEventArgs e)
     {
-        if (_settings.ClickThrough) return;
+        if (!_moving) return;
         try { DragMove(); } catch (InvalidOperationException) { return; }
 
-        // Snap to the nearest corner of the monitor the overlay was dropped on
         if (!Native.GetWindowRect(Handle, out var r)) return;
-        var cx = (r.Left + r.Right) / 2;
-        var cy = (r.Top + r.Bottom) / 2;
-        var display = Displays.All().FirstOrDefault(d => cx >= d.Bounds.Left && cx < d.Bounds.Right && cy >= d.Bounds.Top && cy < d.Bounds.Bottom);
-        if (display is null) { Reposition(); return; }
-        var left = cx < (display.WorkArea.Left + display.WorkArea.Right) / 2;
-        var top = cy < (display.WorkArea.Top + display.WorkArea.Bottom) / 2;
-        _settings.Position = (top ? "Top" : "Bottom") + (left ? "Left" : "Right");
+        int cx = (r.Left + r.Right) / 2, cy = (r.Top + r.Bottom) / 2;
+        var display = Displays.All().FirstOrDefault(d => cx >= d.Bounds.Left && cx < d.Bounds.Right && cy >= d.Bounds.Top && cy < d.Bounds.Bottom)
+                      ?? Displays.Find(_settings.Monitor);
+        if (display is null) return;
+        var panelTop = r.Top + HandlePixels(display.Dpi);
+        var work = display.WorkArea;
+        var (fx, fy) = OverlayPlacement.ToFractions(r.Left, panelTop, (work.Left, work.Top, work.Right, work.Bottom),
+            r.Right - r.Left, r.Bottom - panelTop);
+        _settings.Position = Settings.Custom;
+        _settings.CustomX = fx;
+        _settings.CustomY = fy;
         _settings.Monitor = display.Primary ? "" : display.DeviceName;
         Reposition();
         Moved?.Invoke();

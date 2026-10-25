@@ -544,12 +544,14 @@
                             </Grid>
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Corner" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Position}">
+                                <TextBlock Text="Position" FontSize="13" VerticalAlignment="Center" />
+                                <ComboBox x:Name="PositionBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Position}"
+                                          AutomationProperties.Name="Overlay position">
                                     <ComboBoxItem Content="Top right" Tag="TopRight" />
                                     <ComboBoxItem Content="Top left" Tag="TopLeft" />
                                     <ComboBoxItem Content="Bottom right" Tag="BottomRight" />
                                     <ComboBoxItem Content="Bottom left" Tag="BottomLeft" />
+                                    <ComboBoxItem Content="Custom (pinned spot)" Tag="Custom" />
                                 </ComboBox>
                             </Grid>
                             <Grid Style="{StaticResource Row}">
@@ -583,12 +585,14 @@
                     <TextBlock Text="BEHAVIOR" Style="{StaticResource Section}" />
                     <Border Style="{StaticResource CardBox}">
                         <StackPanel>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ClickThrough}" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="Click-through" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="On: clicks pass through the overlay to your game. Off: drag the overlay to any corner of any display; it snaps into place. Turn it back on here or from the tray." />
+                            <Grid Style="{StaticResource Row}">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="Move the overlay" FontSize="13" />
+                                    <TextBlock Style="{StaticResource Small}" Text="Unlocks it so you can drag it anywhere on any screen; press Pin on the overlay to lock it there. Clicks pass through to your game whenever it's pinned." />
                                 </StackPanel>
-                            </CheckBox>
+                                <Button Grid.Column="1" Content="Move overlay" Style="{StaticResource Btn}" Click="OnMoveOverlay" VerticalAlignment="Center" />
+                            </Grid>
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
                                 <StackPanel>
