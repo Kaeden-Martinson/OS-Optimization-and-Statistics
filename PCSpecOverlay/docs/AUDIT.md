@@ -117,6 +117,19 @@ Light/dark foundation for the redesign (spec: `docs/superpowers/specs/2026-10-24
 | In-game overlay | ✅ | Stayed dark in all modes (its own theme setting comes in stage 2) |
 | Screen-reader names | 🟡 | The new Theme dropdown is named. 38 older controls have no name (sliders, some dropdowns, slider step buttons); this predates the redesign and is tracked for a separate fix |
 
+## Instrument stage 2 (2026-10-24, Release development build beside the installed 2.0.13)
+
+The in-game overlay rebuilt as Strip (default) and Panel with its own theme. 169 automated tests pass; these were checked on screen.
+
+| Check | Result | Notes |
+|---|---|---|
+| Panel | ✅ | Header with GPU name and FPS source, frame-time trace, numbers in Cascadia Mono, amber/red only for temperatures and slowdown chips, square corners, no green |
+| Strip | ✅ | One ruled line; the background darkens what's behind it as designed (bright desktop 245 → 16–37) |
+| Overlay theme | ✅ | Always light switched live; Same as app followed the app's Light/Dark switch live; Always dark is the default |
+| In game (Starve.io in Edge) | ✅ | 165 FPS, 6.1 ms, source DXGI; uneven frames show as spikes on the trace; GPU 91 °C and CPU 96 °C in red; readable over the bright game |
+| CPU use | ✅ | Same 60 s side by side: installed 2.0.13 1.61 % of one core, new Panel 1.61 % |
+| Per-game layout, drag-and-snap | ⬜ | Code path unchanged from before and reviewed; not exercised on screen this time |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
