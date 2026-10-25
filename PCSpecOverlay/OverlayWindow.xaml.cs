@@ -1,9 +1,11 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using PCSpecOverlay.Core;
 using PCSpecOverlay.Monitors;
 
@@ -52,10 +54,12 @@ public partial class OverlayWindow : Window
         SourceInitialized += (_, _) =>
         {
             Handle = new WindowInteropHelper(this).Handle;
+            HwndSource.FromHwnd(Handle)?.AddHook(PlaceWhileResizing);
             ApplyWindowStyles();
         };
-        SizeChanged += (_, _) => Reposition();
-        DpiChanged += (_, _) => Dispatcher.BeginInvoke(Reposition);
+        // PlaceWhileResizing moves the window in the same step WPF resizes it; these passes run once layout has settled
+        SizeChanged += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Reposition));
+        DpiChanged += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Reposition));
         MouseLeftButtonDown += OnDrag;
         TraceCanvas.SizeChanged += (_, _) => DrawTrace();
     }
@@ -121,34 +125,67 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
-    /// Places the panel at its corner or pinned spot on the chosen display (the main display if that one is gone).
+    /// Places the panel at its corner or pinned spot on the chosen display (the main display if that one is gone),
+    /// with the whole window inside that display's work area.
     /// While moving, the handle bar sits above the panel (below it near the top edge), so the panel itself never moves.
     /// </summary>
     public void Reposition()
     {
-        if (_dragging || Handle == IntPtr.Zero || Displays.Find(_settings.Monitor) is not { } display) return;
-        if (!Native.GetWindowRect(Handle, out var r)) return;
-        var handle = HandlePixels(display.Dpi);
-        int windowWidth = r.Right - r.Left, w = PanelWidth(display.Dpi, windowWidth), h = r.Bottom - r.Top - handle;
-        var m = (int)Math.Round(EdgeMarginDip * display.Dpi / 96.0);
-        var work = display.WorkArea;
-        var (x, y) = OverlayPlacement.Place(_settings.Position, _settings.CustomX, _settings.CustomY,
-            (work.Left, work.Top, work.Right, work.Bottom), w, h, m);
-        var (left, top, below, right) = OverlayPlacement.MoveWindow(x, y, (work.Left, work.Top, work.Right, work.Bottom),
-            w, windowWidth, handle);
-        SetHandleSide(below, right);
-        if (left != r.Left || top != r.Top)
-            Native.SetWindowPos(Handle, Native.HWND_TOPMOST, left, top, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+        if (_dragging || Handle == IntPtr.Zero || !Native.GetWindowRect(Handle, out var r)) return;
+        if (Spot(r.Right - r.Left, r.Bottom - r.Top) is not { } spot || (spot.Left == r.Left && spot.Top == r.Top)) return;
+        Native.SetWindowPos(Handle, Native.HWND_TOPMOST, spot.Left, spot.Top, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
     }
 
+    /// <summary>
+    /// WPF resizes the window (to fit its content, or for a display's scaling) keeping its top-left corner, and raises
+    /// SizeChanged before the window has its new size. So the new position is worked out here, from the size the
+    /// window is about to get, and applied in the same step: growing near the right or bottom edge never pushes it
+    /// past that edge or onto the next display, not even for a frame.
+    /// </summary>
+    private IntPtr PlaceWhileResizing(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg != Native.WM_WINDOWPOSCHANGING || _dragging) return IntPtr.Zero;
+        var pos = Marshal.PtrToStructure<Native.WINDOWPOS>(lParam);
+        if ((pos.flags & Native.SWP_NOSIZE) != 0 || !Native.GetWindowRect(hwnd, out var r)) return IntPtr.Zero;
+        if (pos.cx == r.Right - r.Left && pos.cy == r.Bottom - r.Top) return IntPtr.Zero;
+        if (Spot(pos.cx, pos.cy) is not { } spot) return IntPtr.Zero;
+        pos.x = spot.Left;
+        pos.y = spot.Top;
+        pos.flags &= ~Native.SWP_NOMOVE;
+        Marshal.StructureToPtr(pos, lParam, false);
+        return IntPtr.Zero;
+    }
+
+    /// <summary>Where a window of this size (physical pixels) goes; null when no display is connected.</summary>
+    private (int Left, int Top)? Spot(int width, int height)
+    {
+        if (Displays.Find(_settings.Monitor) is not { } display) return null;
+        // Sizes in the window's own pixels; only the edge margin belongs to the target display
+        var scale = PixelsPerDip(width);
+        var m = (int)Math.Round(EdgeMarginDip * display.Dpi / 96.0);
+        var work = display.WorkArea;
+        var (left, top, below, right) = OverlayPlacement.Arrange(_settings.Position, _settings.CustomX, _settings.CustomY,
+            (work.Left, work.Top, work.Right, work.Bottom), width, height, PanelWidth(scale, width), HandlePixels(scale), m);
+        SetHandleSide(below, right);
+        return (left, top);
+    }
+
+    /// <summary>
+    /// Physical pixels per DIP for a window this wide: the scaling WPF actually drew it at. While the window is still
+    /// on (or coming from) a display with other scaling this isn't the target display's, and mixing the two
+    /// mismeasures it; once it is placed on its display, Windows rescales it and it is placed again.
+    /// </summary>
+    private double PixelsPerDip(int width) =>
+        width > 0 && ActualWidth > 0 ? width / ActualWidth : VisualTreeHelper.GetDpi(this).DpiScaleX;
+
     /// <summary>Height of the move handle and its gap in physical pixels; 0 when pinned.</summary>
-    private int HandlePixels(uint dpi) =>
-        _moving ? (int)Math.Round((MoveHandle.ActualHeight + MoveHandle.Margin.Top + MoveHandle.Margin.Bottom) * dpi / 96.0) : 0;
+    private int HandlePixels(double scale) =>
+        _moving ? (int)Math.Round((MoveHandle.ActualHeight + MoveHandle.Margin.Top + MoveHandle.Margin.Bottom) * scale) : 0;
 
     /// <summary>The panel's own width in physical pixels; a wider handle bar can make the window wider than it.</summary>
-    private int PanelWidth(uint dpi, int windowWidth)
+    private int PanelWidth(double scale, int windowWidth)
     {
-        var w = (int)Math.Round(PanelHost.ActualWidth * dpi / 96.0);
+        var w = (int)Math.Round(PanelHost.ActualWidth * scale);
         return w <= 0 || w > windowWidth ? windowWidth : w;
     }
 
@@ -199,9 +236,10 @@ public partial class OverlayWindow : Window
 
         if (!Native.GetWindowRect(Handle, out var r)) return;
         // Measure the panel, not the window: the handle bar adds height above or below it and may add width
-        var dpi = (uint)Math.Round(VisualTreeHelper.GetDpi(this).PixelsPerInchY);
-        var handle = HandlePixels(dpi);
-        int windowWidth = r.Right - r.Left, panelWidth = PanelWidth(dpi, windowWidth);
+        int windowWidth = r.Right - r.Left;
+        var scale = PixelsPerDip(windowWidth);
+        var handle = HandlePixels(scale);
+        var panelWidth = PanelWidth(scale, windowWidth);
         var panelLeft = r.Left + (_panelRight ? windowWidth - panelWidth : 0);
         var panelTop = r.Top + (_handleBelow ? 0 : handle);
         var panelHeight = r.Bottom - r.Top - handle;
@@ -341,7 +379,8 @@ public partial class OverlayWindow : Window
         LimitsRow.Visibility = Show(limits != Limit.None);
 
         var thermal = (limits & (Limit.GpuThermal | Limit.CpuThermal)) != 0;
-        CLimit.Visibility = Show(limits != Limit.None);
+        // The strip keeps the chip's slot while slowdowns are shown at all, so one coming and going doesn't resize it
+        CLimit.Visibility = limits != Limit.None ? Visibility.Visible : _settings.ShowSlowdowns ? Visibility.Hidden : Visibility.Collapsed;
         CLimitText.Text = thermal ? "HEAT" : "POWER";
         var key = thermal ? "O.Hot" : "O.Signal";
         CLimitText.SetResourceReference(TextBlock.ForegroundProperty, key);

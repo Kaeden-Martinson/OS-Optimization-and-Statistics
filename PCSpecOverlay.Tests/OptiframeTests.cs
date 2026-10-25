@@ -73,6 +73,100 @@ public class OverlayPlacementTests
         Assert.Equal((100, 474, false, false), OverlayPlacement.MoveWindow(100, 500, Screen, 90, 130, 26));
         Assert.Equal((1782, 474, false, true), OverlayPlacement.MoveWindow(1822, 500, Screen, 90, 130, 26));
     }
+
+    // ---- keeping the whole window on its own display (the 2.1.0 drift onto the next monitor) ----
+
+    private static readonly (int, int, int, int) Main = (0, 0, 1920, 1020);     // DISPLAY1, 125 %
+    private static readonly (int, int, int, int) Left = (-1600, 0, 0, 900);     // DISPLAY2
+    private static readonly (int, int, int, int) Right = (1920, 0, 3520, 900);  // DISPLAY5
+
+    [Fact]
+    public void A_window_inside_the_work_area_stays_put() =>
+        Assert.Equal((1614, 49), OverlayPlacement.Clamp(1614, 49, 302, 278, Main));
+
+    [Fact]
+    public void A_window_partly_past_the_right_edge_is_pulled_back_inside() =>
+        Assert.Equal((1591, 49), OverlayPlacement.Clamp(1614, 49, 329, 278, Main)); // grew from 302 to 329 at x 1614
+
+    [Fact]
+    public void A_window_partly_outside_any_edge_is_pulled_back_inside()
+    {
+        Assert.Equal((0, 0), OverlayPlacement.Clamp(-40, -10, 302, 278, Main));
+        Assert.Equal((1618, 742), OverlayPlacement.Clamp(1800, 900, 302, 278, Main));
+    }
+
+    [Fact]
+    public void Clamping_uses_a_work_area_left_of_the_main_display()
+    {
+        Assert.Equal((-302, 0), OverlayPlacement.Clamp(-200, 0, 302, 278, Left));
+        Assert.Equal((-1600, 622), OverlayPlacement.Clamp(-1700, 800, 302, 278, Left));
+    }
+
+    [Fact]
+    public void Clamping_uses_a_work_area_right_of_the_main_display()
+    {
+        Assert.Equal((1920, 0), OverlayPlacement.Clamp(1800, 0, 302, 278, Right));
+        Assert.Equal((3218, 50), OverlayPlacement.Clamp(3400, 50, 302, 278, Right));
+    }
+
+    [Fact]
+    public void A_window_larger_than_the_work_area_starts_at_its_top_left() =>
+        Assert.Equal((1920, 0), OverlayPlacement.Clamp(2500, 300, 2000, 1000, Right));
+
+    [Theory]
+    [InlineData(302, 1614)]
+    [InlineData(329, 1587)]
+    [InlineData(420, 1496)]
+    public void A_pin_near_the_right_edge_keeps_its_right_edge_as_the_window_grows(int width, int left)
+    {
+        // The user's pin: CustomX 0.9975, CustomY 0.066 on the 125 % main display
+        var (x, y, _, _) = OverlayPlacement.Arrange(Settings.Custom, 0.9975, 0.066, Main, width, 278, width, 0, 18);
+        Assert.Equal((left, 49), (x, y));
+        Assert.Equal(1916, x + width);
+    }
+
+    [Theory]
+    [InlineData(302)]
+    [InlineData(329)]
+    public void A_right_corner_keeps_its_right_edge_as_the_window_grows(int width)
+    {
+        var (x, _, _, _) = OverlayPlacement.Arrange("TopRight", 0, 0, Main, width, 278, width, 0, 18);
+        Assert.Equal(1902, x + width);
+    }
+
+    [Fact]
+    public void A_pinned_window_is_all_panel_so_a_mismatched_panel_width_cannot_shift_it()
+    {
+        // 2.1.0 measured a 302 px panel against the 329 px window it was shrinking from, read the 27 px
+        // difference as a move handle and moved the window 27 px left of its pin (1587 instead of 1614)
+        Assert.Equal((1614, 49, false, false), OverlayPlacement.Arrange(Settings.Custom, 0.9975, 0.066, Main, 302, 278, 275, 0, 18));
+        Assert.Equal((1614, 49, false, false), OverlayPlacement.Arrange(Settings.Custom, 0.9975, 0.066, Main, 302, 278, 329, 0, 18));
+    }
+
+    [Theory]
+    [InlineData("TopRight")]
+    [InlineData("BottomRight")]
+    [InlineData("TopLeft")]
+    [InlineData("BottomLeft")]
+    [InlineData(Settings.Custom)]
+    public void The_whole_window_ends_up_inside_its_own_display(string position)
+    {
+        foreach (var work in new[] { Main, Left, Right })
+        foreach (var (fx, fy) in new[] { (0.0, 0.0), (0.9975, 0.066), (1.0, 1.0) })
+        foreach (var (window, panel, handle) in new[] { (302, 302, 0), (900, 900, 0), (180, 90, 33), (2000, 2000, 0) })
+        {
+            var (x, y, _, _) = OverlayPlacement.Arrange(position, fx, fy, work, window, 278, panel, handle, 18);
+            var (l, t, r, b) = work;
+            if (window <= r - l) Assert.InRange(x, l, r - window);
+            else Assert.Equal(l, x);
+            Assert.InRange(y, t, b - 278);
+        }
+    }
+
+    [Fact]
+    public void In_move_mode_the_handle_bar_still_goes_below_and_beside_the_panel_in_a_top_right_corner() =>
+        // Panel at 1812,18 (90 wide); the 130 px handle bar goes below it and extends left
+        Assert.Equal((1772, 18, true, true), OverlayPlacement.Arrange("TopRight", 0, 0, Screen, 130, 82, 90, 26, 18));
 }
 
 public class PlacementSettingTests
@@ -228,7 +322,7 @@ public class MovePinTests
         foreach (var name in new[] { "MoveHandle", "PinButton", "MoveOutline" }) Assert.Contains($"x:Name=\"{name}\"", xaml);
         Assert.Contains("Click=\"OnPin\"", xaml);
         var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/OverlayWindow.xaml.cs"));
-        Assert.Contains("OverlayPlacement.Place(", code);
+        Assert.Contains("OverlayPlacement.Arrange(", code);
         Assert.Contains("OverlayPlacement.ToFractions(", code);
         Assert.DoesNotContain("ClickThrough", code);
     }

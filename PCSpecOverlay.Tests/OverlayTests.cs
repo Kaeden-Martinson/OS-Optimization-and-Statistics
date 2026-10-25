@@ -259,3 +259,74 @@ public class OverlayChoiceTests
         Assert.DoesNotContain("Content=\"Compact\"", xaml);
     }
 }
+
+/// <summary>
+/// The overlay's width depends on its layout and switches, never on the readings: 2.1.0 grew and shrank
+/// every tick ("2" → "144" FPS, "30W" → "115W", a slowdown chip coming and going) and walked off its display.
+/// </summary>
+public class OverlayWidthTests
+{
+    private const double Gb = 1024.0 * 1024 * 1024;
+
+    // Every reading at its narrowest (or missing)...
+    private static readonly Telemetry Narrow = new()
+    {
+        Fps = new FpsSample(2, 9.9, 1, 9.9),
+        FpsSource = "DXGI",
+        Gpu = new GpuSample(GpuStatus.Ok, 0, 9, (ulong)(0.1 * Gb), (ulong)(63.7 * Gb), 0, 0),
+        CpuLoad = 0, CpuTempC = 9, CpuClockGhz = null,
+        Ram = (0.1, 63.7),
+        Limits = Limit.None,
+    };
+
+    // ...and at its widest
+    private static readonly Telemetry Wide = new()
+    {
+        Fps = new FpsSample(9999, 999.9, 9999, 999.9),
+        FpsSource = "KERNEL",
+        Gpu = new GpuSample(GpuStatus.Ok, 100, 105, (ulong)(63.7 * Gb), (ulong)(63.7 * Gb), 3105, 450),
+        CpuLoad = 100, CpuTempC = 105, CpuClockGhz = 5.8,
+        Ram = (63.7, 63.7),
+        Limits = Limit.GpuThermal | Limit.CpuThermal | Limit.GpuPower | Limit.CpuPower,
+    };
+
+    private static double Width(string layout, Telemetry t)
+    {
+        var w = new OverlayWindow();
+        w.SetGpuName("NVIDIA GeForce RTX 5060 Laptop GPU");
+        w.ApplySettings(new Settings { Layout = layout });
+        w.ShowStatus(new OverlayStatus(false, false, false));
+        w.ShowFps(t);
+        w.ShowStats(t);
+        var root = (UIElement)w.Content;
+        root.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        root.Arrange(new Rect(root.DesiredSize));
+        root.UpdateLayout();
+        return root.DesiredSize.Width;
+    }
+
+    [Theory]
+    [InlineData(Settings.Expanded)]
+    [InlineData(Settings.Compact)]
+    public void Readings_never_change_the_width(string layout) => Sta.Run(() =>
+    {
+        var narrow = Width(layout, Narrow);
+        Assert.Equal(narrow, Width(layout, Wide));
+        Assert.Equal(narrow, Width(layout, Wide with { Limits = Limit.GpuPower })); // "POWER" rather than "HEAT"
+    });
+
+    [Fact]
+    public void Switching_a_row_off_may_change_the_width() => Sta.Run(() =>
+    {
+        double Strip(bool cpu)
+        {
+            var w = new OverlayWindow();
+            w.ApplySettings(new Settings { Layout = Settings.Compact, ShowCpu = cpu });
+            w.ShowStats(Wide);
+            var root = (UIElement)w.Content;
+            root.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            return root.DesiredSize.Width;
+        }
+        Assert.True(Strip(false) < Strip(true));
+    });
+}

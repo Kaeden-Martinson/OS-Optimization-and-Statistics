@@ -44,4 +44,30 @@ public static class OverlayPlacement
         var right = extra > 0 && panelX + windowWidth > work.Right;
         return (right ? panelX - extra : panelX, below ? panelY : panelY - handle, below, right);
     }
+
+    /// <summary>
+    /// Moves a window of the given size the least distance that puts it fully inside the work area; a window larger
+    /// than the work area starts at its left or top edge.
+    /// </summary>
+    public static (int Left, int Top) Clamp(int left, int top, int width, int height,
+        (int Left, int Top, int Right, int Bottom) work) =>
+        (Math.Max(work.Left, Math.Min(left, work.Right - width)),
+         Math.Max(work.Top, Math.Min(top, work.Bottom - height)));
+
+    /// <summary>
+    /// Where the overlay window goes for its current size, in that size's pixels: the panel at its corner or pinned
+    /// spot (so right and bottom placements keep their right or bottom edge as the size changes), the move handle
+    /// beside it (<paramref name="handle"/> is 0 when pinned), and the whole window kept inside the work area.
+    /// While pinned the window is all panel, so a panel width that disagrees with the window's is ignored.
+    /// </summary>
+    public static (int Left, int Top, bool HandleBelow, bool PanelRight) Arrange(string position, double customX, double customY,
+        (int Left, int Top, int Right, int Bottom) work, int windowWidth, int windowHeight, int panelWidth, int handle, int margin)
+    {
+        if (handle <= 0 || panelWidth <= 0 || panelWidth > windowWidth) panelWidth = windowWidth;
+        handle = Math.Max(0, handle);
+        var (x, y) = Place(position, customX, customY, work, panelWidth, windowHeight - handle, margin);
+        var (left, top, below, right) = MoveWindow(x, y, work, panelWidth, windowWidth, handle);
+        (left, top) = Clamp(left, top, windowWidth, windowHeight, work);
+        return (left, top, below, right);
+    }
 }
