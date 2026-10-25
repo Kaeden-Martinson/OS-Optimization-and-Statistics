@@ -87,6 +87,8 @@ public partial class App : Application
         _theme.Changed += _overlay.SetAppTheme;
         _overlay.EnsureHandle();
         _overlay.Moved += SaveSettings;
+        _overlay.Moved += () => _controlCenter?.OverlayMoved();
+        _overlay.Pinned += () => _tray?.Notify("It stays here and clicks pass through to your game. Use Move overlay in the tray to move it again.", "Overlay pinned");
         HwndSource.FromHwnd(_overlay.Handle).AddHook(WndProc);
 
         var hotkeyError = TryRegisterHotkey(Settings.Hotkey);
@@ -189,6 +191,13 @@ public partial class App : Application
         }
         if (_controlCenter.WindowState == WindowState.Minimized) _controlCenter.WindowState = WindowState.Normal;
         _controlCenter.Activate();
+    }
+
+    /// <summary>Shows the overlay if needed and unlocks it for dragging; Pin on the overlay locks it again.</summary>
+    public void MoveOverlay()
+    {
+        if (!_overlay.IsVisible) ToggleOverlay();
+        _overlay.BeginMove();
     }
 
     public void ToggleOverlay()

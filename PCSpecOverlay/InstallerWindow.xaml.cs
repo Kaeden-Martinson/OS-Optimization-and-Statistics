@@ -20,7 +20,7 @@ public partial class InstallerWindow : Window
         if (mode == Mode.Install)
         {
             var installed = Installer.InstalledVersion();
-            Heading.Text = installed is null ? "Install PC Spec Overlay" : "Update PC Spec Overlay";
+            Heading.Text = installed is null ? $"Install {AppIdentity.ProductName}" : $"Update {AppIdentity.ProductName}";
             Intro.Text = installed is null
                 ? $"Version {Installer.Version} will be installed for your account in {Installer.Describe(AppIdentity.InstallDirectory)}. " +
                   "No administrator rights are needed. You can remove it any time from Settings › Apps."
@@ -33,7 +33,7 @@ public partial class InstallerWindow : Window
         }
         else
         {
-            Heading.Text = "Uninstall PC Spec Overlay";
+            Heading.Text = $"Uninstall {AppIdentity.ProductName}";
             Intro.Text = "This removes the app, its Start menu shortcut, its Apps entry and Start with Windows.";
             Option1.Content = "Undo Windows changes the app made (power mode, browser graphics settings, Game Mode, …) — recommended";
             Option2.Content = "Also delete my settings and gaming history";
@@ -54,7 +54,7 @@ public partial class InstallerWindow : Window
         {
             var error = Installer.Install(Option1.IsChecked == true);
             ok = error is null;
-            report = ok ? ["Installed. PC Spec Overlay is running — find it in the tray and in the Start menu."] : [error!];
+            report = ok ? [$"Installed. {AppIdentity.ProductName} is running — find it in the tray and in the Start menu."] : [error!];
         }
         else
         {

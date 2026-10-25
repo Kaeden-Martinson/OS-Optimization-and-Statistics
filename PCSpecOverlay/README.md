@@ -1,4 +1,4 @@
-# PC Spec Overlay
+# Optiframe
 
 A lightweight Windows performance overlay and optimizer, in the spirit of NVIDIA's in-game overlay:
 live FPS, frame time and 1% lows (DirectX, Vulkan and OpenGL); GPU and CPU load, temperature, clocks and power; slowdown
@@ -11,7 +11,7 @@ Everything it changes is recorded, reversible, and never overwrites a choice you
 
 ## Install
 
-1. Run **`PCSpecOverlay-Setup-<version>.exe`**.
+1. Run **`Optiframe-Setup-<version>.exe`**.
 2. Choose whether it should start with Windows, then **Install**.
 
 It installs for your account only (`%LocalAppData%\Programs\PCSpecOverlay`), needs no administrator
@@ -23,7 +23,7 @@ missing, Windows offers to download it from Microsoft the first time you start t
 **Updating:** Control Center › General › Updates checks GitHub once a day (or on demand) and can download and install a newer release; the download's SHA-256 must match the release notes before anything runs. Or run a newer setup yourself. A running copy is closed first (cleanly, restoring anything it
 changed), settings are kept, and the previous version is kept beside the new one as a fallback.
 
-**Uninstalling:** Settings › Apps › PC Spec Overlay › Uninstall. You can choose to undo the Windows
+**Uninstalling:** Settings › Apps › Optiframe › Uninstall. You can choose to undo the Windows
 changes the app made and to delete your settings. The startup entry, shortcut and Apps entry are
 always removed.
 
@@ -34,7 +34,7 @@ always removed.
 | Show / hide the overlay | **Alt+Shift+O** (change it in Control Center › General) |
 | Open the Control Center | Click the tray icon, or start the app again from the Start menu |
 | Stop all optimizations immediately | Tray › *Stop optimizations now*, or Overview › *Stop optimizations now* |
-| Move the overlay | Control Center › Overlay › Display / Corner — or turn off *Click-through* and drag it; it snaps to the nearest corner of any display |
+| Move the overlay | Tray or Control Center › Overlay › *Move overlay*, drag it anywhere (any display), then press **Pin**. The four corners in Control Center › Overlay are presets |
 
 ### Control Center pages
 
@@ -45,8 +45,8 @@ always removed.
   Also lists what's using your CPU, GPU and memory, with *Lower during games* and *End* (asks first).
 - **Gaming** — automatic gaming mode, which optimizations it may use, timing (switch-on delay and
   Alt+Tab grace period), your games list with per-game options, recently seen games.
-- **Overlay** — layout (expanded or one-line compact), display, corner, opacity, text size, which
-  metrics to show, refresh rates, click-through.
+- **Overlay** — layout (expanded or one-line compact), display, position (a corner preset or your
+  pinned spot) and *Move overlay*, opacity, text size, which metrics to show, refresh rates.
 - **Temperatures & alerts** — warning and hot levels for GPU and CPU, notification rules. A problem that keeps
   going (e.g. a GPU throttling all night under an AI workload) notifies at your cooldown three times, then at most
   hourly until it has been gone for 30 minutes.
@@ -178,7 +178,7 @@ dotnet publish PCSpecOverlay -c Release -p:PublishSingleFile=true -o artifacts\p
 ```
 
 Or run `.\build-release.ps1 -UpdateRepository owner/name [-CertificateThumbprint …]`: it tests, publishes, signs when a
-certificate is given, and writes `release-notes.md` with the SHA-256 line the updater requires. Manually: rename the published exe to `PCSpecOverlay-Setup-<version>.exe` to make the setup program (a file
+certificate is given, and writes `release-notes.md` with the SHA-256 line the updater requires. Manually: rename the published exe to `Optiframe-Setup-<version>.exe` to make the setup program (a file
 whose name contains "Setup" runs the installer). Builds running from anywhere other than the install
 folder are **development builds**: they use `%AppData%\PCSpecOverlay-Dev`, their own startup entry,
 lock and monitoring session, so they never interfere with the installed app.

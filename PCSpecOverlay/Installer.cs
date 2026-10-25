@@ -102,6 +102,7 @@ internal static class Installer
         try
         {
             CreateShortcut(target);
+            DeleteLegacyShortcut();
             using (var k = Registry.CurrentUser.CreateSubKey(UninstallKey))
             {
                 k.SetValue("DisplayName", AppIdentity.ProductName);
@@ -140,6 +141,7 @@ internal static class Installer
 
         try { TraceEventSession.GetActiveSession(FpsMonitor.SessionName)?.Stop(); } catch { /* not running */ }
         try { File.Delete(ShortcutPath); } catch { /* already gone */ }
+        DeleteLegacyShortcut();
         try { Registry.CurrentUser.DeleteSubKeyTree(UninstallKey, throwOnMissingSubKey: false); } catch { /* already gone */ }
 
         if (deleteData)
@@ -175,6 +177,13 @@ internal static class Installer
         new GameBoost(state).RestoreAll();
         if (report.Count == 0) report.Add("There were no Windows changes to undo.");
         return report;
+    }
+
+    /// <summary>Versions before 2.1.0 named the Start-menu shortcut after the old product name.</summary>
+    private static void DeleteLegacyShortcut()
+    {
+        try { File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), $"{AppIdentity.LegacyProductName}.lnk")); }
+        catch { /* not there */ }
     }
 
     private static void CreateShortcut(string target)

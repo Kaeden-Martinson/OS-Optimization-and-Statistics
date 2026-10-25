@@ -10,7 +10,8 @@ namespace PCSpecOverlay.Core;
 /// </summary>
 public static class AppIdentity
 {
-    public const string ProductName = "PC Spec Overlay";
+    public const string ProductName = "Optiframe";
+    public const string LegacyProductName = "PC Spec Overlay"; // the Start-menu shortcut's name before 2.1.0
     public const string ExeName = "PCSpecOverlay.exe";
 
     public static string InstallDirectory { get; } = Path.Combine(

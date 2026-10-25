@@ -11,7 +11,7 @@ public class UpdateTests
         System.Text.Json.JsonSerializer.Serialize(new
         {
             tag_name = tag,
-            name = $"PC Spec Overlay {tag}",
+            name = $"Optiframe {tag}",
             body,
             html_url = $"https://github.com/me/pcspec/releases/tag/{tag}",
             assets = assets.Select(a => new { name = a.Name, size = a.Size, browser_download_url = $"https://github.com/me/pcspec/releases/download/{tag}/{a.Name}" }),
@@ -78,7 +78,7 @@ public class UpdateTests
         using var http = new HttpClient(new FixedHandler([1, 2, 3, 4, 5])); // right size, wrong content
         var e = await Assert.ThrowsAsync<InvalidOperationException>(() => Updates.DownloadAsync(http, release));
         Assert.Contains("didn't match", e.Message);
-        Assert.False(File.Exists(Path.Combine(Path.GetTempPath(), "PCSpecOverlay-update", "PCSpecOverlay-Setup-9.9.9.exe")));
+        Assert.False(File.Exists(Updates.DownloadPath(release.Version)));
     }
 
     [Fact]
@@ -89,6 +89,7 @@ public class UpdateTests
         var release = Updates.Parse(Release("v9.9.8", $"SHA256: {hash}", ("PCSpecOverlay-Setup-9.9.8.exe", content.Length)))!;
         using var http = new HttpClient(new FixedHandler(content));
         var path = await Updates.DownloadAsync(http, release);
+        Assert.Equal(Updates.DownloadPath(release.Version), path);
         Assert.Equal(content, File.ReadAllBytes(path));
         File.Delete(path);
     }

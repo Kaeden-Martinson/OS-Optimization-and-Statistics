@@ -12,6 +12,19 @@ public static class ThemeResolver
 {
     public const string PersonalizeKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
 
+    /// <summary>Whether the Windows taskbar is light (SystemUsesLightTheme = 1); anything else counts as dark.</summary>
+    public static bool TaskbarIsLight(Func<object?> readSystemUsesLightTheme)
+    {
+        try { return readSystemUsesLightTheme() is int v && v == 1; }
+        catch { return false; }
+    }
+
+    public static object? ReadSystemUsesLightTheme()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(PersonalizeKey);
+        return key?.GetValue("SystemUsesLightTheme");
+    }
+
     public static AppTheme Resolve(string appearance, Func<object?> readAppsUseLightTheme) => appearance switch
     {
         Settings.Light => AppTheme.Light,

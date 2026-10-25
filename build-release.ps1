@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Builds a release of PC Spec Overlay: runs the tests, publishes the single-file setup, signs it when a
+  Builds a release of Optiframe: runs the tests, publishes the single-file setup, signs it when a
   certificate is available, and writes release notes containing the SHA-256 the in-app updater requires.
 
 .EXAMPLE
@@ -9,7 +9,7 @@
   .\build-release.ps1 -PfxPath cert.pfx               # asks for the password
   .\build-release.ps1 -UpdateRepository "owner/name"  # a fork checking its own releases
 
-  Then create a GitHub release tagged v<version>, attach artifacts\release\PCSpecOverlay-Setup-<version>.exe,
+  Then create a GitHub release tagged v<version>, attach artifacts\release\Optiframe-Setup-<version>.exe,
   and paste artifacts\release\release-notes.md as the description.
 #>
 param(
@@ -32,7 +32,7 @@ $repoArgs = if ($UpdateRepository) { @("-p:UpdateRepository=$UpdateRepository") 
 if (-not $UpdateRepository) {
     $UpdateRepository = ($project.Project.PropertyGroup.UpdateRepository | ForEach-Object { if ($_ -is [string]) { $_ } else { $_.'#text' } } | Where-Object { $_ } | Select-Object -First 1)
 }
-Write-Host "Building PC Spec Overlay $version" -ForegroundColor Green
+Write-Host "Building Optiframe $version" -ForegroundColor Green
 
 if (-not $SkipTests) {
     dotnet test PCSpec.slnx -c Release --nologo -v q
@@ -43,7 +43,7 @@ $out = "artifacts\release"
 Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
 dotnet publish PCSpecOverlay\PCSpecOverlay.csproj -c Release -p:PublishSingleFile=true @repoArgs -o "$out\publish" --nologo -v q
 if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
-$setup = "$out\PCSpecOverlay-Setup-$version.exe"
+$setup = "$out\Optiframe-Setup-$version.exe"
 Move-Item "$out\publish\PCSpecOverlay.exe" $setup
 Remove-Item "$out\publish" -Recurse -Force
 
@@ -69,9 +69,9 @@ if ($CertificateThumbprint -or $PfxPath) {
 $hash = (Get-FileHash $setup -Algorithm SHA256).Hash
 $size = (Get-Item $setup).Length
 @"
-## PC Spec Overlay $version
+## Optiframe $version
 
-Run ``PCSpecOverlay-Setup-$version.exe`` to install or update (per-user, no administrator rights).
+Run ``Optiframe-Setup-$version.exe`` to install or update (per-user, no administrator rights).
 Requires Windows 10/11 64-bit and the .NET 8 Desktop Runtime.
 
 SHA256: $hash
