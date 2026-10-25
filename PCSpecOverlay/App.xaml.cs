@@ -69,14 +69,14 @@ public partial class App : Application
 
         Log.Info("App", $"Starting {Installer.Version} from {Installer.Describe(Environment.ProcessPath)}");
         _engine = new Engine();
-        _theme = new ThemeManager(Resources);
-        _theme.Apply(Settings.Appearance);
 
         // By default the overlay draws on the CPU: GPU rendering loads the graphics driver into this process
         // (~100 MB more). Optional, because on some PCs it lowers CPU use. Must be set before any window exists.
         StartedWithGpuRendering = Settings.GpuRendering;
         if (!StartedWithGpuRendering) System.Windows.Media.RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
         Log.Info("App", $"Drawing with the {(StartedWithGpuRendering ? "graphics chip" : "CPU")}");
+        _theme = new ThemeManager(Resources);
+        _theme.Apply(Settings.Appearance);
         _engine.Alert += a => _tray?.Notify(a.Message, a.Title, a.DriverConfirmed);
         _history = new HistoryRecorder(_engine.Settings);
 

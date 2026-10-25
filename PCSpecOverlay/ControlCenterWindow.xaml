@@ -16,7 +16,7 @@
         <Style x:Key="TileLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11" />
             <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Foreground" Value="{DynamicResource Faint}" />
+            <Setter Property="Foreground" Value="{DynamicResource Muted}" />
         </Style>
         <Style x:Key="TileValue" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
@@ -62,7 +62,7 @@
                                 </StackPanel>
                             </StackPanel>
                             <TextBlock x:Name="PART_Version" DockPanel.Dock="Bottom" Margin="22,0,0,16" FontSize="11"
-                                       Foreground="{DynamicResource Faint}"
+                                       Foreground="{DynamicResource Muted}"
                                        Text="{Binding VersionText, RelativeSource={RelativeSource AncestorType=Window}}" />
                             <StackPanel IsItemsHost="True" />
                         </DockPanel>
@@ -89,7 +89,7 @@
                                 <TextBlock Text="FRAME RATE" Style="{StaticResource TileLabel}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TFps" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" FPS" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                                    <TextBlock Text=" FPS" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
                                 </StackPanel>
                                 <TextBlock x:Name="TFpsSub" Style="{StaticResource Small}" />
                             </StackPanel>
@@ -99,7 +99,7 @@
                                 <TextBlock x:Name="TGpuLabel" Text="GPU" Style="{StaticResource TileLabel}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TGpu" Style="{StaticResource TileValue}" />
-                                    <TextBlock x:Name="TGpuUnit" Text=" °C" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                                    <TextBlock x:Name="TGpuUnit" Text=" °C" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
                                 </StackPanel>
                                 <TextBlock x:Name="TGpuSub" Style="{StaticResource Small}" />
                             </StackPanel>
@@ -109,7 +109,7 @@
                                 <TextBlock Text="CPU" Style="{StaticResource TileLabel}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TCpu" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" °C" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                                    <TextBlock Text=" °C" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
                                 </StackPanel>
                                 <TextBlock x:Name="TCpuSub" Style="{StaticResource Small}" />
                             </StackPanel>
@@ -119,7 +119,7 @@
                                 <TextBlock Text="MEMORY" Style="{StaticResource TileLabel}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TRam" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" GB" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                                    <TextBlock Text=" GB" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
                                 </StackPanel>
                                 <TextBlock x:Name="TRamSub" Style="{StaticResource Small}" />
                             </StackPanel>
@@ -166,7 +166,7 @@
                         <Border Style="{StaticResource CardBox}">
                             <StackPanel>
                                 <DockPanel>
-                                    <Border x:Name="GamingPill" DockPanel.Dock="Right" CornerRadius="10" Padding="9,2" VerticalAlignment="Top">
+                                    <Border x:Name="GamingPill" DockPanel.Dock="Right" Padding="9,2" VerticalAlignment="Top">
                                         <TextBlock x:Name="GamingPillText" FontSize="11" FontWeight="Bold" />
                                     </Border>
                                     <TextBlock Text="Gaming mode" Style="{StaticResource CardTitle}" />
@@ -235,7 +235,7 @@
                     </DockPanel>
 
                     <Border x:Name="RestartBanner" Visibility="Collapsed" Background="{DynamicResource AccentSoft}" BorderBrush="{DynamicResource Accent}"
-                            BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,10">
+                            BorderThickness="1" Padding="16,12" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />

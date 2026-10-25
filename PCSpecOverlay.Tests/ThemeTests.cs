@@ -126,6 +126,14 @@ public class ColorDictionaryTests
         Assert.Equal(C(d, "Signal"), C(d, "Warn"));
         Assert.Equal(C(d, "Muted"), C(d, "Info"));
     });
+
+    [Fact]
+    public void Dark_and_light_define_the_same_keys() => Sta.Run(() =>
+    {
+        var dark = XamlFile.LoadDictionary("PCSpecOverlay/Themes/Colors.Dark.xaml").Keys.Cast<object>().Select(k => k.ToString()).OrderBy(k => k);
+        var light = XamlFile.LoadDictionary("PCSpecOverlay/Themes/Colors.Light.xaml").Keys.Cast<object>().Select(k => k.ToString()).OrderBy(k => k);
+        Assert.Equal(dark, light);
+    });
 }
 
 public class IconTests

@@ -175,6 +175,7 @@ public partial class ControlCenterWindow : Window
     private void OnThemeChanged(AppTheme theme)
     {
         TitleBar.Apply(this, theme == AppTheme.Dark);
+        HotkeyResult.Text = "";
         RefreshAll();
     }
 
@@ -279,7 +280,7 @@ public partial class ControlCenterWindow : Window
         else if (_engine.OptimizationsPaused) { pill = "PAUSED"; pillColor = (Brush)FindResource("Warn"); }
         else if (gm.Active) { pill = "ACTIVE"; pillColor = (Brush)FindResource("Accent"); }
         else if (_settings.AutoGamingMode) { pill = "WAITING FOR A GAME"; pillColor = (Brush)FindResource("Info"); }
-        else { pill = "OFF"; pillColor = (Brush)FindResource("Faint"); }
+        else { pill = "OFF"; pillColor = (Brush)FindResource("Muted"); }
         GamingPillText.Text = pill;
         GamingPillText.Foreground = pillColor;
         var c = ((SolidColorBrush)pillColor).Color;
@@ -327,7 +328,7 @@ public partial class ControlCenterWindow : Window
         return new Border
         {
             Background = new SolidColorBrush(Color.FromArgb(0x1A, c.R, c.G, c.B)), BorderBrush = accent, BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, 10), Child = dock,
+            Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, 10), Child = dock,
         };
     }
 
