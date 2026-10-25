@@ -127,3 +127,27 @@ public class ColorDictionaryTests
         Assert.Equal(C(d, "Muted"), C(d, "Info"));
     });
 }
+
+public class IconTests
+{
+    private static readonly string[] Names =
+    [
+        "Mark", "Overview", "Optimizer", "Gaming", "Overlay", "Temperature", "Settings", "Diagnostics", "Sun", "Moon",
+        "Monitor", "Check", "Warning", "Info", "Undo", "Pause", "Plus", "Close", "Chevron", "ChevronDown", "Refresh",
+        "Copy", "File", "Folder", "Pointer", "Power", "Grip", "Window",
+    ];
+
+    [Fact]
+    public void Every_icon_is_a_geometry_inside_the_24_unit_grid() => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary("PCSpecOverlay/Themes/Icons.xaml");
+        foreach (var name in Names)
+        {
+            var g = Assert.IsAssignableFrom<Geometry>(d["Icon." + name]);
+            var b = g.Bounds;
+            Assert.False(b.IsEmpty, name);
+            Assert.True(b.Left >= 0 && b.Top >= 0 && b.Right <= 24 && b.Bottom <= 24, $"{name} bounds {b}");
+        }
+        Assert.Equal(Names.Length, d.Keys.Count);
+    });
+}

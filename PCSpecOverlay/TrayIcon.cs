@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using PCSpecOverlay.Core;
 using Forms = System.Windows.Forms;
+using Icon = System.Drawing.Icon;
 
 namespace PCSpecOverlay;
 
