@@ -130,6 +130,18 @@ The in-game overlay rebuilt as Strip (default) and Panel with its own theme. 169
 | CPU use | ✅ | Same 60 s side by side: installed 2.0.13 1.61 % of one core, new Panel 1.61 % |
 | Per-game layout, drag-and-snap | ⬜ | Code path unchanged from before and reviewed; not exercised on screen this time |
 
+## Instrument stage 3 (2026-10-24, Release development build)
+
+Top tab bar and the new Overview. 190 automated tests pass; these were checked on screen.
+
+| Check | Result | Notes |
+|---|---|---|
+| Tab bar | ✅ | Seven tabs with icons, Overview underlined; app name left, "2.0.13 dev" and the sun/moon switch right |
+| Minimum width (900 px) | ✅ | At 125 % scaling the last tab (Diagnostics) ends at 1193 px, clear of the version label; no overlap |
+| Overview, dark | ✅ | Four ruled readings with 10-segment bars (GPU 88 °C and CPU 94 °C in red), chart with grid and an amber dip dot, events (shortcut warning in amber), status line with the green light |
+| Sun/moon switch | 🟡 | Tooltip "Light theme" shows on hover; the click itself wasn't exercised on screen. The switch logic was reviewed and the Settings dropdown sync was fixed in review |
+| Light theme of the new Overview | ⬜ | Not looked at on screen this time |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
