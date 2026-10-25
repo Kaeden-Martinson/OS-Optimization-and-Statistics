@@ -17,18 +17,19 @@ public readonly record struct OverlayStatus(bool GamingMode, bool Boost, bool Pa
 /// center. It never takes focus, stays out of Alt+Tab, and is click-through unless the user turns
 /// that off to drag it (it then snaps to the nearest corner of whichever monitor it's dropped on).
 /// Positioning works in physical pixels per monitor, so mixed display scaling can't misplace it.
+/// Its colors come from Themes/Overlay.*.xaml merged into this window only, so the app theme never
+/// recolors it unless the overlay theme is "Same as app".
 /// </summary>
 public partial class OverlayWindow : Window
 {
-    private static readonly Brush Normal = Frozen(0xF3, 0xF5, 0xF6);
-    private static readonly Brush Warm = Frozen(0xF5, 0xB7, 0x31);
-    private static readonly Brush Hot = Frozen(0xFF, 0x4D, 0x4F);
-    private static readonly Brush Muted = Frozen(0x69, 0x72, 0x7B);
     private const double EdgeMarginDip = 14;
 
     private Settings _settings = new();
-    private string _layout = Settings.Expanded;
+    private string _layout = Settings.Compact;
     private Limit _shownLimits = (Limit)(-1);
+    private AppTheme _appTheme = AppTheme.Dark;
+    private AppTheme _shownTheme = AppTheme.Dark; // OverlayWindow.xaml merges the dark colors
+    private readonly FrameTimeTrace _trace = new();
 
     public IntPtr Handle { get; private set; }
 
@@ -46,6 +47,7 @@ public partial class OverlayWindow : Window
         SizeChanged += (_, _) => Reposition();
         DpiChanged += (_, _) => Dispatcher.BeginInvoke(Reposition);
         MouseLeftButtonDown += OnDrag;
+        TraceCanvas.SizeChanged += (_, _) => DrawTrace();
     }
 
     public void EnsureHandle() => Handle = new WindowInteropHelper(this).EnsureHandle();
@@ -58,17 +60,43 @@ public partial class OverlayWindow : Window
         Opacity = s.Opacity;
         PanelScale.ScaleX = PanelScale.ScaleY = s.Scale;
 
-        var expanded = _layout != Settings.Compact;
-        ExpandedLayout.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
-        CompactLayout.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
-        FrameTimeRow.Visibility = CFrameTimeBox.Visibility = Show(s.ShowFrameTime);
+        var panel = _layout == Settings.Expanded;
+        ExpandedLayout.Visibility = Show(panel);
+        CompactLayout.Visibility = Show(!panel);
+        FrameTimeRow.Visibility = CFrameTimeBox.Visibility = TraceArea.Visibility = Show(s.ShowFrameTime);
         LowRow.Visibility = Show(s.ShowOnePercentLow);
         CpuRow.Visibility = CCpuBox.Visibility = Show(s.ShowCpu);
         RamRow.Visibility = Show(s.ShowRam);
         _shownLimits = (Limit)(-1); // re-render limit chips
 
+        ApplyTheme();
         ApplyWindowStyles();
         Reposition();
+        DrawTrace();
+    }
+
+    /// <summary>The control center's theme; used when the overlay theme is "Same as app".</summary>
+    public void SetAppTheme(AppTheme theme)
+    {
+        _appTheme = theme;
+        ApplyTheme();
+    }
+
+    private void ApplyTheme()
+    {
+        var theme = ThemeResolver.ResolveOverlay(_settings.OverlayTheme, _appTheme);
+        if (theme == _shownTheme) return;
+        try
+        {
+            var colors = new ResourceDictionary { Source = new Uri($"pack://application:,,,/PCSpecOverlay;component/Themes/Overlay.{theme}.xaml") };
+            Resources.MergedDictionaries.Clear();
+            Resources.MergedDictionaries.Add(colors);
+            _shownTheme = theme;
+        }
+        catch (Exception e)
+        {
+            Log.Error("Overlay", $"Couldn't load the {theme.ToString().ToLowerInvariant()} overlay colors", e);
+        }
     }
 
     private static Visibility Show(bool on) => on ? Visibility.Visible : Visibility.Collapsed;
@@ -132,27 +160,40 @@ public partial class OverlayWindow : Window
         var text = status.GamingMode ? "GAMING MODE" : status.Paused ? "PAUSED" : status.Boost ? "BOOST" : null;
         BadgeText.Text = text ?? "";
         CBadgeText.Text = status.GamingMode ? "GAME" : text ?? "";
-        Badge.Visibility = CBadge.Visibility = text is null ? Visibility.Collapsed : Visibility.Visible;
-        Badge.Background = CBadge.Background = status.Paused ? Muted : (Brush)FindResource("Accent");
+        Badge.Visibility = CBadge.Visibility = Show(text is not null);
+        var fill = status.Paused ? "O.Muted" : "O.Text";
+        Badge.SetResourceReference(Border.BackgroundProperty, fill);
+        CBadge.SetResourceReference(Border.BackgroundProperty, fill);
     }
 
     public void ShowFps(Telemetry t)
     {
         FpsHint.Text = t.FpsUnavailable;
-        FpsHint.Visibility = t.FpsUnavailable is null ? Visibility.Collapsed : Visibility.Visible;
+        FpsHint.Visibility = Show(t.FpsUnavailable is not null);
+        FpsSource.Text = t.FpsSource ?? "";
 
         if (t.Fps is { } s)
         {
             FpsValue.Text = CFps.Text = Math.Round(s.Fps).ToString("0");
             FrameTime.Text = CFrameTime.Text = s.FrameTimeMs.ToString("0.0");
             LowFps.Text = Math.Round(s.OnePercentLow).ToString("0");
-            FpsValue.Foreground = CFps.Foreground = Normal;
         }
         else
         {
             FpsValue.Text = CFps.Text = FrameTime.Text = CFrameTime.Text = LowFps.Text = "—";
-            FpsValue.Foreground = CFps.Foreground = Muted;
         }
+        var color = t.Fps is null ? "O.Muted" : "O.Text";
+        FpsValue.SetResourceReference(TextBlock.ForegroundProperty, color);
+        CFps.SetResourceReference(TextBlock.ForegroundProperty, color);
+
+        _trace.Add(t.Fps?.WorstFrameMs);
+        DrawTrace();
+    }
+
+    private void DrawTrace()
+    {
+        if (ExpandedLayout.Visibility != Visibility.Visible || TraceArea.Visibility != Visibility.Visible) return;
+        TraceLine.Points = new PointCollection(_trace.Plot(TraceCanvas.ActualWidth, TraceCanvas.ActualHeight));
     }
 
     public void ShowStats(Telemetry t)
@@ -179,7 +220,7 @@ public partial class OverlayWindow : Window
         Set(GpuTemp, g.TempC, "0");
         Set(GpuClock, g.ClockMhz, "0");
         Set(GpuPower, g.PowerW, "0");
-        GpuTemp.Foreground = TempBrush(g.TempC, s.GpuTempWarn, s.GpuTempHot);
+        SetTemp(GpuTemp, g.TempC, s.GpuTempWarn, s.GpuTempHot);
         SetBar(GpuBar, g.Load);
         const double gb = 1024.0 * 1024 * 1024;
         Set(VramUsed, g.VramUsed / gb, "0.0");
@@ -188,17 +229,17 @@ public partial class OverlayWindow : Window
         Set(CpuLoad, t.CpuLoad, "0");
         Set(CpuTemp, t.CpuTempC, "0");
         Set(CpuClock, t.CpuClockGhz, "0.0");
-        CpuTemp.Foreground = TempBrush(t.CpuTempC, s.CpuTempWarn, s.CpuTempHot);
+        SetTemp(CpuTemp, t.CpuTempC, s.CpuTempWarn, s.CpuTempHot);
         SetBar(CpuBar, t.CpuLoad);
 
         Set(RamUsed, t.Ram?.UsedGb, "0.0");
         RamTotal.Text = t.Ram is { } r ? $"/ {r.TotalGb:0.0} GB" : "/ — GB";
 
-        // Compact line
-        CGpu.Text = ok ? $"{Num(g.Load, "0")}% · {Num(g.TempC, "0")}°" : g.Status == GpuStatus.Sleeping ? "sleeping" : "—";
-        CGpu.Foreground = TempBrush(g.TempC, s.GpuTempWarn, s.GpuTempHot);
-        CCpu.Text = $"{Num(t.CpuLoad, "0")}% · {Num(t.CpuTempC, "0")}°";
-        CCpu.Foreground = TempBrush(t.CpuTempC, s.CpuTempWarn, s.CpuTempHot);
+        // Strip: temperature first, then load
+        CGpu.Text = ok ? $"{Num(g.TempC, "0")}° {Num(g.Load, "0")}%" : g.Status == GpuStatus.Sleeping ? "sleeping" : "—";
+        SetTemp(CGpu, g.TempC, s.GpuTempWarn, s.GpuTempHot);
+        CCpu.Text = $"{Num(t.CpuTempC, "0")}° {Num(t.CpuLoad, "0")}%";
+        SetTemp(CCpu, t.CpuTempC, s.CpuTempWarn, s.CpuTempHot);
 
         ShowLimits(s.ShowSlowdowns ? t.Limits : Limit.None);
     }
@@ -217,40 +258,36 @@ public partial class OverlayWindow : Window
                      (Limit.CpuPower, "CPU · AT POWER LIMIT", false),
                  })
         {
-            if (limits.HasFlag(flag)) LimitsRow.Children.Add(Chip(text, hot ? Hot : Warm, 9.5));
+            if (limits.HasFlag(flag)) LimitsRow.Children.Add(Chip(text, hot ? "O.Hot" : "O.Signal"));
         }
         LimitsRow.Visibility = Show(limits != Limit.None);
 
         var thermal = (limits & (Limit.GpuThermal | Limit.CpuThermal)) != 0;
         CLimit.Visibility = Show(limits != Limit.None);
         CLimitText.Text = thermal ? "HEAT" : "POWER";
-        var color = ((SolidColorBrush)(thermal ? Hot : Warm)).Color;
-        CLimitText.Foreground = new SolidColorBrush(color);
-        CLimit.Background = new SolidColorBrush(Color.FromArgb(0x30, color.R, color.G, color.B));
+        var key = thermal ? "O.Hot" : "O.Signal";
+        CLimitText.SetResourceReference(TextBlock.ForegroundProperty, key);
+        CLimit.SetResourceReference(Border.BackgroundProperty, key + "Soft");
     }
 
-    private static Border Chip(string text, Brush brush, double size)
+    /// <summary>A square warning chip in the given color token (its "Soft" variant fills it).</summary>
+    private static Border Chip(string text, string key)
     {
-        var c = ((SolidColorBrush)brush).Color;
-        return new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(0x30, c.R, c.G, c.B)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x80, c.R, c.G, c.B)),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(3),
-            Padding = new Thickness(6, 1, 6, 2),
-            Margin = new Thickness(0, 0, 6, 4),
-            Child = new TextBlock
-            {
-                Text = text, FontFamily = new FontFamily("Segoe UI"), FontWeight = FontWeights.Bold,
-                FontSize = size, Foreground = brush,
-            },
-        };
+        var label = new TextBlock { Text = text, FontFamily = new FontFamily("Segoe UI"), FontWeight = FontWeights.SemiBold, FontSize = 9.5 };
+        label.SetResourceReference(TextBlock.ForegroundProperty, key);
+        var chip = new Border { BorderThickness = new Thickness(1), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 6, 4), Child = label };
+        chip.SetResourceReference(Border.BackgroundProperty, key + "Soft");
+        chip.SetResourceReference(Border.BorderBrushProperty, key);
+        return chip;
     }
 
     private static string Num(double? v, string format) => v is { } x ? x.ToString(format) : "—";
 
     private static void Set(TextBlock block, double? value, string format) => block.Text = Num(value, format);
+
+    /// <summary>Amber at the warning level, red at the hot level, otherwise the normal text color.</summary>
+    private static void SetTemp(TextBlock block, double? c, double warm, double hot) =>
+        block.SetResourceReference(TextBlock.ForegroundProperty, c is null ? "O.Text" : c >= hot ? "O.Hot" : c >= warm ? "O.Signal" : "O.Text");
 
     /// <summary>
     /// Bars ease only on noticeable changes (≥10 points), briefly and at a low frame rate; small
@@ -271,15 +308,5 @@ public partial class OverlayWindow : Window
         var anim = new DoubleAnimation(target, TimeSpan.FromMilliseconds(200)) { EasingFunction = new QuadraticEase() };
         Timeline.SetDesiredFrameRate(anim, 20);
         scale.BeginAnimation(ScaleTransform.ScaleXProperty, anim);
-    }
-
-    private static Brush TempBrush(double? c, double warm, double hot) =>
-        c is null ? Normal : c >= hot ? Hot : c >= warm ? Warm : Normal;
-
-    private static Brush Frozen(byte r, byte g, byte b)
-    {
-        var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
-        brush.Freeze();
-        return brush;
     }
 }

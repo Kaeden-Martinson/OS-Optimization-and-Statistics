@@ -197,3 +197,26 @@ public class OverlayColorTests
         Assert.True(Contrast.Ratio(C(d, "O.Solid"), C(d, "O.Text")) >= 4.5, "badge text on badge");
     });
 }
+
+public class OverlaySourceTests
+{
+    [Fact]
+    public void Overlay_xaml_takes_every_color_from_the_overlay_tokens()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/OverlayWindow.xaml"));
+        Assert.DoesNotMatch(@"=""#[0-9A-Fa-f]{6,8}""", xaml);
+        Assert.DoesNotMatch(@"\{StaticResource O\.", xaml);
+        Assert.DoesNotMatch(@"\{(Static|Dynamic)Resource (Accent|Text|Muted|Bg|Panel|Signal|Hot|Warn)\}", xaml); // never the app's colors
+        Assert.DoesNotContain("CornerRadius", xaml);
+        Assert.Contains("Themes/Overlay.Dark.xaml", xaml);
+    }
+
+    [Fact]
+    public void Overlay_code_has_no_hard_coded_colors()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/OverlayWindow.xaml.cs"));
+        Assert.DoesNotMatch(@"Color\.From(Rgb|Argb)\(", code);
+        Assert.DoesNotContain("Frozen(", code);
+        Assert.DoesNotContain("FindResource(\"Accent\")", code);
+    }
+}
