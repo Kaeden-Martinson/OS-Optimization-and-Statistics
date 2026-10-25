@@ -327,7 +327,7 @@ public class OverlayWidthTests
 
     /// <summary>
     /// The Strip's cells: content starts at the cell's 10 DIP padding (any slack at its right end), and the gaps are
-    /// the same in every cell: label to value 6, number to unit 3, number to ° or % 2, between values 8.
+    /// the same in every cell: label to value 6, number to unit 3, between values 8 (° and % join the number).
     /// </summary>
     [Fact]
     public void Strip_cells_are_evenly_spaced() => Sta.Run(() =>
@@ -370,9 +370,9 @@ public class OverlayWidthTests
         {
             var label = Runs(Line(p + "Text")).First();
             Near(6, Gap(label, R(p + "Temp")));              // GPU 64
-            Near(2, Gap(R(p + "Temp"), R(p + "Deg")));       // 64°
-            Near(8, Gap(R(p + "Deg"), R(p + "Load")));       // ° 4
-            Near(2, Gap(R(p + "Load"), R(p + "Pct")));       // 4%
+            Assert.Equal("°", R(p + "Temp").Text[^1..]);              // 64° and 4%: the glyphs join the number
+            Assert.Equal("%", R(p + "Load").Text[^1..]);
+            Near(8, Gap(R(p + "Temp"), R(p + "Load")));       // 64° 4%
         }
 
         // One baseline: every cell's line has the same height and sits at the same height

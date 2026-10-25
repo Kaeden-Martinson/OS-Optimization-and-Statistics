@@ -398,13 +398,12 @@ public partial class OverlayWindow : Window
 
         // Strip: temperature first, then load; without a reading, the GPU cell says why in place of its values
         CGpuState.Text = g.Status == GpuStatus.Sleeping ? "sleeping" : "";
-        CGpuTemp.Text = ok ? Num(g.TempC, "0") : g.Status == GpuStatus.Sleeping ? "" : "—";
-        CGpuDeg.Text = ok ? "°" : "";
-        CGpuLoad.Text = ok ? Num(g.Load, "0") : "";
-        CGpuPct.Text = ok ? "%" : "";
+        // ° and % are part of the value: the number's font and color, no gap
+        CGpuTemp.Text = ok ? Num(g.TempC, "0", "°") : g.Status == GpuStatus.Sleeping ? "" : "—";
+        CGpuLoad.Text = ok ? Num(g.Load, "0", "%") : "";
         CGpuTemp.SetResourceReference(TextElement.ForegroundProperty, TempColor(g.TempC, s.GpuTempWarn, s.GpuTempHot));
-        CCpuTemp.Text = Num(t.CpuTempC, "0");
-        CCpuLoad.Text = Num(t.CpuLoad, "0");
+        CCpuTemp.Text = Num(t.CpuTempC, "0", "°");
+        CCpuLoad.Text = Num(t.CpuLoad, "0", "%");
         CCpuTemp.SetResourceReference(TextElement.ForegroundProperty, TempColor(t.CpuTempC, s.CpuTempWarn, s.CpuTempHot));
 
         ShowLimits(s.ShowSlowdowns ? t.Limits : Limit.None);
@@ -448,7 +447,7 @@ public partial class OverlayWindow : Window
         return chip;
     }
 
-    private static string Num(double? v, string format) => v is { } x ? x.ToString(format) : "—";
+    private static string Num(double? v, string format, string suffix = "") => v is { } x ? x.ToString(format) + suffix : "—";
 
     private static void Set(TextBlock block, double? value, string format) => block.Text = Num(value, format);
 
