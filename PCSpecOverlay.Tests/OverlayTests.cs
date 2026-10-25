@@ -22,6 +22,7 @@ public class OverlaySettingTests
         var s = JsonSerializer.Deserialize<Settings>("""{"Layout":"Expanded"}""")!;
         s.Validate();
         Assert.Equal(Settings.Expanded, s.Layout);
+        Assert.Equal(Settings.AlwaysDark, s.OverlayTheme); // missing in the file → default
     }
 
     [Theory]
@@ -161,6 +162,28 @@ public class OverlayColorTests
         ["O.Bg", "O.Solid", "O.Line", "O.Line2", "O.Text", "O.Muted", "O.Signal", "O.Hot", "O.SignalSoft", "O.HotSoft", "O.Track"];
 
     private static Color C(ResourceDictionary d, string key) => ((SolidColorBrush)d[key]).Color;
+
+    /// <summary>A translucent color painted over an opaque one, as the screen shows it.</summary>
+    private static Color Over(Color top, Color bottom)
+    {
+        double a = top.A / 255.0;
+        byte Mix(byte t, byte b) => (byte)Math.Round(t * a + b * (1 - a));
+        return Color.FromRgb(Mix(top.R, bottom.R), Mix(top.G, bottom.G), Mix(top.B, bottom.B));
+    }
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Themes/Overlay.Dark.xaml")]
+    [InlineData("PCSpecOverlay/Themes/Overlay.Light.xaml")]
+    public void Warning_chip_text_meets_four_and_a_half_to_one_on_its_own_fill(string file) => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary(file);
+        foreach (var key in new[] { "O.Signal", "O.Hot" })
+        {
+            var fill = Over(C(d, key + "Soft"), C(d, "O.Solid"));
+            var ratio = Contrast.Ratio(C(d, key), fill);
+            Assert.True(ratio >= 4.5, $"{key} on {key}Soft is {ratio:0.00}:1 in {file}");
+        }
+    });
 
     [Theory]
     [InlineData("PCSpecOverlay/Themes/Overlay.Dark.xaml")]

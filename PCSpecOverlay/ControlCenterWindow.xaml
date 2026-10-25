@@ -522,7 +522,7 @@
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
                                 <TextBlock Text="Layout" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Layout}">
+                                <ComboBox Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Layout}" AutomationProperties.Name="Overlay layout">
                                     <ComboBoxItem Content="Strip (one line)" Tag="Compact" />
                                     <ComboBoxItem Content="Panel" Tag="Expanded" />
                                 </ComboBox>

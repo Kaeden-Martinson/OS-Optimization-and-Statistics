@@ -6,6 +6,7 @@ namespace PCSpecOverlay.Monitors;
 /// The overlay's frame-time line: the worst frame of each FPS update, newest on the right. Fixed size,
 /// so it never grows. The scale stretches to fit the biggest spike but never zooms in past 33.4 ms
 /// (30 FPS), so a smooth game draws a calm, low line and a stutter stands out.
+/// Each value is the worst frame of the last second at the time of an update, so with updates several times a second one hitch shows as a short plateau rather than a single spike.
 /// </summary>
 public sealed class FrameTimeTrace
 {
@@ -43,7 +44,7 @@ public sealed class FrameTimeTrace
     /// <summary>Points for a polyline in a width × height box (y grows downward); gaps are skipped.</summary>
     public List<Point> Plot(double width, double height)
     {
-        var points = new List<Point>();
+        var points = new List<Point>(Count);
         if (width <= 0 || height <= 0) return points;
         var values = Values();
         var max = values.Max() ?? 0;

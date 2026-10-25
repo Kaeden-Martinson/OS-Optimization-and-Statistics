@@ -9,7 +9,7 @@
     <SolidColorBrush x:Key="O.Muted" Color="#5F5F59" />
     <SolidColorBrush x:Key="O.Signal" Color="#955C00" />
     <SolidColorBrush x:Key="O.Hot" Color="#B8322B" />
-    <SolidColorBrush x:Key="O.SignalSoft" Color="#2E955C00" />
-    <SolidColorBrush x:Key="O.HotSoft" Color="#2EB8322B" />
+    <SolidColorBrush x:Key="O.SignalSoft" Color="#1A955C00" />
+    <SolidColorBrush x:Key="O.HotSoft" Color="#1AB8322B" />
     <SolidColorBrush x:Key="O.Track" Color="#1F000000" />
 </ResourceDictionary>
