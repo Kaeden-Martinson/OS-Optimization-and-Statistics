@@ -134,7 +134,7 @@ public partial class ControlCenterWindow : Window
 
     private void ShowUpdate(UpdateResult? r)
     {
-        UpdateVersion.Text = $"You have version {AppIdentity.Version}" + (AppIdentity.IsDevBuild ? " (development build)" : "");
+        VersionValue.Text = AppIdentity.Version + (AppIdentity.IsDevBuild ? " dev" : "");
         UpdateStatus.Text = r?.Message is { Length: > 0 } m ? m
             : string.IsNullOrEmpty(Updates.Repository) ? "Updates aren't set up yet: this build doesn't know where releases are published."
             : "Not checked yet.";
@@ -193,6 +193,8 @@ public partial class ControlCenterWindow : Window
 
     private void OnLightTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Light);
 
+    private void OnAppearance(object sender, RoutedEventArgs e) => ChooseTheme((string)((FrameworkElement)sender).Tag);
+
     private void OnDarkTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Dark);
 
     private void OnMoveOverlay(object sender, RoutedEventArgs e) => _app.MoveOverlay();
@@ -204,14 +206,11 @@ public partial class ControlCenterWindow : Window
         RefreshPreview();
     }
 
-    /// <summary>The switch in the tab bar picks Light or Dark outright; Match Windows stays on the Settings page.</summary>
+    /// <summary>The tab-bar switch and the Appearance segments both land here; the switch picks Light or Dark outright.</summary>
     private void ChooseTheme(string appearance)
     {
         _settings.Appearance = appearance;
         _app.SaveSettings();
-        _loading = true; // the dropdown echoes the change; it was saved just above
-        AppearanceBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
-        _loading = false;
         SyncThemeButtons();
     }
 
@@ -220,6 +219,15 @@ public partial class ControlCenterWindow : Window
     {
         LightButton.IsChecked = _app.Theme.Current == AppTheme.Light;
         DarkButton.IsChecked = _app.Theme.Current == AppTheme.Dark;
+        Quietly(() =>
+        {
+            AppearanceLight.IsChecked = _settings.Appearance == Settings.Light;
+            AppearanceDark.IsChecked = _settings.Appearance == Settings.Dark;
+            AppearanceMatch.IsChecked = _settings.Appearance == Settings.MatchWindows;
+        });
+        AppearanceValue.Text = _settings.Appearance == Settings.MatchWindows
+            ? $"Match Windows ({(_app.Theme.Current == AppTheme.Dark ? "dark" : "light")})"
+            : _settings.Appearance;
     }
 
     /// <summary>Brushes made in code (banners, charts, temperature colors) are rebuilt by the next refresh.</summary>
@@ -266,6 +274,7 @@ public partial class ControlCenterWindow : Window
         HotkeyBox.Text = _app.HotkeyInUse ?? _settings.Hotkey;
         var startup = StartupTask.Status();
         StartupSwitch.IsChecked = startup.Enabled;
+        StartupValue.Text = startup.Enabled ? "With Windows" : "Off";
         StartupStatus.Text = startup.Describe() + (AppIdentity.IsDevBuild ? " · This is a development build; it uses its own startup entry." : "");
         UpdateBoostTargets();
         UpdateRestartHint();
@@ -784,6 +793,7 @@ public partial class ControlCenterWindow : Window
         DataContext = _settings;
         _loading = false;
         RefreshAll();
+        SyncThemeButtons();
     }
 
     // ---- diagnostics ----

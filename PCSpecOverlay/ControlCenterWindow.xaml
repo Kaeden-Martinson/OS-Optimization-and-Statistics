@@ -821,119 +821,155 @@
         <!-- ===================== GENERAL ===================== -->
         <TabItem Header="Settings" Tag="{StaticResource Icon.Settings}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Settings" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}" Text="Startup, shortcut, power use and history." />
+                <StackPanel>
+                    <StackPanel Margin="24,18,24,14">
+                        <TextBlock Text="Settings" Style="{StaticResource PageTitle}" />
+                        <TextBlock Style="{StaticResource Body}" Text="Version, startup and appearance, then the shortcut, power use and history." />
+                    </StackPanel>
 
-                    <TextBlock Text="STARTUP" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox x:Name="StartupSwitch" Style="{StaticResource Switch}" Click="OnStartupToggle">
+                    <!-- Status strip -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1">
+                        <UniformGrid Columns="3">
+                            <Border Style="{StaticResource ReadingCell}">
                                 <StackPanel>
-                                    <TextBlock Text="Start with Windows" FontSize="13" />
-                                    <TextBlock x:Name="StartupStatus" Style="{StaticResource Body}" />
+                                    <TextBlock Text="VERSION" Style="{StaticResource ReadingKey}" />
+                                    <TextBlock x:Name="VersionValue" Style="{StaticResource ReadingValue}" FontSize="22" />
+                                    <TextBlock x:Name="UpdateStatus" Style="{StaticResource Small}" />
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button x:Name="CheckUpdatesButton" Style="{StaticResource Btn}" Click="OnCheckUpdates" Margin="0,0,8,6"
+                                                AutomationProperties.Name="Check for updates now">
+                                            <StackPanel Orientation="Horizontal">
+                                                <core:Icon Data="{StaticResource Icon.Refresh}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                <TextBlock Text="Check now" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="InstallUpdateButton" Content="Download and install" Style="{StaticResource Btn}" Tag="Primary"
+                                                Click="OnInstallUpdate" Visibility="Collapsed" Margin="0,0,8,6" />
+                                        <Button x:Name="ReleasePageButton" Content="What's new" Style="{StaticResource Btn}"
+                                                Click="OnReleasePage" Visibility="Collapsed" Margin="0,0,8,6" />
+                                    </WrapPanel>
                                 </StackPanel>
-                            </CheckBox>
-                        </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ReadingCell}">
+                                <StackPanel>
+                                    <TextBlock Text="STARTUP" Style="{StaticResource ReadingKey}" />
+                                    <TextBlock x:Name="StartupValue" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0" />
+                                    <TextBlock x:Name="StartupStatus" Style="{StaticResource Small}" />
+                                    <CheckBox x:Name="StartupSwitch" Style="{StaticResource Switch}" Click="OnStartupToggle" HorizontalAlignment="Left"
+                                              Margin="0,10,0,0" AutomationProperties.Name="Start with Windows" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ReadingCell}" BorderThickness="0">
+                                <StackPanel>
+                                    <TextBlock Text="APPEARANCE" Style="{StaticResource ReadingKey}" />
+                                    <TextBlock x:Name="AppearanceValue" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0" />
+                                    <TextBlock Style="{StaticResource Small}" Text="This window. The overlay has its own theme on the Overlay page." />
+                                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="1,1,0,1" HorizontalAlignment="Left" Margin="0,10,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton x:Name="AppearanceLight" GroupName="Appearance" Style="{StaticResource Seg}" Tag="Light"
+                                                         Click="OnAppearance" AutomationProperties.Name="Light" ToolTip="Light">
+                                                <core:Icon Data="{StaticResource Icon.Sun}" Width="14" Height="14" />
+                                            </RadioButton>
+                                            <RadioButton x:Name="AppearanceDark" GroupName="Appearance" Style="{StaticResource Seg}" Tag="Dark"
+                                                         Click="OnAppearance" AutomationProperties.Name="Dark" ToolTip="Dark">
+                                                <core:Icon Data="{StaticResource Icon.Moon}" Width="14" Height="14" />
+                                            </RadioButton>
+                                            <RadioButton x:Name="AppearanceMatch" GroupName="Appearance" Style="{StaticResource Seg}" Tag="MatchWindows"
+                                                         Click="OnAppearance" AutomationProperties.Name="Match Windows" ToolTip="Match Windows">
+                                                <core:Icon Data="{StaticResource Icon.Monitor}" Width="14" Height="14" />
+                                            </RadioButton>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
                     </Border>
 
-                    <TextBlock Text="APPEARANCE" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <DockPanel>
-                            <ComboBox x:Name="AppearanceBox" DockPanel.Dock="Right" VerticalAlignment="Center"
-                                      SelectedValuePath="Tag" SelectedValue="{Binding Appearance}" AutomationProperties.Name="Theme">
-                                <ComboBoxItem Tag="MatchWindows" Content="Match Windows" />
-                                <ComboBoxItem Tag="Light" Content="Light" />
-                                <ComboBoxItem Tag="Dark" Content="Dark" />
-                            </ComboBox>
-                            <StackPanel Margin="0,0,16,0">
-                                <TextBlock Text="Theme" FontSize="13" />
-                                <TextBlock Style="{StaticResource Body}" Text="Light, dark, or follow the Windows app setting. The in-game overlay stays dark." />
+                    <!-- Two columns -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
+                            <StackPanel>
+                                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,18,0,0">
+                                    <TextBlock Text="SHORTCUT AND UPDATES" Style="{StaticResource Key}" />
+                                </Border>
+                                <Border Style="{StaticResource LedgerRow}">
+                                    <StackPanel>
+                                        <TextBlock Text="Show or hide the overlay" FontSize="13" />
+                                        <DockPanel Margin="0,8,0,0">
+                                            <Button DockPanel.Dock="Right" Content="Use this shortcut" Style="{StaticResource Btn}" Margin="8,0,0,0" Click="OnApplyHotkey" />
+                                            <TextBox x:Name="HotkeyBox" IsReadOnly="True" PreviewKeyDown="OnHotkeyKey" AutomationProperties.Name="Overlay shortcut"
+                                                     ToolTip="Click here and press the new shortcut" FontFamily="Cascadia Mono, Consolas" />
+                                        </DockPanel>
+                                        <TextBlock x:Name="HotkeyResult" Style="{StaticResource Body}" />
+                                        <TextBlock Style="{StaticResource Small}" Text="Click the box, press the keys you want (e.g. Ctrl+Alt+P), then choose Use this shortcut. If another app already uses it, your current shortcut stays." />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource LedgerRow}">
+                                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CheckForUpdates}">
+                                        <StackPanel>
+                                            <TextBlock Text="Check for updates once a day" FontSize="13" />
+                                            <TextBlock Style="{StaticResource Body}" Text="Asks GitHub for the latest release; nothing personal is sent. Updates install only when you choose, after the download's checksum is verified." />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </Border>
                             </StackPanel>
-                        </DockPanel>
-                    </Border>
-
-                    <TextBlock Text="UPDATES" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <TextBlock x:Name="UpdateVersion" FontSize="13" />
-                            <TextBlock x:Name="UpdateStatus" Style="{StaticResource Body}" />
-                            <WrapPanel Margin="0,10,0,0">
-                                <Button x:Name="CheckUpdatesButton" Content="Check now" Style="{StaticResource Btn}" Click="OnCheckUpdates" Margin="0,0,8,8" />
-                                <Button x:Name="InstallUpdateButton" Content="Download and install" Style="{StaticResource Btn}" Tag="Primary"
-                                        Click="OnInstallUpdate" Visibility="Collapsed" Margin="0,0,8,8" />
-                                <Button x:Name="ReleasePageButton" Content="What's new" Style="{StaticResource Btn}"
-                                        Click="OnReleasePage" Visibility="Collapsed" Margin="0,0,8,8" />
-                            </WrapPanel>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CheckForUpdates}" Margin="0,6,0,0">
+                        </Border>
+                        <StackPanel Grid.Column="1">
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,18,0,0">
+                                <TextBlock Text="POWER AND HISTORY" Style="{StaticResource Key}" />
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}">
+                                <CheckBox x:Name="SleepSwitch" Style="{StaticResource Switch}" IsChecked="{Binding LetGpuSleep}">
+                                    <StackPanel>
+                                        <TextBlock Text="Let the laptop GPU sleep" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Body}" Text="When the NVIDIA GPU is powered down, don't wake it just to read its sensors." />
+                                    </StackPanel>
+                                </CheckBox>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}">
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding HistoryEnabled}">
+                                    <StackPanel>
+                                        <TextBlock Text="Keep performance history" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Body}" Text="The last 10 minutes stay in memory for the graphs. A short summary of each gaming session is saved on this PC; nothing is uploaded." />
+                                    </StackPanel>
+                                </CheckBox>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="64" TextAlignment="Right"
+                                               Text="{Binding Value, ElementName=RetentionSlider, StringFormat='{}{0:0} days'}" />
+                                    <Slider x:Name="RetentionSlider" DockPanel.Dock="Right" Width="160" Minimum="1" Maximum="90" TickFrequency="1"
+                                            Value="{Binding HistoryRetentionDays}" Margin="12,0,10,0" AutomationProperties.Name="Keep session summaries for this many days" />
+                                    <TextBlock Text="Keep session summaries for" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}">
                                 <StackPanel>
-                                    <TextBlock Text="Check automatically once a day" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Asks GitHub for the latest release; nothing personal is sent. Updates are only installed when you choose to, after the download's checksum is verified." />
+                                    <TextBlock Text="RECENT SESSIONS" Style="{StaticResource Key}" Margin="0,0,0,6" />
+                                    <ItemsControl x:Name="SessionList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontFamily="Cascadia Mono, Consolas" FontSize="11" Foreground="{DynamicResource Text}"
+                                                           TextWrapping="Wrap" Margin="0,0,0,5" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock x:Name="SessionsEmpty" Style="{StaticResource Small}" Text="No sessions saved yet." />
                                 </StackPanel>
-                            </CheckBox>
+                            </Border>
                         </StackPanel>
-                    </Border>
+                    </Grid>
 
-                    <TextBlock Text="SHORTCUT" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <TextBlock Text="Show or hide the overlay" FontSize="13" />
-                            <Grid Margin="0,8,0,0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                <TextBox x:Name="HotkeyBox" IsReadOnly="True" PreviewKeyDown="OnHotkeyKey" AutomationProperties.Name="Overlay shortcut"
-                                         ToolTip="Click here and press the new shortcut" />
-                                <Button Grid.Column="1" Content="Use this shortcut" Style="{StaticResource Btn}" Margin="8,0,0,0" Click="OnApplyHotkey" />
-                                <TextBlock x:Name="HotkeyResult" Grid.Column="2" Style="{StaticResource Body}" Margin="12,0,0,0" VerticalAlignment="Center" />
-                            </Grid>
-                            <TextBlock Style="{StaticResource Small}" Margin="0,6,0,0" Text="Click the box, press the keys you want (e.g. Ctrl+Alt+P), then choose Use this shortcut. If another app already uses it, your current shortcut stays." />
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="POWER AND HISTORY" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox x:Name="SleepSwitch" Style="{StaticResource Switch}" IsChecked="{Binding LetGpuSleep}" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="Let the laptop GPU sleep" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="When the NVIDIA GPU is powered down, don't wake it just to read its sensors. The overlay shows it as sleeping." />
-                                </StackPanel>
-                            </CheckBox>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding HistoryEnabled}" Margin="0,0,0,14">
-                                <StackPanel>
-                                    <TextBlock Text="Keep performance history" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="The last 10 minutes stay in memory for the graphs. A short summary of each gaming session is saved on this PC; nothing is uploaded." />
-                                </StackPanel>
-                            </CheckBox>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Keep session summaries for" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="RetentionSlider" Grid.Column="1" Minimum="1" Maximum="90" TickFrequency="1" Value="{Binding HistoryRetentionDays}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=RetentionSlider, StringFormat='{}{0:0} days'}" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="RECENT SESSIONS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <ItemsControl x:Name="SessionList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,0,0,6" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock x:Name="SessionsEmpty" Style="{StaticResource Small}" Text="No sessions saved yet." />
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="RESET" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="24,14" Margin="0,18,0,0">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Restore defaults" Style="{StaticResource Btn}" Click="OnResetSettings" VerticalAlignment="Center" />
                             <StackPanel Margin="0,0,16,0">
                                 <TextBlock Text="Restore default settings" FontSize="13" />
-                                <TextBlock Style="{StaticResource Body}" Text="Resets preferences on every page. Your games list and lowered apps are kept, and Windows settings the app changed aren't touched (undo those on the Optimizer or Diagnostics page)." />
+                                <TextBlock Style="{StaticResource Body}" Text="Resets preferences on every page. Your games list and lowered apps are kept, and Windows settings the app changed aren't touched (undo those on the Diagnostics page)." />
                             </StackPanel>
                         </DockPanel>
                     </Border>

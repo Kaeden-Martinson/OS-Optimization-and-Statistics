@@ -237,3 +237,20 @@ public class AlertsPageTests
         Assert.Contains("CpuScale.SetCurrent(", code);
     }
 }
+
+public class SettingsPageTests
+{
+    [Fact]
+    public void Settings_opens_with_a_status_strip()
+    {
+        var page = PageXaml.Tab("Settings");
+        foreach (var part in new[] { "Text=\"VERSION\"", "Text=\"STARTUP\"", "Text=\"APPEARANCE\"", "x:Name=\"VersionValue\"", "x:Name=\"UpdateStatus\"",
+                     "x:Name=\"CheckUpdatesButton\"", "x:Name=\"InstallUpdateButton\"", "x:Name=\"StartupSwitch\"", "x:Name=\"StartupValue\"",
+                     "x:Name=\"AppearanceLight\"", "x:Name=\"AppearanceDark\"", "x:Name=\"AppearanceMatch\"", "x:Name=\"AppearanceValue\"",
+                     "Click=\"OnAppearance\"", "x:Name=\"HotkeyBox\"", "{Binding CheckForUpdates}", "x:Name=\"SleepSwitch\"",
+                     "x:Name=\"RetentionSlider\"", "x:Name=\"SessionList\"", "Click=\"OnResetSettings\"" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "AppearanceBox", "UpdateVersion", "CardBox", "\"H1\"" })
+            Assert.DoesNotContain(gone, page);
+    }
+}
