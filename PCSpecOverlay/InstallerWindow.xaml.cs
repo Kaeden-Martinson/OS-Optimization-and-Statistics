@@ -10,12 +10,17 @@ public partial class InstallerWindow : Window
 
     private readonly Mode _mode;
     private bool _done;
+    private readonly ThemeManager _theme = new(Application.Current.Resources);
 
     public InstallerWindow(Mode mode)
     {
         InitializeComponent();
         _mode = mode;
-        SourceInitialized += (_, _) => TitleBar.Apply(this, dark: true);
+        // Setup runs before the app has a theme, and can't read the installed copy's settings: follow Windows
+        _theme.Apply(Settings.MatchWindows);
+        SourceInitialized += (_, _) => TitleBar.Apply(this, _theme.Current == AppTheme.Dark);
+        _theme.Changed += theme => TitleBar.Apply(this, theme == AppTheme.Dark);
+        Closed += (_, _) => _theme.Dispose();
 
         if (mode == Mode.Install)
         {
@@ -28,7 +33,7 @@ public partial class InstallerWindow : Window
                   "and the previous version is kept as a fallback. A running copy will be closed first (it puts back any changes it made).";
             Option1.Content = "Start with Windows";
             Option1.IsChecked = installed is null || StartupTask.Status().Enabled;
-            Option2.Visibility = Visibility.Collapsed;
+            Option2Row.Visibility = Visibility.Collapsed;
             Primary.Content = installed is null ? "Install" : "Update";
         }
         else
@@ -38,7 +43,6 @@ public partial class InstallerWindow : Window
             Option1.Content = "Undo Windows changes the app made (power mode, browser graphics settings, Game Mode, …) — recommended";
             Option2.Content = "Also delete my settings and gaming history";
             Primary.Content = "Uninstall";
-            Primary.Tag = "Danger";
         }
     }
 

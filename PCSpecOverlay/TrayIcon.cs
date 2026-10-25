@@ -16,7 +16,7 @@ internal sealed class TrayIcon : IDisposable
     private bool _disposed;
 
     /// <summary>Reserves room at the right of a switch-like item for its check (six em spaces, wide enough at 150% DPI; the renderer draws nothing for it).</summary>
-    private const string CheckRoom = "      ";
+    private static readonly string CheckRoom = new('\u2003', 6);
 
     private readonly Forms.ContextMenuStrip _menu;
     private readonly List<(Forms.ToolStripMenuItem Item, string Icon)> _iconItems = new();

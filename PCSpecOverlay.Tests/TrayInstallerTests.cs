@@ -81,3 +81,23 @@ public class TrayMenuTests
         Assert.DoesNotMatch(@"Color\.FromArgb\(|Color\.[A-Z][a-z]+[^A-Za-z(]", Renderer);
     }
 }
+
+public class InstallerWindowTests
+{
+    [Fact]
+    public void The_installer_is_one_card_that_follows_the_theme()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/InstallerWindow.xaml"));
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/InstallerWindow.xaml.cs"));
+        foreach (var part in new[] { "{DynamicResource Bg}", "StaticResource PageTitle", "x:Name=\"Option2Row\"", "x:Name=\"ResultBox\"",
+                     "x:Name=\"Primary\"", "x:Name=\"Secondary\"" })
+            Assert.Contains(part, xaml);
+        foreach (var gone in new[] { "DynamicResource Window}", "CardBox", "\"H1\"", "\"Lead\"" })
+            Assert.DoesNotContain(gone, xaml);
+        Assert.DoesNotContain("Danger", code);
+        Assert.DoesNotContain("dark: true", code);
+        Assert.Contains("_theme.Apply(Settings.MatchWindows)", code);
+        Assert.Contains("_theme.Changed +=", code);
+        Assert.Contains("_theme.Dispose()", code);
+    }
+}
