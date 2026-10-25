@@ -181,6 +181,9 @@ Pages were switched and captured through UI Automation and PrintWindow, without 
 | After the update | ✅ | Installed exe 2.1.0.0, with the 2.0.13 fallback kept (`PCSpecOverlay.exe.previous`). Start menu has only `Optiframe.lnk` (the old "PC Spec Overlay.lnk" is gone). Apps entry "Optiframe 2.1.0" by Optiframe. Startup task `\PCSpecOverlay` points at the installed exe. Settings carried over (Appearance MatchWindows, pinned position kept). |
 | In-app update from 2.0.13 | ⬜ | Not exercised: the copy was updated with the setup directly. 2.0.13's asset match and checksum path are unchanged. |
 | Note | — | The user applied the Optimizer's Power mode fix (Best performance) right after the update; it's undoable on the Optimizer or Diagnostics page. |
+| Published 2.1.0 | ✅ | Before publishing, the build added the pop-up removal and the overlay width/drift fix (309/309). GitHub release v2.1.0 (fa8b197) is Latest, with `Optiframe-Setup-2.1.0.exe` 9,599,901 bytes; the notes' SHA256 5CB19C7B… matches the file, checked through the GitHub API. |
+| Published build on this PC | ✅ | The user ran the published setup (Update). Installed exe SHA256 matches 5CB19C7B…; log "Exited cleanly", "Installed 2.1.0" and "Starting 2.1.0" at 15:12. Apps entry, startup task, `Optiframe.lnk` and the pinned spot (Custom 0.9975/0.066) are kept. The fallback is now the earlier 2.1.0 build. |
+| Layout switched to Strip | ✅ | Through the Overlay page's Strip card (UI Automation selection); settings.json `"Layout": "Compact"`. The overlay was hidden by the user's setting (`Visible: false`) and left that way. |
 
 ## Priorities from this audit
 
