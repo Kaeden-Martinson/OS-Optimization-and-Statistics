@@ -85,3 +85,72 @@ public class WorstFrameTests
         Assert.Equal(10, s.WorstFrameMs, 1);
     }
 }
+
+public class FrameTimeTraceTests
+{
+    [Fact]
+    public void Keeps_only_the_newest_values()
+    {
+        var t = new FrameTimeTrace(capacity: 5);
+        for (var i = 1; i <= 8; i++) t.Add(i);
+        Assert.Equal(5, t.Count);
+        Assert.Equal(new double?[] { 4, 5, 6, 7, 8 }, t.Values());
+    }
+
+    [Fact]
+    public void Missing_or_invalid_values_become_gaps()
+    {
+        var t = new FrameTimeTrace(capacity: 4);
+        t.Add(10); t.Add(null); t.Add(double.NaN); t.Add(-3);
+        Assert.Equal(new double?[] { 10, null, null, null }, t.Values());
+        Assert.Single(t.Plot(100, 20)); // only the one real value is plotted
+    }
+
+    [Fact]
+    public void Newest_value_is_at_the_right_edge()
+    {
+        var t = new FrameTimeTrace(capacity: 3);
+        t.Add(10); t.Add(10); t.Add(10);
+        var points = t.Plot(200, 20);
+        Assert.Equal(new[] { 0.0, 100.0, 200.0 }, points.Select(p => p.X));
+    }
+
+    [Fact]
+    public void A_partly_filled_trace_hugs_the_right_edge()
+    {
+        var t = new FrameTimeTrace(capacity: 5);
+        t.Add(10); t.Add(10);
+        Assert.Equal(new[] { 150.0, 200.0 }, t.Plot(200, 20).Select(p => p.X));
+    }
+
+    [Fact]
+    public void Small_frame_times_scale_against_the_minimum_ceiling()
+    {
+        var t = new FrameTimeTrace(capacity: 2);
+        t.Add(16.7); t.Add(16.7);
+        var y = t.Plot(100, 30)[0].Y;
+        Assert.Equal(30 - 16.7 / FrameTimeTrace.MinCeilingMs * 30, y, 3);
+    }
+
+    [Fact]
+    public void A_spike_is_the_highest_point_and_stays_inside_the_box()
+    {
+        var t = new FrameTimeTrace(capacity: 4);
+        t.Add(7); t.Add(7); t.Add(120); t.Add(7);
+        var points = t.Plot(90, 24);
+        var spike = points[2];
+        Assert.Equal(points.Min(p => p.Y), spike.Y);
+        Assert.InRange(spike.Y, 0, 24);
+        Assert.All(points, p => Assert.InRange(p.Y, 0, 24));
+    }
+
+    [Fact]
+    public void Nothing_to_draw_without_room_or_values()
+    {
+        var t = new FrameTimeTrace();
+        Assert.Empty(t.Plot(100, 20));
+        t.Add(10);
+        Assert.Empty(t.Plot(0, 20));
+        Assert.Empty(t.Plot(100, 0));
+    }
+}
