@@ -9,23 +9,45 @@
         TextOptions.TextFormattingMode="Display">
 
     <Window.Resources>
-        <!-- Live tile on the overview -->
-        <Style x:Key="Tile" TargetType="Border" BasedOn="{StaticResource CardBox}">
-            <Setter Property="Margin" Value="0,0,10,10" />
+        <!-- Overview: one ruled reading cell -->
+        <Style x:Key="ReadingCell" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+            <Setter Property="BorderThickness" Value="0,0,1,0" />
             <Setter Property="Padding" Value="16,12,16,14" />
+        </Style>
+        <Style x:Key="ReadingKey" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+        </Style>
+        <Style x:Key="ReadingValue" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+            <Setter Property="FontSize" Value="30" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+            <Setter Property="Text" Value="—" />
+        </Style>
+        <Style x:Key="ReadingUnit" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Margin" Value="4,0,0,6" />
+        </Style>
+        <Style x:Key="ReadingSub" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="Ticks" TargetType="UniformGrid">
+            <Setter Property="Columns" Value="10" />
+            <Setter Property="Height" Value="6" />
+            <Setter Property="Margin" Value="0,10,0,0" />
         </Style>
         <Style x:Key="TileLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11" />
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Foreground" Value="{DynamicResource Muted}" />
-        </Style>
-        <Style x:Key="TileValue" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
-            <Setter Property="FontSize" Value="30" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Margin" Value="0,4,0,0" />
-            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
-            <Setter Property="Text" Value="—" />
         </Style>
         <Style x:Key="Row" TargetType="Grid">
             <Setter Property="Margin" Value="0,0,0,14" />
@@ -58,149 +80,140 @@
 
         <!-- ===================== OVERVIEW ===================== -->
         <TabItem Header="Overview" Tag="{StaticResource Icon.Overview}" Style="{StaticResource TopTab}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Overview" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}" Text="What your PC is doing right now, and what the app is doing about it." />
+            <DockPanel>
+                <!-- Status line: what is running, power, overlay; Stop/Resume when relevant -->
+                <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="16,6">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button x:Name="StopButton" Content="Stop optimizations" Style="{StaticResource Btn}" Tag="Danger"
+                                    Click="OnStopOptimizations" Padding="10,2" Margin="8,0,0,0" />
+                            <Button x:Name="ResumeButton" Content="Resume" Style="{StaticResource Btn}" Tag="Primary"
+                                    Click="OnResume" Visibility="Collapsed" Padding="10,2" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Rectangle x:Name="StatusLed" Width="6" Height="6" Fill="{DynamicResource Good}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock x:Name="StatusLine" FontFamily="Cascadia Mono, Consolas" FontSize="11"
+                                       Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
 
-                    <!-- Banners: only shown when something needs attention -->
-                    <StackPanel x:Name="Banners" Margin="0,18,0,0" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Banners: only shown when something needs attention -->
+                        <StackPanel x:Name="Banners" Margin="16,12,16,0" />
 
-                    <UniformGrid Columns="4" Margin="0,8,-10,0">
-                        <Border Style="{StaticResource Tile}">
-                            <StackPanel>
-                                <TextBlock Text="FRAME RATE" Style="{StaticResource TileLabel}" />
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock x:Name="TFps" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" FPS" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
-                                </StackPanel>
-                                <TextBlock x:Name="TFpsSub" Style="{StaticResource Small}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Tile}">
-                            <StackPanel>
-                                <TextBlock x:Name="TGpuLabel" Text="GPU" Style="{StaticResource TileLabel}" />
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock x:Name="TGpu" Style="{StaticResource TileValue}" />
-                                    <TextBlock x:Name="TGpuUnit" Text=" °C" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
-                                </StackPanel>
-                                <TextBlock x:Name="TGpuSub" Style="{StaticResource Small}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Tile}">
-                            <StackPanel>
-                                <TextBlock Text="CPU" Style="{StaticResource TileLabel}" />
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock x:Name="TCpu" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" °C" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
-                                </StackPanel>
-                                <TextBlock x:Name="TCpuSub" Style="{StaticResource Small}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Tile}">
-                            <StackPanel>
-                                <TextBlock Text="MEMORY" Style="{StaticResource TileLabel}" />
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock x:Name="TRam" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" GB" FontSize="12" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
-                                </StackPanel>
-                                <TextBlock x:Name="TRamSub" Style="{StaticResource Small}" />
-                            </StackPanel>
-                        </Border>
-                    </UniformGrid>
-
-                    <Grid Margin="0,0,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Border Style="{StaticResource CardBox}">
-                            <StackPanel>
-                                <DockPanel>
-                                    <TextBlock x:Name="FpsChartRange" DockPanel.Dock="Right" Style="{StaticResource Small}" Margin="0" />
-                                    <TextBlock Text="Frame rate · last 10 minutes" Style="{StaticResource CardTitle}" FontSize="13" />
-                                </DockPanel>
-                                <Canvas x:Name="FpsChart" Height="110" Margin="0,10,0,0" ClipToBounds="True" />
-                            </StackPanel>
-                        </Border>
-                        <Border Grid.Column="2" Style="{StaticResource CardBox}">
-                            <StackPanel>
-                                <DockPanel>
-                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                        <Rectangle Width="10" Height="2" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
-                                        <TextBlock Text=" GPU   " Style="{StaticResource Small}" Margin="0" />
-                                        <Rectangle Width="10" Height="2" Fill="{DynamicResource Info}" VerticalAlignment="Center" />
-                                        <TextBlock Text=" CPU" Style="{StaticResource Small}" Margin="0" />
+                        <!-- Four readings in a ruled grid -->
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+                            <UniformGrid Columns="4">
+                                <Border Style="{StaticResource ReadingCell}">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock x:Name="TFpsSource" DockPanel.Dock="Right" Style="{StaticResource ReadingKey}" FontFamily="Cascadia Mono, Consolas" />
+                                            <TextBlock Text="FRAME RATE" Style="{StaticResource ReadingKey}" />
+                                        </DockPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="TFps" Style="{StaticResource ReadingValue}" />
+                                            <TextBlock Text="fps" Style="{StaticResource ReadingUnit}" />
+                                        </StackPanel>
+                                        <TextBlock x:Name="TFpsSub" Style="{StaticResource ReadingSub}" />
                                     </StackPanel>
-                                    <TextBlock Text="Temperatures · last 10 minutes" Style="{StaticResource CardTitle}" FontSize="13" />
-                                </DockPanel>
-                                <Canvas x:Name="TempChart" Height="110" Margin="0,10,0,0" ClipToBounds="True" />
-                            </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReadingCell}">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock x:Name="TGpuName" DockPanel.Dock="Right" Style="{StaticResource ReadingKey}" />
+                                            <TextBlock Text="GPU" Style="{StaticResource ReadingKey}" />
+                                        </DockPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="TGpu" Style="{StaticResource ReadingValue}" />
+                                            <TextBlock x:Name="TGpuUnit" Text="°C" Style="{StaticResource ReadingUnit}" />
+                                        </StackPanel>
+                                        <TextBlock x:Name="TGpuSub" Style="{StaticResource ReadingSub}" />
+                                        <UniformGrid x:Name="GpuTicks" Style="{StaticResource Ticks}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReadingCell}">
+                                    <StackPanel>
+                                        <TextBlock Text="CPU" Style="{StaticResource ReadingKey}" />
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="TCpu" Style="{StaticResource ReadingValue}" />
+                                            <TextBlock Text="°C" Style="{StaticResource ReadingUnit}" />
+                                        </StackPanel>
+                                        <TextBlock x:Name="TCpuSub" Style="{StaticResource ReadingSub}" />
+                                        <UniformGrid x:Name="CpuTicks" Style="{StaticResource Ticks}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource ReadingCell}" BorderThickness="0">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock x:Name="TRamTotal" DockPanel.Dock="Right" Style="{StaticResource ReadingKey}" FontFamily="Cascadia Mono, Consolas" />
+                                            <TextBlock Text="MEMORY" Style="{StaticResource ReadingKey}" />
+                                        </DockPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="TRam" Style="{StaticResource ReadingValue}" />
+                                            <TextBlock Text="GB" Style="{StaticResource ReadingUnit}" />
+                                        </StackPanel>
+                                        <TextBlock x:Name="TRamSub" Style="{StaticResource ReadingSub}" />
+                                        <UniformGrid x:Name="RamTicks" Style="{StaticResource Ticks}" />
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
                         </Border>
-                    </Grid>
 
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="10" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Border Style="{StaticResource CardBox}">
-                            <StackPanel>
-                                <DockPanel>
-                                    <Border x:Name="GamingPill" DockPanel.Dock="Right" Padding="9,2" VerticalAlignment="Top">
-                                        <TextBlock x:Name="GamingPillText" FontSize="11" FontWeight="Bold" />
-                                    </Border>
-                                    <TextBlock Text="Gaming mode" Style="{StaticResource CardTitle}" />
-                                </DockPanel>
-                                <TextBlock x:Name="GamingSummary" Style="{StaticResource Body}" Margin="0,6,0,0" />
-                                <ItemsControl x:Name="GamingDetails" Margin="0,6,0,0">
+                        <!-- Frame-rate chart and what the app did -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.7*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="16,12,16,16">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock x:Name="FpsChartRange" DockPanel.Dock="Right" Style="{StaticResource ReadingKey}" FontFamily="Cascadia Mono, Consolas" />
+                                        <TextBlock Text="FRAME RATE · LAST 10 MINUTES" Style="{StaticResource ReadingKey}" />
+                                    </DockPanel>
+                                    <Canvas x:Name="FpsChart" Height="170" Margin="0,10,0,0" ClipToBounds="True" />
+                                </StackPanel>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="16,12,16,16">
+                                <TextBlock Text="EVENTS" Style="{StaticResource ReadingKey}" Margin="0,0,0,8" />
+                                <TextBlock x:Name="EventsEmpty" Style="{StaticResource Body}" Visibility="Collapsed"
+                                           Text="Nothing yet. Gaming mode, Game Boost, optimizer changes and alerts appear here." />
+                                <ItemsControl x:Name="EventList">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding}" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2,0,0" />
+                                            <Grid Margin="0,0,0,7">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="46" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Time, StringFormat=HH:mm}" FontFamily="Cascadia Mono, Consolas" FontSize="11"
+                                                           Foreground="{DynamicResource Muted}" Margin="0,1,0,0" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Message}" FontSize="12" TextWrapping="Wrap">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{DynamicResource Text}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Signal}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Level}" Value="Error">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Hot}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                                    <Button x:Name="StopButton" Content="Stop optimizations now" Style="{StaticResource Btn}" Tag="Danger" Click="OnStopOptimizations" Margin="0,0,8,0" />
-                                    <Button x:Name="ResumeButton" Content="Resume" Style="{StaticResource Btn}" Tag="Primary" Click="OnResume" Visibility="Collapsed" Margin="0,0,8,0" />
-                                    <Button Content="Settings" Style="{StaticResource Btn}" Click="OnGoToGaming" />
-                                </StackPanel>
                             </StackPanel>
-                        </Border>
-                        <Border Grid.Column="2" Style="{StaticResource CardBox}">
-                            <StackPanel>
-                                <TextBlock Text="Power" Style="{StaticResource CardTitle}" />
-                                <Grid Margin="0,8,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock Text="Plan" Style="{StaticResource Body}" Margin="0,2,18,2" />
-                                    <TextBlock x:Name="PowerPlan" Grid.Column="1" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2" />
-                                    <TextBlock Grid.Row="1" Text="Power mode" Style="{StaticResource Body}" Margin="0,2,18,2" />
-                                    <TextBlock x:Name="PowerModeText" Grid.Row="1" Grid.Column="1" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2" />
-                                    <TextBlock Grid.Row="2" Text="Source" Style="{StaticResource Body}" Margin="0,2,18,2" />
-                                    <TextBlock x:Name="PowerSource" Grid.Row="2" Grid.Column="1" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2" />
-                                    <TextBlock Grid.Row="3" Text="App changes" Style="{StaticResource Body}" Margin="0,2,18,2" />
-                                    <TextBlock x:Name="OwnedChanges" Grid.Row="3" Grid.Column="1" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2" />
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <TextBlock Text="Last gaming session" Style="{StaticResource CardTitle}" />
-                            <TextBlock x:Name="LastSession" Style="{StaticResource Body}" Margin="0,6,0,0" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
         </TabItem>
 
         <!-- ===================== OPTIMIZER ===================== -->

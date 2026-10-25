@@ -112,3 +112,27 @@ public class ShellSourceTests
         Assert.Contains("MinWidth=\"900\"", Xaml);
     }
 }
+
+public class OverviewSourceTests
+{
+    [Fact]
+    public void Overview_has_the_instrument_parts_and_none_of_the_old_cards()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        foreach (var name in new[] { "TFpsSource", "GpuTicks", "CpuTicks", "RamTicks", "EventList", "EventsEmpty", "StatusLed", "StatusLine", "FpsChart" })
+            Assert.Contains($"x:Name=\"{name}\"", xaml);
+        foreach (var gone in new[] { "TempChart", "GamingPill", "GamingSummary", "GamingDetails", "PowerPlan", "OwnedChanges", "LastSession", "StaticResource Tile}", "TileValue" })
+            Assert.DoesNotContain(gone, xaml);
+    }
+
+    [Fact]
+    public void Overview_code_uses_the_tested_helpers()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("OverviewData.FilledTicks(", code);
+        Assert.Contains("OverviewData.Dips(", code);
+        Assert.Contains("OverviewData.Events(", code);
+        Assert.DoesNotContain("RefreshGamingCard", code);
+        Assert.DoesNotContain("HotLine(", code);
+    }
+}

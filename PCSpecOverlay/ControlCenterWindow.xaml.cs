@@ -235,8 +235,6 @@ public partial class ControlCenterWindow : Window
         var sessions = HistoryRecorder.LoadSessions(10);
         SessionList.ItemsSource = sessions.Select(DescribeSession).ToList();
         SessionsEmpty.Visibility = sessions.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        var last = _app.History.LastSession ?? sessions.FirstOrDefault();
-        LastSession.Text = last is null ? "No gaming session recorded yet. Sessions are summarized when a game you play has been closed or out of focus for a minute." : DescribeSession(last);
         if (Nav.SelectedIndex == 6) RefreshDiagnostics();
     }
 
@@ -257,62 +255,74 @@ public partial class ControlCenterWindow : Window
         var s = _settings;
 
         TFps.Text = t.Fps is { } f ? $"{f.Fps:0}" : "—";
+        TFpsSource.Text = t.FpsSource ?? "";
         TFpsSub.Text = t.Fps is { } ff ? $"{ff.FrameTimeMs:0.0} ms · 1% low {ff.OnePercentLow:0}"
             : t.FpsUnavailable ?? "No game or app rendering in front";
 
         var g = t.Gpu;
-        TGpuLabel.Text = _engine.Gpu?.Name.Replace("NVIDIA GeForce ", "").ToUpperInvariant() ?? "GPU";
+        TGpuName.Text = _engine.Gpu?.Name.Replace("NVIDIA ", "").Replace("GeForce ", "").Replace(" Laptop GPU", "") ?? "";
         TGpuUnit.Visibility = g.TempC is null ? Visibility.Collapsed : Visibility.Visible;
         TGpu.Text = g.TempC is { } gt ? $"{gt:0}" : g.Status switch { GpuStatus.Sleeping => "Sleeping", GpuStatus.NotPresent => "None", _ => "—" };
         TGpu.Foreground = Temp(g.TempC, s.GpuTempWarn, s.GpuTempHot);
         TGpuSub.Text = g.Status switch
         {
-            GpuStatus.Ok => $"{g.Load ?? 0}% busy · {g.ClockMhz} MHz · {g.PowerW:0} W",
+            GpuStatus.Ok => $"{g.Load ?? 0}% · {g.ClockMhz} MHz · {g.PowerW:0} W",
             GpuStatus.Sleeping => "Powered down to save battery",
             GpuStatus.NotPresent => "No NVIDIA GPU or driver found",
             _ => "Driver isn't responding; retrying",
         };
+        SetTicks(GpuTicks, g.Status == GpuStatus.Ok ? g.Load / 100.0 : null);
 
         TCpu.Text = t.CpuTempC is { } ct ? $"{ct:0}" : "—";
         TCpu.Foreground = Temp(t.CpuTempC, s.CpuTempWarn, s.CpuTempHot);
-        TCpuSub.Text = $"{t.CpuLoad:0}% busy · {t.CpuClockGhz:0.0} GHz";
+        TCpuSub.Text = $"{t.CpuLoad:0}% · {t.CpuClockGhz:0.0} GHz";
+        SetTicks(CpuTicks, t.CpuLoad / 100.0);
 
         TRam.Text = t.Ram is { } r ? $"{r.UsedGb:0.0}" : "—";
-        TRamSub.Text = (t.Ram is { } rr ? $"of {rr.TotalGb:0} GB RAM" : "") +
-                       (g.VramUsed is { } vu && g.VramTotal is { } vt ? $" · VRAM {vu / 1073741824.0:0.0}/{vt / 1073741824.0:0} GB" : "");
+        TRamTotal.Text = t.Ram is { } rt ? $"{rt.TotalGb:0} GB" : "";
+        TRamSub.Text = g.VramUsed is { } vu && g.VramTotal is { } vt ? $"VRAM {vu / 1073741824.0:0.0} / {vt / 1073741824.0:0} GB" : "";
+        SetTicks(RamTicks, t.Ram is { TotalGb: > 0 } ru ? ru.UsedGb / ru.TotalGb : null);
 
-        DrawCharts();
-        RefreshGamingCard();
+        DrawFpsChart();
+        RefreshEvents();
+        RefreshStatus();
         RefreshBanners();
-
-        var mode = PowerMode.Current();
-        PowerPlan.Text = PowerMode.PlanName() ?? "Unknown";
-        PowerModeText.Text = PowerMode.Name(mode) + (_engine.Journal.IsOwnedBy(SettingCatalog.Power.Id, GamingMode.Owner) ? " (set by gaming mode)" : "");
-        PowerSource.Text = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Offline ? "Battery" : "Plugged in";
-        var owned = _engine.Journal.Entries.Count;
-        OwnedChanges.Text = owned == 0 ? "None — Windows is as you set it" : $"{owned} setting{(owned == 1 ? "" : "s")} changed (see Diagnostics)";
     }
 
-    private void RefreshGamingCard()
+    /// <summary>Fills the first N of a reading's ten segments in the text color; the rest stay as divider lines.</summary>
+    private static void SetTicks(UniformGrid host, double? fraction)
+    {
+        if (host.Children.Count == 0)
+            for (var i = 0; i < OverviewData.TickCount; i++) host.Children.Add(new Rectangle { Margin = new Thickness(0, 0, 2, 0) });
+        var filled = OverviewData.FilledTicks(fraction);
+        for (var i = 0; i < host.Children.Count; i++)
+            ((Rectangle)host.Children[i]).SetResourceReference(Shape.FillProperty, i < filled ? "Text" : "Line");
+    }
+
+    private void RefreshEvents()
+    {
+        var events = OverviewData.Events(Log.Recent(), 8);
+        EventList.ItemsSource = events;
+        EventsEmpty.Visibility = events.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>One line at the bottom: what is running, power, and the overlay; Stop/Resume when they apply.</summary>
+    private void RefreshStatus()
     {
         var gm = _engine.Gaming;
-        string pill; Brush pillColor;
-        if (_engine.RecoveryMode) { pill = "RECOVERY MODE"; pillColor = (Brush)FindResource("Warn"); }
-        else if (_engine.OptimizationsPaused) { pill = "PAUSED"; pillColor = (Brush)FindResource("Warn"); }
-        else if (gm.Active) { pill = "ACTIVE"; pillColor = (Brush)FindResource("Accent"); }
-        else if (_settings.AutoGamingMode) { pill = "WAITING FOR A GAME"; pillColor = (Brush)FindResource("Info"); }
-        else { pill = "OFF"; pillColor = (Brush)FindResource("Muted"); }
-        GamingPillText.Text = pill;
-        GamingPillText.Foreground = pillColor;
-        var c = ((SolidColorBrush)pillColor).Color;
-        GamingPill.Background = new SolidColorBrush(Color.FromArgb(0x26, c.R, c.G, c.B));
+        string state, led;
+        if (_engine.RecoveryMode) { state = "Recovery mode: automatic optimizations are off"; led = "Signal"; }
+        else if (_engine.OptimizationsPaused) { state = "Optimizations paused"; led = "Signal"; }
+        else if (gm.Active) { state = $"Gaming mode on for {string.Join(", ", gm.ActiveGames)}"; led = "Good"; }
+        else if (_settings.AutoGamingMode) { state = "Gaming mode waiting for a game"; led = "Good"; }
+        else { state = "Monitoring"; led = "Good"; }
+        StatusLed.SetResourceReference(Shape.FillProperty, led);
 
-        var game = _engine.Game;
-        GamingSummary.Text = gm.Active ? $"Playing {string.Join(", ", gm.ActiveGames)}. Active optimizations:"
-            : game is { Optimize: false } ? $"{game.Label} is in front ({(game.Confirmed ? "optimization turned off for it" : "detected as fullscreen; add it on the Gaming page to optimize")})."
-            : _settings.AutoGamingMode ? "Nothing is changed until a game from your list is in front."
-            : "Turn it on from the Gaming page or the tray.";
-        GamingDetails.ItemsSource = gm.Optimizations.Select(o => "• " + o).Concat(gm.Notices.Select(n => "! " + n)).ToList();
+        var power = PowerMode.Name(PowerMode.Current()) + (_engine.Journal.IsOwnedBy(SettingCatalog.Power.Id, GamingMode.Owner) ? " (gaming mode)" : "");
+        var source = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Offline ? "On battery" : "Plugged in";
+        var overlay = _app.OverlayVisible ? $"Overlay visible · {_app.HotkeyInUse ?? "no shortcut"}" : "Overlay hidden";
+        StatusLine.Text = string.Join("  ·  ", state, source, power, overlay);
+
         var somethingActive = gm.Active || _engine.Boost.Active || _engine.Journal.Entries.Any(e => e.Owners.Contains(GamingMode.Owner));
         StopButton.Visibility = !_engine.OptimizationsPaused && somethingActive ? Visibility.Visible : Visibility.Collapsed;
         ResumeButton.Visibility = _engine.OptimizationsPaused || _engine.RecoveryMode ? Visibility.Visible : Visibility.Collapsed;
@@ -328,6 +338,8 @@ public partial class ControlCenterWindow : Window
         var browsers = BrowsersNeedingRestart();
         if (browsers.Count > 0)
             Banners.Children.Add(Banner($"Restart {Names(browsers)} to finish", "A graphics setting changed while it was running.", "Go to Optimizer", (_, _) => Nav.SelectedIndex = 1, warn: false));
+        foreach (var notice in _engine.Gaming.Notices)
+            Banners.Children.Add(Banner("Gaming mode", notice, null, null, warn: true));
     }
 
     private Border Banner(string title, string text, string? button, RoutedEventHandler? click, bool warn)
@@ -355,16 +367,46 @@ public partial class ControlCenterWindow : Window
 
     // ---- charts ----
 
-    private void DrawCharts()
+    /// <summary>Frame rate over the history window on a light grid, with marked dips.</summary>
+    private void DrawFpsChart()
     {
         var points = _app.History.Points.ToList();
-        var maxFps = points.Select(p => p.Fps ?? 0).DefaultIfEmpty(0).Max();
-        var fpsTop = Math.Max(60, Math.Ceiling(maxFps * 1.15 / 30) * 30);
-        FpsChartRange.Text = $"0–{fpsTop:0} FPS";
-        Plot(FpsChart, points, p => p.Fps, 0, fpsTop, (Brush)FindResource("Accent"), clear: true);
-        Plot(TempChart, points, p => p.GpuTempC, 30, 110, (Brush)FindResource("Accent"), clear: true);
-        Plot(TempChart, points, p => p.CpuTempC, 30, 110, (Brush)FindResource("Info"), clear: false);
-        HotLine(TempChart, _settings.GpuTempHot, 30, 110);
+        var fps = points.Select(p => p.Fps).ToList();
+        var real = fps.Where(v => v is > 0).Select(v => v!.Value).ToList();
+        var top = Math.Max(60, Math.Ceiling((real.Count > 0 ? real.Max() : 0) * 1.15 / 30) * 30);
+        FpsChartRange.Text = real.Count > 0 ? $"avg {real.Average():0}  low {real.Min():0}" : "";
+
+        FpsChart.Children.Clear();
+        double w = FpsChart.ActualWidth, h = FpsChart.ActualHeight;
+        if (w <= 0) return;
+        for (var i = 1; i < 4; i++) AddGridLine(0, h * i / 4, w, h * i / 4);
+        for (var i = 1; i < 8; i++) AddGridLine(w * i / 8, 0, w * i / 8, h);
+
+        Plot(FpsChart, points, p => p.Fps, 0, top, (Brush)FindResource("Text"), clear: false);
+        foreach (var i in OverviewData.Dips(fps))
+        {
+            var p = ChartPoint(points, i, fps[i]!.Value, 0, top, w, h);
+            var dot = new Ellipse { Width = 6, Height = 6 };
+            dot.SetResourceReference(Shape.FillProperty, "Signal");
+            Canvas.SetLeft(dot, p.X - 3);
+            Canvas.SetTop(dot, p.Y - 3);
+            FpsChart.Children.Add(dot);
+        }
+    }
+
+    private void AddGridLine(double x1, double y1, double x2, double y2)
+    {
+        var line = new Line { X1 = x1, Y1 = y1, X2 = x2, Y2 = y2, StrokeThickness = 1 };
+        line.SetResourceReference(Shape.StrokeProperty, "Line2");
+        FpsChart.Children.Add(line);
+    }
+
+    /// <summary>Where point <paramref name="index"/> sits on a chart of the history window (newest at the right).</summary>
+    private static Point ChartPoint(List<HistoryPoint> points, int index, double value, double min, double max, double w, double h)
+    {
+        var x = w - (points[^1].Time - points[index].Time).TotalSeconds / HistoryRecorder.Window.TotalSeconds * w;
+        var y = h - (Math.Clamp(value, min, max) - min) / (max - min) * h;
+        return new Point(x, y);
     }
 
     private static void Plot(Canvas canvas, List<HistoryPoint> points, Func<HistoryPoint, double?> value, double min, double max, Brush brush, bool clear)
@@ -372,25 +414,13 @@ public partial class ControlCenterWindow : Window
         if (clear) canvas.Children.Clear();
         double w = canvas.ActualWidth, h = canvas.ActualHeight;
         if (w <= 0 || points.Count < 2) return;
-        var end = points[^1].Time;
         var line = new Polyline { Stroke = brush, StrokeThickness = 1.6, StrokeLineJoin = PenLineJoin.Round };
-        foreach (var p in points)
+        for (var i = 0; i < points.Count; i++)
         {
-            if (value(p) is not { } v) { if (line.Points.Count > 0) { canvas.Children.Add(line); line = new Polyline { Stroke = brush, StrokeThickness = 1.6 }; } continue; }
-            var x = w - (end - p.Time).TotalSeconds / HistoryRecorder.Window.TotalSeconds * w;
-            var y = h - (Math.Clamp(v, min, max) - min) / (max - min) * h;
-            line.Points.Add(new Point(x, y));
+            if (value(points[i]) is not { } v) { if (line.Points.Count > 0) { canvas.Children.Add(line); line = new Polyline { Stroke = brush, StrokeThickness = 1.6 }; } continue; }
+            line.Points.Add(ChartPoint(points, i, v, min, max, w, h));
         }
         if (line.Points.Count > 0) canvas.Children.Add(line);
-    }
-
-    private static void HotLine(Canvas canvas, double value, double min, double max)
-    {
-        double w = canvas.ActualWidth, h = canvas.ActualHeight;
-        if (w <= 0) return;
-        var y = h - (value - min) / (max - min) * h;
-        var hotColor = ((SolidColorBrush)Application.Current.FindResource("Hot")).Color;
-        canvas.Children.Add(new Line { X1 = 0, X2 = w, Y1 = y, Y2 = y, Stroke = new SolidColorBrush(hotColor) { Opacity = 0.45 }, StrokeDashArray = [4, 4], StrokeThickness = 1 });
     }
 
     // ---- optimizer ----
@@ -588,8 +618,6 @@ public partial class ControlCenterWindow : Window
         _app.ResumeOptimizations();
         RefreshOverview();
     }
-
-    private void OnGoToGaming(object sender, RoutedEventArgs e) => Nav.SelectedIndex = 2;
 
     // ---- overlay / general ----
 
