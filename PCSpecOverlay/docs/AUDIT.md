@@ -103,6 +103,20 @@ Legend: ✅ verified working · 🟡 partially working / works with caveats · �
 | Vulkan and OpenGL FPS | ✅ | Added in 2.0.9 via the graphics kernel's present event. Automated tests render real frames: OpenGL on Intel ~60/60 (kernel path), Vulkan on Intel 48.3/48 (kernel path), Vulkan on NVIDIA 71.9/72 (driver hands frames to DXGI → DirectX path, not double-counted). On-screen check (2.0.10): the user clicked each test window and the overlay read about 72, 48 and 90 for targets 72, 48 and 90. That check found and fixed a bug where a Vulkan window borrowed a same-named process's frame rate |
 | Code signing, online updates | ❌ | No certificate or release server available; documented in the README |
 
+## Instrument stage 1 (2026-10-24, development build on the same PC)
+
+Light/dark foundation for the redesign (spec: `docs/superpowers/specs/2026-10-24-instrument-redesign-design.md`). 135 automated tests pass; these were checked on screen.
+
+| Check | Result | Notes |
+|---|---|---|
+| Match Windows at start | ✅ | Windows app mode was Light; the app opened light |
+| Dark chosen in the app | ✅ | Switched live, title bar included, no restart; square switches and Theme row as designed |
+| Optimizer page, dark | ✅ | Primary button filled, amber only on "Balanced", green only on good statuses |
+| Light theme readability | ✅ | Overview labels and units use Muted (Faint is no longer used for text); hot CPU reading in red |
+| Following Windows live | ✅ | With Match Windows on, the user flipped Windows app mode Dark → Light → Dark; the app followed each time within a second (log 20:45:49, 20:45:57, 20:46:00) |
+| In-game overlay | ✅ | Stayed dark in all modes (its own theme setting comes in stage 2) |
+| Screen-reader names | 🟡 | The new Theme dropdown is named. 38 older controls have no name (sliders, some dropdowns, slider step buttons); this predates the redesign and is tracked for a separate fix |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
