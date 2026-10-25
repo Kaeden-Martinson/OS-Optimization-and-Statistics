@@ -53,3 +53,31 @@ public class TrayDrawingTests
         }
     }
 }
+
+public class TrayMenuTests
+{
+    private static readonly string Tray = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/TrayIcon.cs"));
+    private static readonly string Renderer = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/TrayMenuRenderer.cs"));
+
+    [Fact]
+    public void The_menu_is_drawn_by_the_instrument_renderer_with_icons()
+    {
+        Assert.Contains("new TrayMenuRenderer(", Tray);
+        foreach (var icon in new[] { "Icon.Window", "Icon.Overlay", "Icon.Pointer", "Icon.Gaming", "Icon.Pause", "Icon.Monitor", "Icon.Power", "Icon.Check" })
+            Assert.Contains($"\"{icon}\"", Tray);
+        Assert.Contains("MenuIcons.Render(", Tray);
+        Assert.Contains("Theme.Changed +=", Tray);
+        Assert.Contains("Theme.Changed -=", Tray);
+        Assert.Contains("\"Hide overlay\"", Tray);
+        Assert.Contains("$\"Open {AppIdentity.ProductName}\"", Tray);
+    }
+
+    [Fact]
+    public void The_renderer_paints_every_part_from_the_palette()
+    {
+        foreach (var part in new[] { "OnRenderToolStripBackground", "OnRenderToolStripBorder", "OnRenderMenuItemBackground",
+                     "OnRenderItemText", "OnRenderItemCheck", "OnRenderSeparator", "OnRenderImageMargin" })
+            Assert.Contains($"override void {part}(", Renderer);
+        Assert.DoesNotMatch(@"Color\.FromArgb\(|Color\.[A-Z][a-z]+[^A-Za-z(]", Renderer);
+    }
+}

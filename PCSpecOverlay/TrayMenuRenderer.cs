@@ -1,0 +1,67 @@
+using System.Drawing;
+using PCSpecOverlay.Core;
+using Forms = System.Windows.Forms;
+
+namespace PCSpecOverlay;
+
+/// <summary>
+/// Paints the tray menu in the Instrument style: Bg fill with a 1 px Line border and separators, a Panel row with a
+/// 2 px Text edge under the pointer, shortcuts in Muted monospace, and a check icon at the right of switched-on items.
+/// </summary>
+internal sealed class TrayMenuRenderer(Func<TrayPalette> palette, Func<Image?> checkMark) : Forms.ToolStripRenderer
+{
+    private static readonly Font ShortcutFont = new("Cascadia Mono", 8f);
+
+    protected override void OnRenderToolStripBackground(Forms.ToolStripRenderEventArgs e)
+    {
+        using var fill = new SolidBrush(palette().Bg);
+        e.Graphics.FillRectangle(fill, e.AffectedBounds);
+    }
+
+    protected override void OnRenderToolStripBorder(Forms.ToolStripRenderEventArgs e)
+    {
+        using var pen = new Pen(palette().Line);
+        var r = e.AffectedBounds;
+        e.Graphics.DrawRectangle(pen, r.X, r.Y, r.Width - 1, r.Height - 1);
+    }
+
+    /// <summary>The icon column has the same fill as the rest of the menu.</summary>
+    protected override void OnRenderImageMargin(Forms.ToolStripRenderEventArgs e) { }
+
+    protected override void OnRenderMenuItemBackground(Forms.ToolStripItemRenderEventArgs e)
+    {
+        if (!e.Item.Selected || !e.Item.Enabled) return;
+        var p = palette();
+        var r = new Rectangle(2, 0, e.Item.Width - 4, e.Item.Height);
+        using var fill = new SolidBrush(p.Panel);
+        e.Graphics.FillRectangle(fill, r);
+        using var edge = new SolidBrush(p.Text);
+        e.Graphics.FillRectangle(edge, r.X, r.Y, 2, r.Height);
+    }
+
+    protected override void OnRenderItemText(Forms.ToolStripItemTextRenderEventArgs e)
+    {
+        var item = e.Item as Forms.ToolStripMenuItem;
+        var isShortcut = item is { ShortcutKeyDisplayString.Length: > 0 } && e.Text == item.ShortcutKeyDisplayString;
+        if (isShortcut && string.IsNullOrWhiteSpace(e.Text)) return; // room reserved for the check, nothing to write
+        var p = palette();
+        e.TextColor = isShortcut || !e.Item.Enabled ? p.Muted : p.Text;
+        if (isShortcut) e.TextFont = ShortcutFont;
+        base.OnRenderItemText(e);
+        if (!isShortcut && item is { Checked: true } && checkMark() is { } mark)
+            e.Graphics.DrawImage(mark, item.Width - mark.Width - 10, (item.Height - mark.Height) / 2, mark.Width, mark.Height);
+    }
+
+    /// <summary>A switched-on item keeps its own icon (no framed box); its check is drawn at the right.</summary>
+    protected override void OnRenderItemCheck(Forms.ToolStripItemImageRenderEventArgs e)
+    {
+        if (e.Image != null) e.Graphics.DrawImage(e.Image, e.ImageRectangle);
+    }
+
+    protected override void OnRenderSeparator(Forms.ToolStripSeparatorRenderEventArgs e)
+    {
+        using var pen = new Pen(palette().Line);
+        var y = e.Item.Height / 2;
+        e.Graphics.DrawLine(pen, 4, y, e.Item.Width - 4, y);
+    }
+}
