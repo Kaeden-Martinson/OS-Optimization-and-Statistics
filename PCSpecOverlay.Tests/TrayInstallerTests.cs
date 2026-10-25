@@ -212,4 +212,17 @@ public class InstallerWindowTests
         Assert.Contains("_theme.Changed +=", code);
         Assert.Contains("_theme.Dispose()", code);
     }
+
+    [Fact]
+    public void Switch_labels_wrap_instead_of_clipping_and_keep_their_accessible_name()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/InstallerWindow.xaml.cs"));
+        Assert.Contains("TextWrapping = TextWrapping.Wrap", code);
+        foreach (var option in new[] { "Option1.Content = Wrapped(", "Option2.Content = Wrapped(" })
+            Assert.Contains(option, code);
+        Assert.DoesNotMatch(@"Option\d\.Content = """, code);
+        // the screen-reader name comes from the first TextBlock in the content
+        var name = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Core/AccessibleName.cs"));
+        Assert.Contains("TextBlock { Text.Length: > 0 }", name);
+    }
 }
