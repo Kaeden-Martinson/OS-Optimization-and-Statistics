@@ -1,5 +1,5 @@
 using System.Drawing;
-using System.Drawing.Drawing2D;
+using Microsoft.Win32;
 using PCSpecOverlay.Core;
 using Forms = System.Windows.Forms;
 using Icon = System.Drawing.Icon;
@@ -11,7 +11,7 @@ internal sealed class TrayIcon : IDisposable
 {
     private readonly App _app;
     private readonly Forms.NotifyIcon _icon;
-    private readonly Icon _image;
+    private Icon _image;
 
     public TrayIcon(App app)
     {
@@ -73,6 +73,7 @@ internal sealed class TrayIcon : IDisposable
             if (e.Button == Forms.MouseButtons.Left) _app.OpenControlCenter();
         };
         _icon.BalloonTipClicked += (_, _) => _app.OpenControlCenter();
+        SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
     }
 
     /// <param name="important">Warning icon for things that need attention; info icon otherwise.</param>
@@ -82,24 +83,30 @@ internal sealed class TrayIcon : IDisposable
         _icon.ShowBalloonTip(6000, title, message, important ? Forms.ToolTipIcon.Warning : Forms.ToolTipIcon.Info);
     }
 
-    /// <summary>Three rising bars in the accent green.</summary>
+    /// <summary>The Optiframe mark at the tray size: dark on a light taskbar, light on a dark one.</summary>
     private static Icon DrawIcon()
     {
-        using var bmp = new Bitmap(32, 32);
-        using (var g = Graphics.FromImage(bmp))
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.Clear(Color.Transparent);
-            using var brush = new SolidBrush(Color.FromArgb(118, 185, 0));
-            g.FillRectangle(brush, 3, 19, 7, 10);
-            g.FillRectangle(brush, 12, 11, 7, 18);
-            g.FillRectangle(brush, 21, 3, 7, 26);
-        }
+        var size = Forms.SystemInformation.SmallIconSize.Width;
+        var light = ThemeResolver.TaskbarIsLight(ThemeResolver.ReadSystemUsesLightTheme);
+        using var bmp = LogoPainter.Draw(size, light ? Color.FromArgb(0x14, 0x14, 0x14) : Color.FromArgb(0xE9, 0xE9, 0xE6));
         return Icon.FromHandle(bmp.GetHicon());
+    }
+
+    private void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category != UserPreferenceCategory.General) return;
+        _app.Dispatcher.BeginInvoke(() =>
+        {
+            var old = _image;
+            _image = DrawIcon();
+            _icon.Icon = _image;
+            old.Dispose();
+        });
     }
 
     public void Dispose()
     {
+        SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         _icon.Visible = false;
         _icon.Dispose();
         _image.Dispose();

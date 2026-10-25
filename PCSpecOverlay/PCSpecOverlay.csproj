@@ -11,6 +11,7 @@
     <AssemblyName>PCSpecOverlay</AssemblyName>
     <RootNamespace>PCSpecOverlay</RootNamespace>
     <Product>PC Spec Overlay</Product>
+    <ApplicationIcon>Optiframe.ico</ApplicationIcon>
     <Version>2.0.13</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
@@ -27,6 +28,10 @@
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Optiframe.ico" />
   </ItemGroup>
 
   <ItemGroup>
