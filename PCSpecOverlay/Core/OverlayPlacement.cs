@@ -30,4 +30,18 @@ public static class OverlayPlacement
         return (freeX <= 0 ? 0 : Math.Clamp((left - work.Left) / (double)freeX, 0, 1),
                 freeY <= 0 ? 0 : Math.Clamp((top - work.Top) / (double)freeY, 0, 1));
     }
+
+    /// <summary>
+    /// Where the move-mode window goes so the panel stays exactly at (panelX, panelY) and the handle bar stays on
+    /// screen: the handle sits above the panel unless that would cross the work area's top, then below it; a handle
+    /// wider than the panel extends to the right unless that would cross the work area's right edge, then to the left.
+    /// </summary>
+    public static (int Left, int Top, bool HandleBelow, bool PanelRight) MoveWindow(int panelX, int panelY,
+        (int Left, int Top, int Right, int Bottom) work, int panelWidth, int windowWidth, int handle)
+    {
+        var below = panelY - handle < work.Top;
+        var extra = Math.Max(0, windowWidth - panelWidth);
+        var right = extra > 0 && panelX + windowWidth > work.Right;
+        return (right ? panelX - extra : panelX, below ? panelY : panelY - handle, below, right);
+    }
 }

@@ -52,6 +52,27 @@ public class OverlayPlacementTests
         var (fx, fy) = OverlayPlacement.ToFractions(left, top, Screen, 300, 40);
         Assert.Equal((left, top), OverlayPlacement.Place(Settings.Custom, fx, fy, Screen, 300, 40, 18));
     }
+
+    [Fact]
+    public void The_move_handle_sits_above_the_panel_when_there_is_room() =>
+        Assert.Equal((800, 474, false, false), OverlayPlacement.MoveWindow(800, 500, Screen, 300, 300, 26));
+
+    [Theory]
+    [InlineData(18)] // a top corner: the 14 DIP margin is less than the handle
+    [InlineData(0)]  // a pinned spot at the very top
+    public void The_move_handle_goes_below_the_panel_near_the_top(int top) =>
+        Assert.Equal((1602, top, true, false), OverlayPlacement.MoveWindow(1602, top, Screen, 300, 300, 26));
+
+    [Fact]
+    public void The_move_handle_measures_against_the_work_area_top() =>
+        Assert.True(OverlayPlacement.MoveWindow(2000, 60, (1920, 40, 3840, 1080), 300, 300, 26).HandleBelow);
+
+    [Fact]
+    public void A_handle_wider_than_the_panel_extends_away_from_the_right_edge()
+    {
+        Assert.Equal((100, 474, false, false), OverlayPlacement.MoveWindow(100, 500, Screen, 90, 130, 26));
+        Assert.Equal((1782, 474, false, true), OverlayPlacement.MoveWindow(1822, 500, Screen, 90, 130, 26));
+    }
 }
 
 public class PlacementSettingTests

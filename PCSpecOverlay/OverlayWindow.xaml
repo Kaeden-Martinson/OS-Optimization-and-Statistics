@@ -77,9 +77,10 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Move mode only: a handle bar above the panel with the Pin button -->
+        <!-- Move mode only: a handle bar with the Pin button; above the panel, or below it (row 2) near the top edge -->
         <Border x:Name="MoveHandle" Visibility="Collapsed" Background="{DynamicResource O.Text}" Height="22" Margin="0,0,0,4">
             <DockPanel>
                 <Button x:Name="PinButton" DockPanel.Dock="Right" Click="OnPin" Focusable="False" Cursor="Hand" Margin="2"
@@ -108,7 +109,8 @@
             </DockPanel>
         </Border>
 
-        <Grid Grid.Row="1">
+        <!-- Left-aligned so a wider handle bar never stretches the panel -->
+        <Grid x:Name="PanelHost" Grid.Row="1" HorizontalAlignment="Left">
         <Border x:Name="Frame" Background="{DynamicResource O.Bg}" BorderBrush="{DynamicResource O.Line}" BorderThickness="1">
             <Border.LayoutTransform>
                 <ScaleTransform x:Name="PanelScale" ScaleX="1" ScaleY="1" />

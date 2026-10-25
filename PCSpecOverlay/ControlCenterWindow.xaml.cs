@@ -175,17 +175,18 @@ public partial class ControlCenterWindow : Window
 
     private void OnDarkTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Dark);
 
-    /// <summary>The switch in the tab bar picks Light or Dark outright; Match Windows stays on the Settings page.</summary>
     private void OnMoveOverlay(object sender, RoutedEventArgs e) => _app.MoveOverlay();
 
-    /// <summary>The overlay was dragged or pinned: show its new position choice without saving again.</summary>
+    /// <summary>The overlay was dragged or pinned: show its new position choice and display without saving again.</summary>
     public void OverlayMoved()
     {
         _loading = true;
         PositionBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
+        DisplayBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
         _loading = false;
     }
 
+    /// <summary>The switch in the tab bar picks Light or Dark outright; Match Windows stays on the Settings page.</summary>
     private void ChooseTheme(string appearance)
     {
         _settings.Appearance = appearance;
