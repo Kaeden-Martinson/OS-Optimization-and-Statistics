@@ -87,7 +87,7 @@ internal static class DiagnosticReport
         if (engine.OptimizationsPaused) list.Add(new("Optimizations", "Paused by you", DiagLevel.Info));
 
         var errors = Log.Recent().Count(e => e.Level == LogLevel.Error);
-        list.Add(new("Recent errors", errors == 0 ? "None this session" : $"{errors} — see Recent events below", errors == 0 ? DiagLevel.Ok : DiagLevel.Error));
+        list.Add(new("Recent errors", errors == 0 ? "None this session" : $"{errors} — see the log (Open log)", errors == 0 ? DiagLevel.Ok : DiagLevel.Error));
         return list;
     }
 

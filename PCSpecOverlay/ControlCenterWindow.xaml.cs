@@ -801,11 +801,14 @@ public partial class ControlCenterWindow : Window
     private void RefreshDiagnostics()
     {
         var status = DiagnosticReport.Status(_engine).Where(s => s.Name != DiagnosticReport.ChangesCheck).ToList();
-        StatusGrid.ItemsSource = status.Select(s => new StatusCell(s.Name, s.Detail, s.Level, Health.Word(s.Level))).ToList();
+        var cells = status.Select(s => new StatusCell(s.Name, s.Detail, s.Level, Health.Word(s.Level))).ToList();
+        if (StatusGrid.ItemsSource is not IEnumerable<StatusCell> shown || !shown.SequenceEqual(cells))
+            StatusGrid.ItemsSource = cells;
         HealthText.Text = Health.Summary(status.Select(s => s.Level).ToList());
 
         var rows = JournalRows.Build(_engine.Journal.Entries, id => SettingCatalog.Resolve(id)?.Name, SettingCatalog.DescribeValue, DateTime.Now);
-        JournalList.ItemsSource = rows;
+        if (JournalList.ItemsSource is not IEnumerable<JournalRow> listed || !listed.SequenceEqual(rows))
+            JournalList.ItemsSource = rows;
         JournalEmpty.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
