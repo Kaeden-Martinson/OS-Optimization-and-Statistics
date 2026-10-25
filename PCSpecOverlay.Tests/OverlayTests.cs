@@ -154,3 +154,46 @@ public class FrameTimeTraceTests
         Assert.Empty(t.Plot(100, 0));
     }
 }
+
+public class OverlayColorTests
+{
+    private static readonly string[] Keys =
+        ["O.Bg", "O.Solid", "O.Line", "O.Line2", "O.Text", "O.Muted", "O.Signal", "O.Hot", "O.SignalSoft", "O.HotSoft", "O.Track"];
+
+    private static Color C(ResourceDictionary d, string key) => ((SolidColorBrush)d[key]).Color;
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Themes/Overlay.Dark.xaml")]
+    [InlineData("PCSpecOverlay/Themes/Overlay.Light.xaml")]
+    public void Every_key_is_a_brush_and_nothing_else_is_defined(string file) => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary(file);
+        foreach (var key in Keys) Assert.IsType<SolidColorBrush>(d[key]);
+        Assert.Equal(Keys.Length, d.Keys.Count);
+    });
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Themes/Overlay.Dark.xaml")]
+    [InlineData("PCSpecOverlay/Themes/Overlay.Light.xaml")]
+    public void Solid_is_the_panel_color_without_transparency(string file) => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary(file);
+        var bg = C(d, "O.Bg");
+        Assert.Equal(Color.FromRgb(bg.R, bg.G, bg.B), C(d, "O.Solid"));
+        Assert.InRange(bg.A, (byte)0xD0, (byte)0xF0); // see-through enough to sit on a game, solid enough to read
+    });
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Themes/Overlay.Dark.xaml")]
+    [InlineData("PCSpecOverlay/Themes/Overlay.Light.xaml")]
+    public void Readable_overlay_text_meets_four_and_a_half_to_one(string file) => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary(file);
+        foreach (var fg in new[] { "O.Text", "O.Muted", "O.Signal", "O.Hot" })
+        {
+            var ratio = Contrast.Ratio(C(d, fg), C(d, "O.Solid"));
+            Assert.True(ratio >= 4.5, $"{fg} is {ratio:0.00}:1 in {file}");
+        }
+        Assert.True(Contrast.Ratio(C(d, "O.Solid"), C(d, "O.Text")) >= 4.5, "badge text on badge");
+    });
+}

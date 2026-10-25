@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- In-game overlay, light. Merged into the overlay window only; same keys as Overlay.Dark.xaml. -->
+    <SolidColorBrush x:Key="O.Bg" Color="#EBFAF9F6" />
+    <SolidColorBrush x:Key="O.Solid" Color="#FAF9F6" />
+    <SolidColorBrush x:Key="O.Line" Color="#29000000" />
+    <SolidColorBrush x:Key="O.Line2" Color="#14000000" />
+    <SolidColorBrush x:Key="O.Text" Color="#141414" />
+    <SolidColorBrush x:Key="O.Muted" Color="#5F5F59" />
+    <SolidColorBrush x:Key="O.Signal" Color="#955C00" />
+    <SolidColorBrush x:Key="O.Hot" Color="#B8322B" />
+    <SolidColorBrush x:Key="O.SignalSoft" Color="#2E955C00" />
+    <SolidColorBrush x:Key="O.HotSoft" Color="#2EB8322B" />
+    <SolidColorBrush x:Key="O.Track" Color="#1F000000" />
+</ResourceDictionary>
