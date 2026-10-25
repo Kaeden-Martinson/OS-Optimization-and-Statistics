@@ -37,8 +37,6 @@ public partial class ControlCenterWindow : Window
     private bool _loading = true, _restarting;
     private int _tick;
 
-    public string VersionText => $"Version {AppIdentity.Version}{(AppIdentity.IsDevBuild ? " · development build" : "")}";
-
     internal ControlCenterWindow(App app)
     {
         _app = app;
@@ -46,6 +44,7 @@ public partial class ControlCenterWindow : Window
         _settings = app.Settings;
         _rules = new ObservableCollection<GameRule>(_settings.GameRules);
         InitializeComponent();
+        VersionLabel.Text = AppIdentity.Version + (AppIdentity.IsDevBuild ? " dev" : "");
         DataContext = _settings;
 
         // Center on the primary screen ourselves: CenterScreen misplaces windows across monitors with different scaling
@@ -79,7 +78,7 @@ public partial class ControlCenterWindow : Window
         _refresh.Tick += (_, _) => Refresh();
         _refresh.Start();
         Closed += (_, _) => { _app.Theme.Changed -= OnThemeChanged; _refresh.Stop(); if (_saveSoon.IsEnabled) { _saveSoon.Stop(); Save(); } };
-        Loaded += (_, _) => { _loading = false; RefreshAll(); };
+        Loaded += (_, _) => { _loading = false; SyncThemeButtons(); RefreshAll(); };
     }
 
     private static void Fill(ComboBox box, IEnumerable<(object Value, string Label)> items)
@@ -171,9 +170,30 @@ public partial class ControlCenterWindow : Window
         if (e.OriginalSource == Nav && !_loading) RefreshAll();
     }
 
+    private void OnLightTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Light);
+
+    private void OnDarkTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Dark);
+
+    /// <summary>The switch in the tab bar picks Light or Dark outright; Match Windows stays on the Settings page.</summary>
+    private void ChooseTheme(string appearance)
+    {
+        _settings.Appearance = appearance;
+        _app.SaveSettings();
+        AppearanceBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
+        SyncThemeButtons();
+    }
+
+    /// <summary>The pressed half of the switch shows the theme in use (also when it follows Windows).</summary>
+    private void SyncThemeButtons()
+    {
+        LightButton.IsChecked = _app.Theme.Current == AppTheme.Light;
+        DarkButton.IsChecked = _app.Theme.Current == AppTheme.Dark;
+    }
+
     /// <summary>Brushes made in code (banners, charts, temperature colors) are rebuilt by the next refresh.</summary>
     private void OnThemeChanged(AppTheme theme)
     {
+        SyncThemeButtons();
         TitleBar.Apply(this, theme == AppTheme.Dark);
         HotkeyResult.Text = "";
         RefreshAll();
@@ -202,7 +222,7 @@ public partial class ControlCenterWindow : Window
     private void RefreshSlow()
     {
         ShowOverlay.IsChecked = _app.OverlayVisible;
-        HotkeyHint.Text = _app.HotkeyInUse is { } h ? $"Shortcut: {h}" : "No shortcut is active; set one on the General page.";
+        HotkeyHint.Text = _app.HotkeyInUse is { } h ? $"Shortcut: {h}" : "No shortcut is active; set one on the Settings page.";
         HotkeyBox.Text = _app.HotkeyInUse ?? _settings.Hotkey;
         var startup = StartupTask.Status();
         StartupSwitch.IsChecked = startup.Enabled;

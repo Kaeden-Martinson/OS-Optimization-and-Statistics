@@ -84,3 +84,31 @@ public class OverviewDataTests
         Assert.Equal("change 19", events[0].Message);
     }
 }
+
+public class ShellSourceTests
+{
+    private static string Xaml => File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+
+    [Fact]
+    public void Seven_top_tabs_with_icons_in_order()
+    {
+        var tabs = Regex.Matches(Xaml, "<TabItem Header=\"([^\"]+)\" Tag=\"\\{StaticResource Icon\\.(\\w+)\\}\" Style=\"\\{StaticResource TopTab\\}\"")
+            .Select(m => (m.Groups[1].Value, m.Groups[2].Value)).ToList();
+        Assert.Equal(new[]
+        {
+            ("Overview", "Overview"), ("Optimizer", "Optimizer"), ("Gaming", "Gaming"), ("Overlay", "Overlay"),
+            ("Alerts", "Temperature"), ("Settings", "Settings"), ("Diagnostics", "Diagnostics"),
+        }, tabs);
+        Assert.Equal(7, Regex.Matches(Xaml, "<TabItem ").Count);
+    }
+
+    [Fact]
+    public void Sidebar_is_gone_and_the_switch_is_named()
+    {
+        Assert.DoesNotContain("NavItem", Xaml);
+        Assert.DoesNotContain("NavItem", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Theme.xaml")));
+        Assert.Contains("AutomationProperties.Name=\"Light theme\"", Xaml);
+        Assert.Contains("AutomationProperties.Name=\"Dark theme\"", Xaml);
+        Assert.Contains("MinWidth=\"900\"", Xaml);
+    }
+}
