@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -320,7 +321,7 @@ public partial class OverlayWindow : Window
         var text = status.GamingMode ? "GAMING MODE" : status.Paused ? "PAUSED" : status.Boost ? "BOOST" : null;
         BadgeText.Text = text ?? "";
         CBadgeText.Text = status.GamingMode ? "GAME" : text ?? "";
-        Badge.Visibility = CBadge.Visibility = Show(text is not null);
+        Badge.Visibility = CBadgeBox.Visibility = Show(text is not null);
         var fill = status.Paused ? "O.Muted" : "O.Text";
         Badge.SetResourceReference(Border.BackgroundProperty, fill);
         CBadge.SetResourceReference(Border.BackgroundProperty, fill);
@@ -344,7 +345,7 @@ public partial class OverlayWindow : Window
         }
         var color = t.Fps is null ? "O.Muted" : "O.Text";
         FpsValue.SetResourceReference(TextBlock.ForegroundProperty, color);
-        CFps.SetResourceReference(TextBlock.ForegroundProperty, color);
+        CFps.SetResourceReference(TextElement.ForegroundProperty, color);
 
         _trace.Add(t.Fps?.WorstFrameMs);
         DrawTrace();
@@ -395,11 +396,15 @@ public partial class OverlayWindow : Window
         Set(RamUsed, t.Ram?.UsedGb, "0.0");
         RamTotal.Text = t.Ram is { } r ? $"/ {r.TotalGb:0.0} GB" : "/ — GB";
 
-        // Strip: temperature first, then load
-        CGpu.Text = ok ? $"{Num(g.TempC, "0")}° {Num(g.Load, "0")}%" : g.Status == GpuStatus.Sleeping ? "sleeping" : "—";
-        SetTemp(CGpu, g.TempC, s.GpuTempWarn, s.GpuTempHot);
-        CCpu.Text = $"{Num(t.CpuTempC, "0")}° {Num(t.CpuLoad, "0")}%";
-        SetTemp(CCpu, t.CpuTempC, s.CpuTempWarn, s.CpuTempHot);
+        // Strip: temperature first, then load; without a reading, the GPU cell says why in place of its values
+        CGpuState.Text = g.Status == GpuStatus.Sleeping ? "sleeping" : "";
+        // ° and % are part of the value: the number's font and color, no gap
+        CGpuTemp.Text = ok ? Num(g.TempC, "0", "°") : g.Status == GpuStatus.Sleeping ? "" : "—";
+        CGpuLoad.Text = ok ? Num(g.Load, "0", "%") : "";
+        CGpuTemp.SetResourceReference(TextElement.ForegroundProperty, TempColor(g.TempC, s.GpuTempWarn, s.GpuTempHot));
+        CCpuTemp.Text = Num(t.CpuTempC, "0", "°");
+        CCpuLoad.Text = Num(t.CpuLoad, "0", "%");
+        CCpuTemp.SetResourceReference(TextElement.ForegroundProperty, TempColor(t.CpuTempC, s.CpuTempWarn, s.CpuTempHot));
 
         ShowLimits(s.ShowSlowdowns ? t.Limits : Limit.None);
     }
@@ -424,7 +429,7 @@ public partial class OverlayWindow : Window
 
         var thermal = (limits & (Limit.GpuThermal | Limit.CpuThermal)) != 0;
         // The strip keeps the chip's slot while slowdowns are shown at all, so one coming and going doesn't resize it
-        CLimit.Visibility = limits != Limit.None ? Visibility.Visible : _settings.ShowSlowdowns ? Visibility.Hidden : Visibility.Collapsed;
+        CLimitBox.Visibility = limits != Limit.None ? Visibility.Visible : _settings.ShowSlowdowns ? Visibility.Hidden : Visibility.Collapsed;
         CLimitText.Text = thermal ? "HEAT" : "POWER";
         var key = thermal ? "O.Hot" : "O.Signal";
         CLimitText.SetResourceReference(TextBlock.ForegroundProperty, key);
@@ -442,13 +447,16 @@ public partial class OverlayWindow : Window
         return chip;
     }
 
-    private static string Num(double? v, string format) => v is { } x ? x.ToString(format) : "—";
+    private static string Num(double? v, string format, string suffix = "") => v is { } x ? x.ToString(format) + suffix : "—";
 
     private static void Set(TextBlock block, double? value, string format) => block.Text = Num(value, format);
 
     /// <summary>Amber at the warning level, red at the hot level, otherwise the normal text color.</summary>
     private static void SetTemp(TextBlock block, double? c, double warm, double hot) =>
-        block.SetResourceReference(TextBlock.ForegroundProperty, c is null ? "O.Text" : c >= hot ? "O.Hot" : c >= warm ? "O.Signal" : "O.Text");
+        block.SetResourceReference(TextBlock.ForegroundProperty, TempColor(c, warm, hot));
+
+    private static string TempColor(double? c, double warm, double hot) =>
+        c is null ? "O.Text" : c >= hot ? "O.Hot" : c >= warm ? "O.Signal" : "O.Text";
 
     /// <summary>
     /// Bars ease only on noticeable changes (≥10 points), briefly and at a low frame rate; small

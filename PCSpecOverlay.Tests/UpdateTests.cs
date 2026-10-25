@@ -110,11 +110,20 @@ public class UpdateTests
 public class ReleaseNotesTests
 {
     [Fact]
-    public void Version_2_1_0_has_whats_new_and_the_script_includes_it()
+    public void The_current_version_has_whats_new_without_a_checksum()
     {
         var csproj = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/PCSpecOverlay.csproj"));
-        Assert.Contains("<Version>2.1.0</Version>", csproj);
+        var version = System.Text.RegularExpressions.Regex.Match(csproj, "<Version>([^<]+)</Version>").Groups[1].Value;
+        Assert.Equal("2.1.1", version);
+        var notes = File.ReadAllText(SourceFiles.Path($"docs/releases/{version}.md"));
+        foreach (var topic in new[] { "Strip", "spacing" })
+            Assert.Contains(topic, notes, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotMatch(@"SHA-?256\s*[:=]", notes); // the script adds the one checksum line the updater reads
+    }
 
+    [Fact]
+    public void Version_2_1_0_has_whats_new_and_the_script_includes_it()
+    {
         var notes = File.ReadAllText(SourceFiles.Path("docs/releases/2.1.0.md"));
         foreach (var topic in new[] { "Optiframe", "light", "Strip", "pin", "Undo", "30", "100 °C", "Start menu", "settings" })
             Assert.Contains(topic, notes, StringComparison.OrdinalIgnoreCase);

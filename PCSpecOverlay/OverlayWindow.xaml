@@ -54,10 +54,40 @@
                 <Setter Property="Background" Value="{DynamicResource O.Text}" />
                 <Setter Property="RenderTransformOrigin" Value="0,0.5" />
             </Style>
+            <!-- Strip cells: the same padding everywhere, a divider before every cell but the first -->
             <Style x:Key="Cell" TargetType="Border">
                 <Setter Property="BorderBrush" Value="{DynamicResource O.Line2}" />
-                <Setter Property="BorderThickness" Value="0,0,1,0" />
-                <Setter Property="Padding" Value="9,4,9,5" />
+                <Setter Property="BorderThickness" Value="1,0,0,0" />
+                <Setter Property="Padding" Value="10,4,10,4" />
+            </Style>
+            <!-- A cell's line: left-aligned, so any slack sits at the cell's right end -->
+            <Style x:Key="CellText" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <!-- Runs of a cell's line, so its label, numbers and units share one baseline -->
+            <Style x:Key="SLabel" TargetType="Run">
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="9.5" />
+                <Setter Property="Foreground" Value="{DynamicResource O.Muted}" />
+            </Style>
+            <Style x:Key="SNum" TargetType="Run">
+                <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="{DynamicResource O.Text}" />
+                <Setter Property="Text" Value="—" />
+            </Style>
+            <Style x:Key="SUnit" TargetType="Run">
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontSize" Value="9.5" />
+                <Setter Property="Foreground" Value="{DynamicResource O.Muted}" />
+            </Style>
+            <!-- Gives every cell the FPS number's line height, so the cells share one baseline too -->
+            <Style x:Key="SStrut" TargetType="Run">
+                <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+                <Setter Property="FontSize" Value="17" />
+                <Setter Property="Text" Value="&#x200B;" />
             </Style>
             <Style x:Key="Badge" TargetType="Border">
                 <Setter Property="Background" Value="{DynamicResource O.Text}" />
@@ -232,40 +262,48 @@
                 </StackPanel>
 
                 <!-- ============ Strip: one ruled line (stored as "Compact"; the default) ============ -->
+                <!-- Each cell is one line of Runs on one baseline; gaps: label to value 6, number to unit 3,
+                     between values 8. Whitespace between the Runs would show, so each line stays on one source line.
+                     A hidden copy of the line at its widest usual reading (999 FPS, 99.9 ms, 100° 100%) holds the cell's
+                     width in the real fonts, so readings don't resize it; any slack sits at the cell's right end. -->
                 <StackPanel x:Name="CompactLayout" Orientation="Horizontal">
-                    <Border Style="{StaticResource Cell}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="CFps" Style="{StaticResource Num}" FontSize="17" MinWidth="40" VerticalAlignment="Bottom" />
-                            <TextBlock Text="FPS" Style="{StaticResource Unit}" Margin="4,0,0,2" />
-                        </StackPanel>
-                    </Border>
-                    <Border x:Name="CFrameTimeBox" Style="{StaticResource Cell}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                            <TextBlock x:Name="CFrameTime" Style="{StaticResource Num}" FontSize="12" MinWidth="36" />
-                            <TextBlock Text="ms" Style="{StaticResource Unit}" Margin="3,0,0,1" />
-                        </StackPanel>
-                    </Border>
-                    <Border x:Name="CGpuBox" Style="{StaticResource Cell}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                            <TextBlock Text="GPU" Style="{StaticResource Label}" Width="Auto" Margin="0,0,6,1" VerticalAlignment="Bottom" />
-                            <TextBlock x:Name="CGpu" Style="{StaticResource Num}" FontSize="12" MinWidth="66" />
-                        </StackPanel>
-                    </Border>
-                    <Border x:Name="CCpuBox" Style="{StaticResource Cell}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                            <TextBlock Text="CPU" Style="{StaticResource Label}" Width="Auto" Margin="0,0,6,1" VerticalAlignment="Bottom" />
-                            <TextBlock x:Name="CCpu" Style="{StaticResource Num}" FontSize="12" MinWidth="66" />
-                        </StackPanel>
-                    </Border>
-                    <!-- Its slot is kept while slowdowns are shown at all, sized for the longer word, so it can come and go -->
-                    <Border x:Name="CLimit" Visibility="Collapsed" Padding="6,0,6,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                    <Border Style="{StaticResource Cell}" BorderThickness="0">
                         <Grid>
-                            <TextBlock Text="POWER" FontFamily="Segoe UI" FontWeight="SemiBold" FontSize="9" Visibility="Hidden" />
-                            <TextBlock x:Name="CLimitText" FontFamily="Segoe UI" FontWeight="SemiBold" FontSize="9" HorizontalAlignment="Center" />
+                            <TextBlock Style="{StaticResource CellText}" Visibility="Hidden"><Run Style="{StaticResource SNum}" FontSize="17" Text="999" /><InlineUIContainer><Border Width="3" /></InlineUIContainer><Run Style="{StaticResource SUnit}" Text="FPS" /></TextBlock>
+                            <TextBlock x:Name="CFpsText" Style="{StaticResource CellText}"><Run Style="{StaticResource SNum}" x:Name="CFps" FontSize="17" /><InlineUIContainer><Border Width="3" /></InlineUIContainer><Run Style="{StaticResource SUnit}" Text="FPS" /></TextBlock>
                         </Grid>
                     </Border>
-                    <Border x:Name="CBadge" Style="{StaticResource Badge}" Margin="6,0,6,0">
-                        <TextBlock x:Name="CBadgeText" Style="{StaticResource BadgeText}" />
+                    <Border x:Name="CFrameTimeBox" Style="{StaticResource Cell}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource CellText}" Visibility="Hidden"><Run Style="{StaticResource SStrut}" /><Run Style="{StaticResource SNum}" Text="99.9" /><InlineUIContainer><Border Width="3" /></InlineUIContainer><Run Style="{StaticResource SUnit}" Text="ms" /></TextBlock>
+                            <TextBlock x:Name="CFrameTimeText" Style="{StaticResource CellText}"><Run Style="{StaticResource SStrut}" /><Run Style="{StaticResource SNum}" x:Name="CFrameTime" /><InlineUIContainer><Border Width="3" /></InlineUIContainer><Run Style="{StaticResource SUnit}" Text="ms" /></TextBlock>
+                        </Grid>
+                    </Border>
+                    <Border x:Name="CGpuBox" Style="{StaticResource Cell}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource CellText}" Visibility="Hidden"><Run Style="{StaticResource SStrut}" /><Run Style="{StaticResource SLabel}" Text="GPU" /><InlineUIContainer><Border Width="6" /></InlineUIContainer><Run Style="{StaticResource SNum}" Text="100°" /><InlineUIContainer><Border Width="8" /></InlineUIContainer><Run Style="{StaticResource SNum}" Text="100%" /></TextBlock>
+                            <TextBlock x:Name="CGpuText" Style="{StaticResource CellText}"><Run Style="{StaticResource SStrut}" /><Run Style="{StaticResource SLabel}" Text="GPU" /><InlineUIContainer><Border Width="6" /></InlineUIContainer><Run Style="{StaticResource SUnit}" x:Name="CGpuState" FontStyle="Italic" /><Run Style="{StaticResource SNum}" x:Name="CGpuTemp" /><InlineUIContainer><Border Width="8" /></InlineUIContainer><Run Style="{StaticResource SNum}" x:Name="CGpuLoad" /></TextBlock>
+                        </Grid>
+                    </Border>
+                    <Border x:Name="CCpuBox" Style="{StaticResource Cell}">
+                        <Grid>
+                            <TextBlock Style="{StaticResource CellText}" Visibility="Hidden"><Run Style="{StaticResource SStrut}" /><Run Style="{StaticResource SLabel}" Text="CPU" /><InlineUIContainer><Border Width="6" /></InlineUIContainer><Run Style="{StaticResource SNum}" Text="100°" /><InlineUIContainer><Border Width="8" /></InlineUIContainer><Run Style="{StaticResource SNum}" Text="100%" /></TextBlock>
+                            <TextBlock x:Name="CCpuText" Style="{StaticResource CellText}"><Run Style="{StaticResource SStrut}" /><Run Style="{StaticResource SLabel}" Text="CPU" /><InlineUIContainer><Border Width="6" /></InlineUIContainer><Run Style="{StaticResource SNum}" x:Name="CCpuTemp" /><InlineUIContainer><Border Width="8" /></InlineUIContainer><Run Style="{StaticResource SNum}" x:Name="CCpuLoad" /></TextBlock>
+                        </Grid>
+                    </Border>
+                    <!-- The slowdown chip's cell is kept while slowdowns are shown at all, sized for the longer word, so it can come and go -->
+                    <Border x:Name="CLimitBox" Style="{StaticResource Cell}" Visibility="Collapsed">
+                        <Border x:Name="CLimit" Padding="6,0,6,1" VerticalAlignment="Center">
+                            <Grid>
+                                <TextBlock Text="POWER" FontFamily="Segoe UI" FontWeight="SemiBold" FontSize="9" Visibility="Hidden" />
+                                <TextBlock x:Name="CLimitText" FontFamily="Segoe UI" FontWeight="SemiBold" FontSize="9" HorizontalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </Border>
+                    <Border x:Name="CBadgeBox" Style="{StaticResource Cell}" Visibility="Collapsed">
+                        <Border x:Name="CBadge" Style="{StaticResource Badge}" Visibility="Visible">
+                            <TextBlock x:Name="CBadgeText" Style="{StaticResource BadgeText}" />
+                        </Border>
                     </Border>
                 </StackPanel>
             </Grid>
