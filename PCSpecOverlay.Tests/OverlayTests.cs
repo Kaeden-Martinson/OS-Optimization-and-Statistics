@@ -220,3 +220,18 @@ public class OverlaySourceTests
         Assert.DoesNotContain("FindResource(\"Accent\")", code);
     }
 }
+
+public class OverlayChoiceTests
+{
+    [Fact]
+    public void Control_center_offers_strip_panel_and_the_overlay_theme()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        Assert.Contains("Content=\"Strip (one line)\" Tag=\"Compact\"", xaml);
+        Assert.Contains("Content=\"Panel\" Tag=\"Expanded\"", xaml);
+        Assert.Contains("SelectedValue=\"{Binding OverlayTheme}\"", xaml);
+        foreach (var tag in new[] { "SameAsApp", "AlwaysDark", "AlwaysLight" }) Assert.Contains($"Tag=\"{tag}\"", xaml);
+        Assert.DoesNotContain("Content=\"Expanded\"", xaml);
+        Assert.DoesNotContain("Content=\"Compact\"", xaml);
+    }
+}

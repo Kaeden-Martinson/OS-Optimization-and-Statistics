@@ -436,11 +436,11 @@
                                                 <ComboBoxItem Content="Window title" Tag="{x:Static local:GameMatchKind.WindowTitle}" />
                                                 <ComboBoxItem Content="App name" Tag="{x:Static local:GameMatchKind.ProcessName}" />
                                             </ComboBox>
-                                            <ComboBox Grid.Column="2" Margin="0,0,12,0" MinWidth="0" SelectedValuePath="Content"
+                                            <ComboBox Grid.Column="2" Margin="0,0,12,0" MinWidth="0" SelectedValuePath="Tag"
                                                       SelectedValue="{Binding LayoutChoice}" AutomationProperties.Name="Overlay layout for this game">
-                                                <ComboBoxItem Content="Default" />
-                                                <ComboBoxItem Content="Expanded" />
-                                                <ComboBoxItem Content="Compact" />
+                                                <ComboBoxItem Content="Default" Tag="Default" />
+                                                <ComboBoxItem Content="Strip" Tag="Compact" />
+                                                <ComboBoxItem Content="Panel" Tag="Expanded" />
                                             </ComboBox>
                                             <CheckBox Grid.Column="3" Style="{StaticResource Switch}" IsChecked="{Binding Optimize}" Margin="0,0,12,0">
                                                 <TextBlock Text="Optimize" FontSize="12" Foreground="{DynamicResource Muted}" />
@@ -523,8 +523,21 @@
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
                                 <TextBlock Text="Layout" FontSize="13" VerticalAlignment="Center" />
                                 <ComboBox Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Layout}">
-                                    <ComboBoxItem Content="Expanded" Tag="Expanded" />
-                                    <ComboBoxItem Content="Compact (one line)" Tag="Compact" />
+                                    <ComboBoxItem Content="Strip (one line)" Tag="Compact" />
+                                    <ComboBoxItem Content="Panel" Tag="Expanded" />
+                                </ComboBox>
+                            </Grid>
+                            <Grid Style="{StaticResource Row}">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="Overlay theme" FontSize="13" />
+                                    <TextBlock Style="{StaticResource Body}" Text="Dark reads best over most games." />
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" VerticalAlignment="Center" SelectedValuePath="Tag" SelectedValue="{Binding OverlayTheme}"
+                                          AutomationProperties.Name="Overlay theme">
+                                    <ComboBoxItem Content="Always dark" Tag="AlwaysDark" />
+                                    <ComboBoxItem Content="Always light" Tag="AlwaysLight" />
+                                    <ComboBoxItem Content="Same as app" Tag="SameAsApp" />
                                 </ComboBox>
                             </Grid>
                             <Grid Style="{StaticResource Row}">

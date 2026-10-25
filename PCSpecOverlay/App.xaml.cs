@@ -83,6 +83,8 @@ public partial class App : Application
         _overlay = new OverlayWindow();
         _overlay.SetGpuName(_engine.Gpu?.Name);
         _overlay.ApplySettings(Settings);
+        _overlay.SetAppTheme(_theme.Current);
+        _theme.Changed += _overlay.SetAppTheme;
         _overlay.EnsureHandle();
         _overlay.Moved += SaveSettings;
         HwndSource.FromHwnd(_overlay.Handle).AddHook(WndProc);
