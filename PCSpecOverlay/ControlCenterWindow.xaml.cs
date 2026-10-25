@@ -359,7 +359,8 @@ public partial class ControlCenterWindow : Window
         double w = canvas.ActualWidth, h = canvas.ActualHeight;
         if (w <= 0) return;
         var y = h - (value - min) / (max - min) * h;
-        canvas.Children.Add(new Line { X1 = 0, X2 = w, Y1 = y, Y2 = y, Stroke = new SolidColorBrush(Color.FromArgb(0x70, 0xFF, 0x4D, 0x4F)), StrokeDashArray = [4, 4], StrokeThickness = 1 });
+        var hotColor = ((SolidColorBrush)Application.Current.FindResource("Hot")).Color;
+        canvas.Children.Add(new Line { X1 = 0, X2 = w, Y1 = y, Y2 = y, Stroke = new SolidColorBrush(hotColor) { Opacity = 0.45 }, StrokeDashArray = [4, 4], StrokeThickness = 1 });
     }
 
     // ---- optimizer ----
@@ -658,9 +659,8 @@ public partial class ControlCenterWindow : Window
     private bool Confirm(string text, string title) =>
         MessageBox.Show(this, text, title, MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) == MessageBoxResult.OK;
 
-    private static Brush Temp(double? c, double warm, double hot) =>
-        c is null ? Brushes.White : c >= hot ? new SolidColorBrush(Color.FromRgb(0xFF, 0x4D, 0x4F))
-        : c >= warm ? new SolidColorBrush(Color.FromRgb(0xF5, 0xB7, 0x31)) : new SolidColorBrush(Color.FromRgb(0xF3, 0xF5, 0xF6));
+    private Brush Temp(double? c, double warm, double hot) =>
+        (Brush)FindResource(c is null ? "Text" : c >= hot ? "Hot" : c >= warm ? "Warn" : "Text");
 
     /// <summary>One row of the "What's using your PC" list.</summary>
     internal sealed class AppRow(ControlCenterWindow owner) : INotifyPropertyChanged
@@ -706,12 +706,13 @@ public sealed class LevelBrush : IValueConverter
 {
     public static readonly LevelBrush Instance = new();
 
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value switch
-    {
-        LogLevel.Error => new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x8C)),
-        LogLevel.Warning => new SolidColorBrush(Color.FromRgb(0xF5, 0xB7, 0x31)),
-        _ => new SolidColorBrush(Color.FromRgb(0x8C, 0x95, 0x9E)),
-    };
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        Application.Current?.TryFindResource(value switch
+        {
+            LogLevel.Error => "Hot",
+            LogLevel.Warning => "Warn",
+            _ => "Muted",
+        }) as Brush ?? Brushes.Gray;
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
 }

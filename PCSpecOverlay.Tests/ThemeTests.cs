@@ -241,3 +241,14 @@ public class LiveColorTests
         Assert.DoesNotMatch(@"(Color|Fill|Stroke|Background|Foreground|BorderBrush|CaretBrush|SelectionBrush)=""#[0-9A-Fa-f]{6,8}""", xaml);
     }
 }
+
+public class CodeColorTests
+{
+    [Fact]
+    public void Control_center_code_has_no_hard_coded_colors()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.DoesNotMatch(@"Color\.From(Rgb|Argb)\(\s*0x[0-9A-Fa-f]{2},\s*0x", code);
+        Assert.DoesNotContain("Brushes.White", code);
+    }
+}
