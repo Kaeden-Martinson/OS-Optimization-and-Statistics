@@ -239,7 +239,7 @@ public class MovePinTests
         Assert.Contains("\"Move overlay\"", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/TrayIcon.cs")));
         var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
         Assert.Contains("Click=\"OnMoveOverlay\"", xaml);
-        Assert.Contains("Tag=\"Custom\"", xaml);
+        Assert.Contains("Click=\"OnCornerTarget\"", xaml);
         Assert.DoesNotContain("ClickThrough", xaml);
     }
 }

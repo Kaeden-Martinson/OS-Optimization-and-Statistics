@@ -584,125 +584,166 @@
         <!-- ===================== OVERLAY ===================== -->
         <TabItem Header="Overlay" Tag="{StaticResource Icon.Overlay}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Overlay" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}" Text="How the in-game panel looks and where it sits. Changes apply immediately." />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="360" />
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="APPEARANCE" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox x:Name="ShowOverlay" Style="{StaticResource Switch}" Margin="0,0,0,14" Click="OnShowOverlay">
+                    <!-- Left: where and how it appears -->
+                    <StackPanel Margin="24,18,24,24">
+                        <TextBlock Text="Overlay" Style="{StaticResource PageTitle}" />
+                        <TextBlock Style="{StaticResource Body}" Text="What you see in games. Changes apply immediately." Margin="0,3,0,14" />
+
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="1">
+                            <Viewbox Stretch="Uniform">
+                                <Canvas x:Name="PreviewScreen" Width="320" Height="180" Background="{DynamicResource Panel}" ClipToBounds="True">
+                                    <Button x:Name="CornerTopLeft" Style="{StaticResource CornerTarget}" CommandParameter="TopLeft"
+                                            Canvas.Left="6" Canvas.Top="6" Click="OnCornerTarget" AutomationProperties.Name="Move the overlay to the top left" />
+                                    <Button x:Name="CornerTopRight" Style="{StaticResource CornerTarget}" CommandParameter="TopRight"
+                                            Canvas.Left="250" Canvas.Top="6" Click="OnCornerTarget" AutomationProperties.Name="Move the overlay to the top right" />
+                                    <Button x:Name="CornerBottomLeft" Style="{StaticResource CornerTarget}" CommandParameter="BottomLeft"
+                                            Canvas.Left="6" Canvas.Top="158" Click="OnCornerTarget" AutomationProperties.Name="Move the overlay to the bottom left" />
+                                    <Button x:Name="CornerBottomRight" Style="{StaticResource CornerTarget}" CommandParameter="BottomRight"
+                                            Canvas.Left="250" Canvas.Top="158" Click="OnCornerTarget" AutomationProperties.Name="Move the overlay to the bottom right" />
+                                    <Border x:Name="PreviewOverlay" IsHitTestVisible="False" Background="{DynamicResource Bg}"
+                                            BorderBrush="{DynamicResource Line}" BorderThickness="0.5" Padding="4,2">
+                                        <TextBlock x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas" FontSize="7" Foreground="{DynamicResource Text}" />
+                                    </Border>
+                                </Canvas>
+                            </Viewbox>
+                        </Border>
+                        <DockPanel Margin="0,6,0,0">
+                            <TextBlock x:Name="PreviewHotkey" DockPanel.Dock="Right" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" FontSize="11" />
+                            <TextBlock x:Name="PreviewCaption" Style="{StaticResource Small}" Margin="0" />
+                        </DockPanel>
+
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="DisplayBox" SelectedValuePath="Tag" SelectedValue="{Binding Monitor}" AutomationProperties.Name="Display"
+                                      HorizontalAlignment="Left" MinWidth="220" />
+                            <Button Grid.Column="1" Style="{StaticResource Btn}" Click="OnMoveOverlay" AutomationProperties.Name="Move overlay">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Pointer}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Move overlay" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock Style="{StaticResource Small}" Margin="0,6,0,0"
+                                   Text="Move overlay unlocks it so you can drag it anywhere on any screen; press Pin on the overlay to lock it there. Clicks pass through to your game whenever it's pinned." />
+
+                        <UniformGrid Columns="2" Margin="0,16,0,0">
+                            <RadioButton x:Name="StripCard" GroupName="Layout" Style="{StaticResource LayoutCard}" Tag="Compact" Click="OnLayoutCard"
+                                         Margin="0,0,6,0" AutomationProperties.Name="Strip layout">
                                 <StackPanel>
-                                    <TextBlock Text="Show the overlay" FontSize="13" />
-                                    <TextBlock x:Name="HotkeyHint" Style="{StaticResource Body}" />
+                                    <TextBlock Text="Strip" FontSize="13" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Small}" Text="One ruled line. The default." />
                                 </StackPanel>
-                            </CheckBox>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Layout" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Layout}" AutomationProperties.Name="Overlay layout">
-                                    <ComboBoxItem Content="Strip (one line)" Tag="Compact" />
-                                    <ComboBoxItem Content="Panel" Tag="Expanded" />
-                                </ComboBox>
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <StackPanel Margin="0,0,16,0">
-                                    <TextBlock Text="Overlay theme" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Dark reads best over most games." />
+                            </RadioButton>
+                            <RadioButton x:Name="PanelCard" GroupName="Layout" Style="{StaticResource LayoutCard}" Tag="Expanded" Click="OnLayoutCard"
+                                         Margin="6,0,0,0" AutomationProperties.Name="Panel layout">
+                                <StackPanel>
+                                    <TextBlock Text="Panel" FontSize="13" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Small}" Text="Adds the frame-time trace and a row per reading." />
                                 </StackPanel>
-                                <ComboBox Grid.Column="1" VerticalAlignment="Center" SelectedValuePath="Tag" SelectedValue="{Binding OverlayTheme}"
-                                          AutomationProperties.Name="Overlay theme">
-                                    <ComboBoxItem Content="Always dark" Tag="AlwaysDark" />
-                                    <ComboBoxItem Content="Always light" Tag="AlwaysLight" />
-                                    <ComboBoxItem Content="Same as app" Tag="SameAsApp" />
-                                </ComboBox>
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Display" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox x:Name="DisplayBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Monitor}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Position" FontSize="13" VerticalAlignment="Center" />
-                                <ComboBox x:Name="PositionBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Position}"
-                                          AutomationProperties.Name="Overlay position">
-                                    <ComboBoxItem Content="Top right" Tag="TopRight" />
-                                    <ComboBoxItem Content="Top left" Tag="TopLeft" />
-                                    <ComboBoxItem Content="Bottom right" Tag="BottomRight" />
-                                    <ComboBoxItem Content="Bottom left" Tag="BottomLeft" />
-                                    <ComboBoxItem Content="Custom (pinned spot)" Tag="Custom" />
-                                </ComboBox>
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Opacity" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="OpacitySlider" Grid.Column="1" Minimum="0.3" Maximum="1" TickFrequency="0.05" Value="{Binding Opacity}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=OpacitySlider, StringFormat='{}{0:P0}'}" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="Text size" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="ScaleSlider" Grid.Column="1" Minimum="0.75" Maximum="1.75" TickFrequency="0.05" Value="{Binding Scale}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=ScaleSlider, StringFormat='{}{0:P0}'}" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="METRICS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <UniformGrid Columns="2">
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowFrameTime}" Margin="0,0,24,12" Content="Frame time" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowOnePercentLow}" Margin="0,0,0,12" Content="1% low FPS" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowGpu}" Margin="0,0,24,12" Content="GPU" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowVram}" Margin="0,0,0,12" Content="GPU memory (VRAM)" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowCpu}" Margin="0,0,24,12" Content="CPU" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowRam}" Margin="0,0,0,12" Content="RAM" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowSlowdowns}" Margin="0,0,24,0" Content="Slowdown warnings" />
+                            </RadioButton>
                         </UniformGrid>
-                    </Border>
+                    </StackPanel>
 
-                    <TextBlock Text="BEHAVIOR" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
+                    <!-- Right: the other settings -->
+                    <Border Grid.Column="1" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,0,0">
                         <StackPanel>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <StackPanel Margin="0,0,16,0">
-                                    <TextBlock Text="Move the overlay" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="Unlocks it so you can drag it anywhere on any screen; press Pin on the overlay to lock it there. Clicks pass through to your game whenever it's pinned." />
-                                </StackPanel>
-                                <Button Grid.Column="1" Content="Move overlay" Style="{StaticResource Btn}" Click="OnMoveOverlay" VerticalAlignment="Center" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,12">
+                                <CheckBox x:Name="ShowOverlay" Style="{StaticResource Switch}" Click="OnShowOverlay">
+                                    <StackPanel>
+                                        <TextBlock Text="Show the overlay" FontSize="13" />
+                                        <TextBlock x:Name="HotkeyHint" Style="{StaticResource Body}" />
+                                    </StackPanel>
+                                </CheckBox>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="40" TextAlignment="Right"
+                                               Text="{Binding Value, ElementName=OpacitySlider, StringFormat='{}{0:P0}'}" />
+                                    <TextBlock Text="Opacity" FontSize="13" Width="86" VerticalAlignment="Center" />
+                                    <Slider x:Name="OpacitySlider" Minimum="0.3" Maximum="1" TickFrequency="0.05" Value="{Binding Opacity}"
+                                            Margin="0,0,10,0" AutomationProperties.Name="Overlay opacity" />
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="40" TextAlignment="Right"
+                                               Text="{Binding Value, ElementName=ScaleSlider, StringFormat='{}{0:P0}'}" />
+                                    <TextBlock Text="Text size" FontSize="13" Width="86" VerticalAlignment="Center" />
+                                    <Slider x:Name="ScaleSlider" Minimum="0.75" Maximum="1.75" TickFrequency="0.05" Value="{Binding Scale}"
+                                            Margin="0,0,10,0" AutomationProperties.Name="Overlay text size" />
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
                                 <StackPanel>
-                                    <TextBlock Text="FPS refresh" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="How often the overlay redraws. Once a second uses the least CPU." />
+                                    <TextBlock Text="SHOW" Style="{StaticResource Key}" Margin="0,0,0,8" />
+                                    <UniformGrid Columns="2">
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowFrameTime}" Margin="0,0,14,8" Content="Frame time" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowOnePercentLow}" Margin="0,0,0,8" Content="1% low" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowGpu}" Margin="0,0,14,8" Content="GPU" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowVram}" Margin="0,0,0,8" Content="VRAM" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowCpu}" Margin="0,0,14,8" Content="CPU" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowRam}" Margin="0,0,0,8" Content="RAM" />
+                                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowSlowdowns}" Margin="0,0,14,0" Content="Slowdowns" />
+                                    </UniformGrid>
                                 </StackPanel>
-                                <ComboBox x:Name="FpsRefreshBox" Grid.Column="1" SelectedValuePath="Tag"
-                                          SelectedValue="{Binding FpsRefreshMs}" VerticalAlignment="Center" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /></Grid.ColumnDefinitions>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <ComboBox x:Name="FpsRefreshBox" DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding FpsRefreshMs}"
+                                              AutomationProperties.Name="FPS refresh" />
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="FPS refresh" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Small}" Text="Once a second uses the least CPU." />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <ComboBox x:Name="StatsRefreshBox" DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding StatsRefreshMs}"
+                                              AutomationProperties.Name="Sensor refresh" />
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Sensor refresh" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Small}" Text="Slower uses less power." />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,10">
+                                <DockPanel>
+                                    <ComboBox DockPanel.Dock="Right" SelectedValuePath="Tag" SelectedValue="{Binding OverlayTheme}" AutomationProperties.Name="Overlay theme">
+                                        <ComboBoxItem Content="Always dark" Tag="AlwaysDark" />
+                                        <ComboBoxItem Content="Always light" Tag="AlwaysLight" />
+                                        <ComboBoxItem Content="Same as app" Tag="SameAsApp" />
+                                    </ComboBox>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Overlay theme" FontSize="13" />
+                                        <TextBlock Style="{StaticResource Small}" Text="Dark reads best over most games." />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                            <Border Style="{StaticResource LedgerRow}" Padding="20,12">
                                 <StackPanel>
-                                    <TextBlock Text="Sensor refresh" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="GPU, CPU and memory. Slower uses less power." />
+                                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GpuRendering}">
+                                        <StackPanel>
+                                            <TextBlock Text="Draw with the graphics chip" FontSize="13" />
+                                            <TextBlock Style="{StaticResource Body}" Text="Off by default. Measured on this laptop: about 0.3% of one CPU core less, but about 145 MB more memory. Takes effect after the app restarts." />
+                                        </StackPanel>
+                                    </CheckBox>
+                                    <Button x:Name="RestartAppButton" Content="Restart the app now" Style="{StaticResource Btn}" Tag="Primary"
+                                            HorizontalAlignment="Left" Margin="0,10,0,0" Visibility="Collapsed" Click="OnRestartApp" />
                                 </StackPanel>
-                                <ComboBox x:Name="StatsRefreshBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding StatsRefreshMs}" VerticalAlignment="Center" />
-                            </Grid>
-                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GpuRendering}">
-                                <StackPanel>
-                                    <TextBlock Text="Draw the overlay with the graphics chip" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Off by default. Measured on this laptop: about 0.3% of one CPU core less, but about 145 MB more memory, because the graphics driver loads into the app. Takes effect after the app restarts." />
-                                </StackPanel>
-                            </CheckBox>
-                            <Button x:Name="RestartAppButton" Content="Restart the app now" Style="{StaticResource Btn}" Tag="Primary"
-                                    HorizontalAlignment="Left" Margin="0,10,0,0" Visibility="Collapsed" Click="OnRestartApp" />
+                            </Border>
                         </StackPanel>
                     </Border>
-                </StackPanel>
+                </Grid>
             </ScrollViewer>
         </TabItem>
 

@@ -200,3 +200,22 @@ public class GamingPageTests
             Assert.DoesNotContain(gone, page);
     }
 }
+
+public class OverlayPageTests
+{
+    [Fact]
+    public void The_overlay_page_leads_with_a_live_preview()
+    {
+        var page = PageXaml.Tab("Overlay");
+        foreach (var part in new[] { "x:Name=\"PreviewScreen\"", "x:Name=\"PreviewOverlay\"", "x:Name=\"PreviewText\"", "x:Name=\"PreviewCaption\"",
+                     "x:Name=\"CornerTopLeft\"", "x:Name=\"CornerTopRight\"", "x:Name=\"CornerBottomLeft\"", "x:Name=\"CornerBottomRight\"",
+                     "Click=\"OnCornerTarget\"", "x:Name=\"StripCard\"", "x:Name=\"PanelCard\"", "Click=\"OnLayoutCard\"", "Click=\"OnMoveOverlay\"",
+                     "x:Name=\"DisplayBox\"", "x:Name=\"ShowOverlay\"", "{Binding OverlayTheme}", "{Binding GpuRendering}" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "PositionBox", "CardBox", "\"H1\"" })
+            Assert.DoesNotContain(gone, page);
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("OverlayPreview.Strip(", code);
+        Assert.Contains("OverlayPlacement.Place(", code);
+    }
+}

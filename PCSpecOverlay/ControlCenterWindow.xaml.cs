@@ -25,6 +25,7 @@ namespace PCSpecOverlay;
 public partial class ControlCenterWindow : Window
 {
     private const int AppRows = 8;
+    private const int PreviewMargin = 6;
 
     private readonly App _app;
     private readonly Engine _engine;
@@ -91,8 +92,18 @@ public partial class ControlCenterWindow : Window
         if (_loading || e.OriginalSource is TabControl) return;
         if (e.OriginalSource == ShowOverlay || e.OriginalSource == StartupSwitch) return; // handled by their own clicks
         if (e.OriginalSource == LightButton || e.OriginalSource == DarkButton) return; // saved by ChooseTheme
+        if (e.OriginalSource is RadioButton) return; // layout cards and appearance segments save through their own clicks
         _saveSoon.Stop();
         _saveSoon.Start();
+    }
+
+    /// <summary>Sets controls from settings without that counting as an edit.</summary>
+    private void Quietly(Action set)
+    {
+        var was = _loading;
+        _loading = true;
+        try { set(); }
+        finally { _loading = was; }
     }
 
     private void Save()
@@ -106,6 +117,7 @@ public partial class ControlCenterWindow : Window
         }
         UpdateBoostTargets();
         UpdateRestartHint();
+        RefreshPreview();
     }
 
     private void OnRestartApp(object sender, RoutedEventArgs e) => _app.RestartApp();
@@ -177,13 +189,11 @@ public partial class ControlCenterWindow : Window
 
     private void OnMoveOverlay(object sender, RoutedEventArgs e) => _app.MoveOverlay();
 
-    /// <summary>The overlay was dragged or pinned: show its new position choice and display without saving again.</summary>
+    /// <summary>The overlay was dragged or pinned: show its new display and spot without saving again.</summary>
     public void OverlayMoved()
     {
-        _loading = true;
-        PositionBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
-        DisplayBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
-        _loading = false;
+        Quietly(() => DisplayBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget());
+        RefreshPreview();
     }
 
     /// <summary>The switch in the tab bar picks Light or Dark outright; Match Windows stays on the Settings page.</summary>
@@ -228,6 +238,7 @@ public partial class ControlCenterWindow : Window
             case 0: RefreshOverview(); break;
             case 1: if (_tick % 2 == 1) RefreshOptimizer(); break;
             case 2: RefreshGaming(); break;
+            case 3: RefreshPreview(); break;
             case 6: if (_tick % 3 == 1) RefreshDiagnostics(); break;
         }
     }
@@ -236,6 +247,12 @@ public partial class ControlCenterWindow : Window
     private void RefreshSlow()
     {
         ShowOverlay.IsChecked = _app.OverlayVisible;
+        Quietly(() =>
+        {
+            StripCard.IsChecked = _settings.Layout == Settings.Compact;
+            PanelCard.IsChecked = _settings.Layout == Settings.Expanded;
+        });
+        RefreshPreview();
         HotkeyHint.Text = _app.HotkeyInUse is { } h ? $"Shortcut: {h}" : "No shortcut is active; set one on the Settings page.";
         HotkeyBox.Text = _app.HotkeyInUse ?? _settings.Hotkey;
         var startup = StartupTask.Status();
@@ -656,6 +673,43 @@ public partial class ControlCenterWindow : Window
     }
 
     // ---- overlay / general ----
+
+    /// <summary>A dashed corner on the preview: puts the overlay in that corner.</summary>
+    private void OnCornerTarget(object sender, RoutedEventArgs e)
+    {
+        _settings.Position = (string)((Button)sender).CommandParameter;
+        Save();
+    }
+
+    private void OnLayoutCard(object sender, RoutedEventArgs e)
+    {
+        _settings.Layout = (string)((FrameworkElement)sender).Tag;
+        Save();
+    }
+
+    /// <summary>Draws the overlay on the preview screen where and how it will appear, with live readings.</summary>
+    private void RefreshPreview()
+    {
+        var t = _engine.Latest;
+        PreviewText.Text = _settings.Layout == Settings.Compact
+            ? OverlayPreview.Strip(_settings, t.Fps?.Fps, t.Fps?.FrameTimeMs, t.Gpu.TempC, t.CpuTempC)
+            : OverlayPreview.Panel(_settings, t.Fps?.Fps, t.Fps?.FrameTimeMs, t.Gpu.TempC, t.CpuTempC, t.Ram?.UsedGb);
+        PreviewText.FontSize = 7 * _settings.Scale;
+        PreviewOverlay.Opacity = _settings.Opacity;
+        PreviewOverlay.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var size = PreviewOverlay.DesiredSize;
+        var (x, y) = OverlayPlacement.Place(_settings.Position, _settings.CustomX, _settings.CustomY,
+            (0, 0, (int)PreviewScreen.Width, (int)PreviewScreen.Height), (int)Math.Ceiling(size.Width), (int)Math.Ceiling(size.Height), PreviewMargin);
+        Canvas.SetLeft(PreviewOverlay, x);
+        Canvas.SetTop(PreviewOverlay, y);
+        foreach (var target in new[] { CornerTopLeft, CornerTopRight, CornerBottomLeft, CornerBottomRight })
+            target.Tag = (string)target.CommandParameter == _settings.Position ? "On" : null;
+
+        var display = Displays.Find(_settings.Monitor);
+        PreviewCaption.Text = (_settings.Position == Settings.Custom ? "Pinned spot. Use Move overlay to drag it" : "Click a corner to move it there") +
+                              (display is null ? "" : $" · {display.Label}");
+        PreviewHotkey.Text = _app.HotkeyInUse ?? "";
+    }
 
     private void OnShowOverlay(object sender, RoutedEventArgs e)
     {
