@@ -34,7 +34,7 @@ always removed.
 | Show / hide the overlay | **Alt+Shift+O** (change it in Control Center › General) |
 | Open the Control Center | Click the tray icon, or start the app again from the Start menu |
 | Stop all optimizations immediately | Tray › *Stop optimizations now*, or Overview › *Stop optimizations now* |
-| Move the overlay | Control Center › Overlay › Display / Corner — or turn off *Click-through* and drag it; it snaps to the nearest corner of any display |
+| Move the overlay | Tray or Control Center › Overlay › *Move overlay*, drag it anywhere (any display), then press **Pin**. The four corners in Control Center › Overlay are presets |
 
 ### Control Center pages
 
@@ -45,8 +45,8 @@ always removed.
   Also lists what's using your CPU, GPU and memory, with *Lower during games* and *End* (asks first).
 - **Gaming** — automatic gaming mode, which optimizations it may use, timing (switch-on delay and
   Alt+Tab grace period), your games list with per-game options, recently seen games.
-- **Overlay** — layout (expanded or one-line compact), display, corner, opacity, text size, which
-  metrics to show, refresh rates, click-through.
+- **Overlay** — layout (expanded or one-line compact), display, position (a corner preset or your
+  pinned spot) and *Move overlay*, opacity, text size, which metrics to show, refresh rates.
 - **Temperatures & alerts** — warning and hot levels for GPU and CPU, notification rules. A problem that keeps
   going (e.g. a GPU throttling all night under an AI workload) notifies at your cooldown three times, then at most
   hourly until it has been gone for 30 minutes.

@@ -96,14 +96,17 @@ public static class Updates
         return true;
     }
 
+    /// <summary>Where the setup file for a version is downloaded to (and deleted from if it fails the check).</summary>
+    internal static string DownloadPath(Version version) =>
+        Path.Combine(Path.GetTempPath(), "PCSpecOverlay-update", $"Optiframe-Setup-{version}.exe");
+
     /// <summary>Downloads the setup file and checks it. Returns the local path, or throws with a plain reason.</summary>
     public static async Task<string> DownloadAsync(HttpClient http, ReleaseInfo release, IProgress<double>? progress = null, CancellationToken ct = default)
     {
         if (!release.CanInstall) throw new InvalidOperationException("This release doesn't publish a setup file with a checksum, so it can't be installed automatically.");
         var asset = release.Setup!;
-        var dir = Path.Combine(Path.GetTempPath(), "PCSpecOverlay-update");
-        Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, $"Optiframe-Setup-{release.Version}.exe");
+        var path = DownloadPath(release.Version);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
         using (var response = await http.GetAsync(asset.Url, HttpCompletionOption.ResponseHeadersRead, ct))
         {
