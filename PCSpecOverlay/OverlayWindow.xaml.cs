@@ -38,6 +38,12 @@ public partial class OverlayWindow : Window
     private bool _handleBelow;   // move mode near the top edge: the handle bar sits below the panel
     private bool _panelRight;    // move mode near the right edge: a wider handle bar extends left of the panel
 
+    /// <summary>What the window was last placed for, and where. While none of it changes, a size change keeps its edges.</summary>
+    private (PlacedFor For, (int Left, int Top, int Right, int Bottom) Rect)? _placed;
+
+    private readonly record struct PlacedFor(string Position, double X, double Y, string Display,
+        (int Left, int Top, int Right, int Bottom) Work, uint Dpi, bool Moving);
+
     public IntPtr Handle { get; private set; }
 
     /// <summary>Raised when the user presses Pin after moving the overlay.</summary>
@@ -85,7 +91,7 @@ public partial class OverlayWindow : Window
 
         ApplyTheme();
         ApplyWindowStyles();
-        Reposition();
+        PlaceFromSettings();
         DrawTrace();
     }
 
@@ -132,8 +138,25 @@ public partial class OverlayWindow : Window
     public void Reposition()
     {
         if (_dragging || Handle == IntPtr.Zero || !Native.GetWindowRect(Handle, out var r)) return;
-        if (Spot(r.Right - r.Left, r.Bottom - r.Top) is not { } spot || (spot.Left == r.Left && spot.Top == r.Top)) return;
-        Native.SetWindowPos(Handle, Native.HWND_TOPMOST, spot.Left, spot.Top, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+        if (Spot(r.Right - r.Left, r.Bottom - r.Top) is not { } spot) return;
+        SetHandleSide(spot.Below, spot.Right);
+        if (spot.Left != r.Left || spot.Top != r.Top)
+            Native.SetWindowPos(Handle, Native.HWND_TOPMOST, spot.Left, spot.Top, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+    }
+
+    /// <summary>
+    /// Places the window from its corner or pinned spot rather than keeping its edges: now, and again once layout has
+    /// settled at the new size. For a new setting, display, move mode, pin or drop.
+    /// </summary>
+    private void PlaceFromSettings()
+    {
+        _placed = null;
+        Reposition();
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+        {
+            _placed = null;
+            Reposition();
+        }));
     }
 
     /// <summary>
@@ -149,6 +172,9 @@ public partial class OverlayWindow : Window
         if ((pos.flags & Native.SWP_NOSIZE) != 0 || !Native.GetWindowRect(hwnd, out var r)) return IntPtr.Zero;
         if (pos.cx == r.Right - r.Left && pos.cy == r.Bottom - r.Top) return IntPtr.Zero;
         if (Spot(pos.cx, pos.cy) is not { } spot) return IntPtr.Zero;
+        // Changing the layout belongs outside this message
+        if (spot.Below != _handleBelow || spot.Right != _panelRight)
+            Dispatcher.BeginInvoke(new Action(() => SetHandleSide(spot.Below, spot.Right)));
         pos.x = spot.Left;
         pos.y = spot.Top;
         pos.flags &= ~Native.SWP_NOMOVE;
@@ -156,18 +182,36 @@ public partial class OverlayWindow : Window
         return IntPtr.Zero;
     }
 
-    /// <summary>Where a window of this size (physical pixels) goes; null when no display is connected.</summary>
-    private (int Left, int Top)? Spot(int width, int height)
+    /// <summary>
+    /// Where a window of this size (physical pixels) goes, and which side the move handle and panel take; null when no
+    /// display is connected. While the settings, display and scaling are the ones it was last placed for, only the size
+    /// has changed, so it keeps its anchored edges; otherwise it is placed from the corner or pinned spot.
+    /// </summary>
+    private (int Left, int Top, bool Below, bool Right)? Spot(int width, int height)
     {
         if (Displays.Find(_settings.Monitor) is not { } display) return null;
-        // Sizes in the window's own pixels; only the edge margin belongs to the target display
-        var scale = PixelsPerDip(width);
-        var m = (int)Math.Round(EdgeMarginDip * display.Dpi / 96.0);
-        var work = display.WorkArea;
-        var (left, top, below, right) = OverlayPlacement.Arrange(_settings.Position, _settings.CustomX, _settings.CustomY,
-            (work.Left, work.Top, work.Right, work.Bottom), width, height, PanelWidth(scale, width), HandlePixels(scale), m);
-        SetHandleSide(below, right);
-        return (left, top);
+        var w = display.WorkArea;
+        var work = (w.Left, w.Top, w.Right, w.Bottom);
+        var key = new PlacedFor(_settings.Position, _settings.CustomX, _settings.CustomY, display.DeviceName, work,
+            Native.GetDpiForWindow(Handle), _moving);
+
+        (int Left, int Top, bool Below, bool Right) spot;
+        if (!_moving && _placed is { } placed && placed.For == key)
+        {
+            var (left, top) = OverlayPlacement.KeepEdges(_settings.Position, _settings.CustomX, _settings.CustomY, placed.Rect,
+                width, height, work);
+            spot = (left, top, _handleBelow, _panelRight);
+        }
+        else
+        {
+            // Sizes in the window's own pixels; only the edge margin belongs to the target display
+            var scale = PixelsPerDip(width);
+            var m = (int)Math.Round(EdgeMarginDip * display.Dpi / 96.0);
+            spot = OverlayPlacement.Arrange(_settings.Position, _settings.CustomX, _settings.CustomY, work, width, height,
+                PanelWidth(scale, width), HandlePixels(scale), m);
+        }
+        _placed = (key, (spot.Left, spot.Top, spot.Left + width, spot.Top + height));
+        return spot;
     }
 
     /// <summary>
@@ -212,7 +256,7 @@ public partial class OverlayWindow : Window
         _moving = true;
         MoveHandle.Visibility = MoveOutline.Visibility = Visibility.Visible;
         ApplyWindowStyles();
-        Reposition();
+        PlaceFromSettings();
     }
 
     private void OnPin(object sender, RoutedEventArgs e)
@@ -220,7 +264,7 @@ public partial class OverlayWindow : Window
         _moving = false;
         MoveHandle.Visibility = MoveOutline.Visibility = Visibility.Collapsed;
         ApplyWindowStyles();
-        Reposition();
+        PlaceFromSettings();
         Moved?.Invoke();
         Pinned?.Invoke();
     }
@@ -255,7 +299,7 @@ public partial class OverlayWindow : Window
         _settings.CustomX = fx;
         _settings.CustomY = fy;
         _settings.Monitor = display.Primary ? "" : display.DeviceName;
-        Reposition();
+        PlaceFromSettings();
         Moved?.Invoke();
     }
 

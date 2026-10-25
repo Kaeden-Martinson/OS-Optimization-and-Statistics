@@ -163,6 +163,52 @@ public class OverlayPlacementTests
         }
     }
 
+    // ---- a size change alone keeps the placed window's near edges (no 1-2 px jitter from share-of-free-space) ----
+
+    [Theory]
+    [InlineData(311, 298)] // a slowdown chip row appears
+    [InlineData(311, 258)] // ...and goes
+    [InlineData(330, 278)] // wider
+    public void The_users_pin_keeps_its_top_and_right_edges_when_only_the_size_changes(int width, int height)
+    {
+        var (x, y) = OverlayPlacement.KeepEdges(Settings.Custom, 0.9975, 0.066, (1605, 49, 1916, 327), width, height, Main);
+        Assert.Equal((1916 - width, 49), (x, y));
+    }
+
+    [Fact]
+    public void A_pin_past_the_middle_keeps_its_right_and_bottom_edges() =>
+        Assert.Equal((880, 480), OverlayPlacement.KeepEdges(Settings.Custom, 0.6, 0.7, (900, 500, 1200, 780), 320, 300, Main));
+
+    [Fact]
+    public void A_pin_before_the_middle_keeps_its_left_and_top_edges() =>
+        Assert.Equal((300, 200), OverlayPlacement.KeepEdges(Settings.Custom, 0.3, 0.2, (300, 200, 600, 478), 340, 250, Main));
+
+    [Theory]
+    [InlineData("TopLeft", 18, 18)]
+    [InlineData("TopRight", 1902 - 340, 18)]
+    [InlineData("BottomLeft", 18, 1002 - 300)]
+    [InlineData("BottomRight", 1902 - 340, 1002 - 300)]
+    public void Corners_keep_their_own_edges(string corner, int x, int y)
+    {
+        var last = corner switch
+        {
+            "TopLeft" => (18, 18, 329, 296),
+            "TopRight" => (1591, 18, 1902, 296),
+            "BottomLeft" => (18, 724, 329, 1002),
+            _ => (1591, 724, 1902, 1002),
+        };
+        Assert.Equal((x, y), OverlayPlacement.KeepEdges(corner, 0, 0, last, 340, 300, Main));
+    }
+
+    [Fact]
+    public void Kept_edges_are_still_clamped_to_the_work_area()
+    {
+        // Left-anchored near the right edge and growing: pulled back inside
+        Assert.Equal((1620, 0), OverlayPlacement.KeepEdges("TopLeft", 0, 0, (1700, 0, 1900, 100), 300, 100, Main));
+        // Right-anchored on DISPLAY2, wider than its work area: starts at its left edge
+        Assert.Equal((-1600, 622), OverlayPlacement.KeepEdges(Settings.Custom, 1, 1, (-302, 622, 0, 900), 1700, 278, Left));
+    }
+
     [Fact]
     public void In_move_mode_the_handle_bar_still_goes_below_and_beside_the_panel_in_a_top_right_corner() =>
         // Panel at 1812,18 (90 wide); the 130 px handle bar goes below it and extends left
