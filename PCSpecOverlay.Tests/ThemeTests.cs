@@ -220,3 +220,24 @@ public class ThemeManagerTests : TempDataTest // logs theme changes; keep them o
         Assert.Equal(AppTheme.Dark, target["Theme"]);
     });
 }
+
+public class LiveColorTests
+{
+    private static readonly string[] ColorKeys =
+    [
+        "Bg", "Panel", "Line", "Line2", "Text", "TextHover", "Muted", "Faint", "Signal", "Hot", "Good", "Selection",
+        "Window", "Sidebar", "Card", "CardBorder", "Input", "InputBorder", "Accent", "AccentHover", "AccentSoft", "Warn", "Info",
+    ];
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Theme.xaml")]
+    [InlineData("PCSpecOverlay/ControlCenterWindow.xaml")]
+    [InlineData("PCSpecOverlay/InstallerWindow.xaml")]
+    public void Views_use_dynamic_color_references(string file)
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path(file));
+        foreach (var key in ColorKeys)
+            Assert.DoesNotContain("{StaticResource " + key + "}", xaml);
+        Assert.DoesNotMatch(@"(Color|Fill|Stroke|Background|Foreground|BorderBrush|CaretBrush|SelectionBrush)=""#[0-9A-Fa-f]{6,8}""", xaml);
+    }
+}

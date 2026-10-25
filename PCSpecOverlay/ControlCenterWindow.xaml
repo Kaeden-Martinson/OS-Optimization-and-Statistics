@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:PCSpecOverlay"
         Title="PC Spec Overlay · Control Center" Width="1040" Height="760" MinWidth="820" MinHeight="520"
-        WindowStartupLocation="Manual" Background="{StaticResource Window}" Foreground="{StaticResource Text}"
+        WindowStartupLocation="Manual" Background="{DynamicResource Window}" Foreground="{DynamicResource Text}"
         FontFamily="Segoe UI" UseLayoutRounding="True" SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display">
 
@@ -16,7 +16,7 @@
         <Style x:Key="TileLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11" />
             <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Foreground" Value="{StaticResource Faint}" />
+            <Setter Property="Foreground" Value="{DynamicResource Faint}" />
         </Style>
         <Style x:Key="TileValue" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
@@ -32,7 +32,7 @@
         <Style x:Key="ValueLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12.5" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{StaticResource Text}" />
+            <Setter Property="Foreground" Value="{DynamicResource Text}" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="MinWidth" Value="56" />
             <Setter Property="TextAlignment" Value="Right" />
@@ -40,7 +40,7 @@
     </Window.Resources>
 
     <TabControl x:Name="Nav" Background="Transparent" BorderThickness="0" Padding="0" SelectionChanged="OnPageChanged"
-                Foreground="{StaticResource Text}">
+                Foreground="{DynamicResource Text}">
         <TabControl.Template>
             <ControlTemplate TargetType="TabControl">
                 <Grid>
@@ -48,21 +48,21 @@
                         <ColumnDefinition Width="212" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Border Background="{StaticResource Sidebar}" BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,1,0">
+                    <Border Background="{DynamicResource Sidebar}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,1,0">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="22,22,0,22">
                                 <Canvas Width="22" Height="22" Margin="0,0,10,0">
-                                    <Rectangle Canvas.Left="1" Canvas.Top="13" Width="5" Height="8" Fill="{StaticResource Accent}" />
-                                    <Rectangle Canvas.Left="8" Canvas.Top="8" Width="5" Height="13" Fill="{StaticResource Accent}" />
-                                    <Rectangle Canvas.Left="15" Canvas.Top="2" Width="5" Height="19" Fill="{StaticResource Accent}" />
+                                    <Rectangle Canvas.Left="1" Canvas.Top="13" Width="5" Height="8" Fill="{DynamicResource Accent}" />
+                                    <Rectangle Canvas.Left="8" Canvas.Top="8" Width="5" Height="13" Fill="{DynamicResource Accent}" />
+                                    <Rectangle Canvas.Left="15" Canvas.Top="2" Width="5" Height="19" Fill="{DynamicResource Accent}" />
                                 </Canvas>
                                 <StackPanel>
                                     <TextBlock Text="PC Spec" FontSize="15" FontWeight="SemiBold" />
-                                    <TextBlock Text="OVERLAY · OPTIMIZER" FontSize="8.5" FontWeight="Bold" Foreground="{StaticResource Accent}" />
+                                    <TextBlock Text="OVERLAY · OPTIMIZER" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
                                 </StackPanel>
                             </StackPanel>
                             <TextBlock x:Name="PART_Version" DockPanel.Dock="Bottom" Margin="22,0,0,16" FontSize="11"
-                                       Foreground="{StaticResource Faint}"
+                                       Foreground="{DynamicResource Faint}"
                                        Text="{Binding VersionText, RelativeSource={RelativeSource AncestorType=Window}}" />
                             <StackPanel IsItemsHost="True" />
                         </DockPanel>
@@ -89,7 +89,7 @@
                                 <TextBlock Text="FRAME RATE" Style="{StaticResource TileLabel}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TFps" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" FPS" FontSize="12" Foreground="{StaticResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                                    <TextBlock Text=" FPS" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
                                 </StackPanel>
                                 <TextBlock x:Name="TFpsSub" Style="{StaticResource Small}" />
                             </StackPanel>
@@ -99,7 +99,7 @@
                                 <TextBlock x:Name="TGpuLabel" Text="GPU" Style="{StaticResource TileLabel}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TGpu" Style="{StaticResource TileValue}" />
-                                    <TextBlock x:Name="TGpuUnit" Text=" °C" FontSize="12" Foreground="{StaticResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                                    <TextBlock x:Name="TGpuUnit" Text=" °C" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
                                 </StackPanel>
                                 <TextBlock x:Name="TGpuSub" Style="{StaticResource Small}" />
                             </StackPanel>
@@ -109,7 +109,7 @@
                                 <TextBlock Text="CPU" Style="{StaticResource TileLabel}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TCpu" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" °C" FontSize="12" Foreground="{StaticResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                                    <TextBlock Text=" °C" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
                                 </StackPanel>
                                 <TextBlock x:Name="TCpuSub" Style="{StaticResource Small}" />
                             </StackPanel>
@@ -119,7 +119,7 @@
                                 <TextBlock Text="MEMORY" Style="{StaticResource TileLabel}" />
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock x:Name="TRam" Style="{StaticResource TileValue}" />
-                                    <TextBlock Text=" GB" FontSize="12" Foreground="{StaticResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                                    <TextBlock Text=" GB" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Bottom" Margin="0,0,0,7" />
                                 </StackPanel>
                                 <TextBlock x:Name="TRamSub" Style="{StaticResource Small}" />
                             </StackPanel>
@@ -145,9 +145,9 @@
                             <StackPanel>
                                 <DockPanel>
                                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                        <Rectangle Width="10" Height="2" Fill="{StaticResource Accent}" VerticalAlignment="Center" />
+                                        <Rectangle Width="10" Height="2" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
                                         <TextBlock Text=" GPU   " Style="{StaticResource Small}" Margin="0" />
-                                        <Rectangle Width="10" Height="2" Fill="{StaticResource Info}" VerticalAlignment="Center" />
+                                        <Rectangle Width="10" Height="2" Fill="{DynamicResource Info}" VerticalAlignment="Center" />
                                         <TextBlock Text=" CPU" Style="{StaticResource Small}" Margin="0" />
                                     </StackPanel>
                                     <TextBlock Text="Temperatures · last 10 minutes" Style="{StaticResource CardTitle}" FontSize="13" />
@@ -175,7 +175,7 @@
                                 <ItemsControl x:Name="GamingDetails" Margin="0,6,0,0">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding}" Style="{StaticResource Body}" Foreground="{StaticResource Text}" Margin="0,2,0,0" />
+                                            <TextBlock Text="{Binding}" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2,0,0" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -198,13 +198,13 @@
                                         <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
                                     </Grid.RowDefinitions>
                                     <TextBlock Text="Plan" Style="{StaticResource Body}" Margin="0,2,18,2" />
-                                    <TextBlock x:Name="PowerPlan" Grid.Column="1" Style="{StaticResource Body}" Foreground="{StaticResource Text}" Margin="0,2" />
+                                    <TextBlock x:Name="PowerPlan" Grid.Column="1" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2" />
                                     <TextBlock Grid.Row="1" Text="Power mode" Style="{StaticResource Body}" Margin="0,2,18,2" />
-                                    <TextBlock x:Name="PowerModeText" Grid.Row="1" Grid.Column="1" Style="{StaticResource Body}" Foreground="{StaticResource Text}" Margin="0,2" />
+                                    <TextBlock x:Name="PowerModeText" Grid.Row="1" Grid.Column="1" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2" />
                                     <TextBlock Grid.Row="2" Text="Source" Style="{StaticResource Body}" Margin="0,2,18,2" />
-                                    <TextBlock x:Name="PowerSource" Grid.Row="2" Grid.Column="1" Style="{StaticResource Body}" Foreground="{StaticResource Text}" Margin="0,2" />
+                                    <TextBlock x:Name="PowerSource" Grid.Row="2" Grid.Column="1" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2" />
                                     <TextBlock Grid.Row="3" Text="App changes" Style="{StaticResource Body}" Margin="0,2,18,2" />
-                                    <TextBlock x:Name="OwnedChanges" Grid.Row="3" Grid.Column="1" Style="{StaticResource Body}" Foreground="{StaticResource Text}" Margin="0,2" />
+                                    <TextBlock x:Name="OwnedChanges" Grid.Row="3" Grid.Column="1" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,2" />
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -234,7 +234,7 @@
                         <TextBlock Text="SYSTEM CHECKS" Style="{StaticResource Section}" Margin="0" VerticalAlignment="Center" />
                     </DockPanel>
 
-                    <Border x:Name="RestartBanner" Visibility="Collapsed" Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}"
+                    <Border x:Name="RestartBanner" Visibility="Collapsed" Background="{DynamicResource AccentSoft}" BorderBrush="{DynamicResource Accent}"
                             BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -261,7 +261,7 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <Ellipse x:Name="Dot" Width="8" Height="8" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                                 Margin="0,6,0,0" Fill="{StaticResource Good}" />
+                                                 Margin="0,6,0,0" Fill="{DynamicResource Good}" />
                                         <StackPanel Grid.Column="1" Margin="0,0,16,0">
                                             <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" />
                                             <TextBlock Text="{Binding Description}" Style="{StaticResource Body}" />
@@ -269,7 +269,7 @@
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock x:Name="StatusText" Text="{Binding Status}" FontSize="12.5" FontWeight="SemiBold"
-                                                       VerticalAlignment="Center" Margin="0,0,14,0" Foreground="{StaticResource Good}" />
+                                                       VerticalAlignment="Center" Margin="0,0,14,0" Foreground="{DynamicResource Good}" />
                                             <Button x:Name="ActionButton" Content="{Binding ActionLabel}" Style="{StaticResource Btn}"
                                                     Click="OnCheckAction" Visibility="Collapsed"
                                                     AutomationProperties.Name="{Binding Title, StringFormat='{}{0} action'}" />
@@ -278,12 +278,12 @@
                                 </Border>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding State}" Value="Warn">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource Warn}" />
-                                        <Setter TargetName="StatusText" Property="Foreground" Value="{StaticResource Warn}" />
+                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource Warn}" />
+                                        <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource Warn}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding State}" Value="Info">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource Info}" />
-                                        <Setter TargetName="StatusText" Property="Foreground" Value="{StaticResource Muted}" />
+                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource Info}" />
+                                        <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource Muted}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding HasAction}" Value="True">
                                         <Setter TargetName="ActionButton" Property="Visibility" Value="Visible" />
@@ -320,7 +320,7 @@
                             <ItemsControl x:Name="AppList">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="{StaticResource CardBorder}" BorderThickness="0,1,0,0" Padding="0,7">
+                                        <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="0,7">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
@@ -333,7 +333,7 @@
                                                 <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                                 <TextBlock Grid.Column="1" Text="{Binding Cpu}" Style="{StaticResource ValueLabel}" />
                                                 <TextBlock Grid.Column="2" Text="{Binding Gpu}" Style="{StaticResource ValueLabel}" />
-                                                <TextBlock Grid.Column="3" Text="{Binding Ram}" Style="{StaticResource ValueLabel}" Foreground="{StaticResource Muted}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Ram}" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Muted}" />
                                                 <CheckBox Grid.Column="4" Style="{StaticResource Switch}" Margin="22,0,0,0" HorizontalAlignment="Left"
                                                           IsChecked="{Binding IsBoostTarget, Mode=TwoWay}" IsEnabled="{Binding CanLower}"
                                                           AutomationProperties.Name="{Binding Name, StringFormat='Lower {0} during games'}" />
@@ -370,7 +370,7 @@
                                     <TextBlock x:Name="GamingStatusLine" Style="{StaticResource Body}" />
                                 </StackPanel>
                             </CheckBox>
-                            <Border Height="1" Background="{StaticResource CardBorder}" Margin="0,14" />
+                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GamingPowerMode}" Margin="0,0,0,12">
                                 <StackPanel>
                                     <TextBlock Text="Switch power mode to Best performance" FontSize="13" />
@@ -383,7 +383,7 @@
                                     <TextBlock Style="{StaticResource Body}" Text="Raises the game one step (Above normal) and lowers apps you choose one step (Below normal). Never touches Windows system processes; shares CPU time only, not the GPU." />
                                 </StackPanel>
                             </CheckBox>
-                            <Border Height="1" Background="{StaticResource CardBorder}" Margin="0,14" />
+                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -443,7 +443,7 @@
                                                 <ComboBoxItem Content="Compact" />
                                             </ComboBox>
                                             <CheckBox Grid.Column="3" Style="{StaticResource Switch}" IsChecked="{Binding Optimize}" Margin="0,0,12,0">
-                                                <TextBlock Text="Optimize" FontSize="12" Foreground="{StaticResource Muted}" />
+                                                <TextBlock Text="Optimize" FontSize="12" Foreground="{DynamicResource Muted}" />
                                             </CheckBox>
                                             <Button Grid.Column="4" Content="Remove" Style="{StaticResource Btn}" MinWidth="0" Padding="10,3" Click="OnRemoveRule" />
                                         </Grid>
@@ -471,7 +471,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <TextBlock x:Name="RecentEmpty" Style="{StaticResource Small}" Text="Nothing yet — games appear here while they render in front." />
-                            <Border Height="1" Background="{StaticResource CardBorder}" Margin="0,14" />
+                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding DetectFullscreenGames}" Margin="0,0,0,12">
                                 <StackPanel>
                                     <TextBlock Text="Detect fullscreen games" FontSize="13" />
@@ -596,7 +596,7 @@
                                 </StackPanel>
                                 <ComboBox x:Name="StatsRefreshBox" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding StatsRefreshMs}" VerticalAlignment="Center" />
                             </Grid>
-                            <Border Height="1" Background="{StaticResource CardBorder}" Margin="0,14" />
+                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GpuRendering}">
                                 <StackPanel>
                                     <TextBlock Text="Draw the overlay with the graphics chip" FontSize="13" />
@@ -626,25 +626,25 @@
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <TextBlock Text="GPU warning" FontSize="13" VerticalAlignment="Center" />
                                 <Slider x:Name="GpuWarn" Grid.Column="1" Minimum="50" Maximum="105" TickFrequency="1" Value="{Binding GpuTempWarn}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{StaticResource Warn}" Text="{Binding Value, ElementName=GpuWarn, StringFormat='{}{0:0} °C'}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Warn}" Text="{Binding Value, ElementName=GpuWarn, StringFormat='{}{0:0} °C'}" />
                             </Grid>
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <TextBlock Text="GPU hot" FontSize="13" VerticalAlignment="Center" />
                                 <Slider x:Name="GpuHot" Grid.Column="1" Minimum="50" Maximum="110" TickFrequency="1" Value="{Binding GpuTempHot}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{StaticResource Hot}" Text="{Binding Value, ElementName=GpuHot, StringFormat='{}{0:0} °C'}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Hot}" Text="{Binding Value, ElementName=GpuHot, StringFormat='{}{0:0} °C'}" />
                             </Grid>
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <TextBlock Text="CPU warning" FontSize="13" VerticalAlignment="Center" />
                                 <Slider x:Name="CpuWarn" Grid.Column="1" Minimum="50" Maximum="105" TickFrequency="1" Value="{Binding CpuTempWarn}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{StaticResource Warn}" Text="{Binding Value, ElementName=CpuWarn, StringFormat='{}{0:0} °C'}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Warn}" Text="{Binding Value, ElementName=CpuWarn, StringFormat='{}{0:0} °C'}" />
                             </Grid>
                             <Grid Margin="0">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                 <TextBlock Text="CPU hot" FontSize="13" VerticalAlignment="Center" />
                                 <Slider x:Name="CpuHot" Grid.Column="1" Minimum="50" Maximum="110" TickFrequency="1" Value="{Binding CpuTempHot}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{StaticResource Hot}" Text="{Binding Value, ElementName=CpuHot, StringFormat='{}{0:0} °C'}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Hot}" Text="{Binding Value, ElementName=CpuHot, StringFormat='{}{0:0} °C'}" />
                             </Grid>
                             <TextBlock Style="{StaticResource Small}" Margin="0,10,0,0"
                                        Text="CPU temperature comes from the hottest ACPI thermal zone, which tracks the CPU package closely on laptops but isn't a per-core sensor." />
@@ -766,7 +766,7 @@
                             <ItemsControl x:Name="SessionList">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding}" Style="{StaticResource Body}" Foreground="{StaticResource Text}" Margin="0,0,0,6" />
+                                        <TextBlock Text="{Binding}" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" Margin="0,0,0,6" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -824,7 +824,7 @@
                                 <Button Content="Open data folder" Style="{StaticResource Btn}" Click="OnOpenData" Margin="0,0,8,8" />
                                 <Button Content="Undo every change the app made" Style="{StaticResource Btn}" Tag="Danger" Click="OnUndoEverything" Margin="0,0,8,8" />
                             </WrapPanel>
-                            <TextBlock x:Name="ActionResult" Style="{StaticResource Body}" Foreground="{StaticResource Text}" />
+                            <TextBlock x:Name="ActionResult" Style="{StaticResource Body}" Foreground="{DynamicResource Text}" />
                             <TextBlock Style="{StaticResource Small}" Margin="0,6,0,0"
                                        Text="The report includes the version, settings, sensor availability and recent errors. Your user name and profile paths are replaced with placeholders." />
                         </StackPanel>

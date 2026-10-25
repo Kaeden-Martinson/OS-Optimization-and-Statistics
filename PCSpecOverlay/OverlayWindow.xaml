@@ -9,6 +9,8 @@
         TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale">
 
     <Window.Resources>
+        <!-- The overlay stays dark whatever the app theme (its own theme setting comes in stage 2) -->
+        <SolidColorBrush x:Key="Accent" Color="#E9E9E6" />
         <SolidColorBrush x:Key="LabelBrush" Color="#8C959E" />
         <SolidColorBrush x:Key="ValueBrush" Color="#F3F5F6" />
         <SolidColorBrush x:Key="UnitBrush" Color="#69727B" />
