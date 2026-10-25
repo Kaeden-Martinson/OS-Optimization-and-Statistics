@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PCSpecOverlay.Core;
 
 namespace PCSpecOverlay.Tests;
 
@@ -36,5 +37,36 @@ public class AppearanceSettingTests
         var s = JsonSerializer.Deserialize<Settings>("""{"Appearance":null}""")!;
         s.Validate();
         Assert.Equal(Settings.MatchWindows, s.Appearance);
+    }
+}
+
+public class ThemeResolverTests : TempDataTest // logs a warning; keep it out of the real log
+{
+    [Theory]
+    [InlineData("Light", 0, AppTheme.Light)]
+    [InlineData("Dark", 1, AppTheme.Dark)]
+    [InlineData("MatchWindows", 1, AppTheme.Light)]
+    [InlineData("MatchWindows", 0, AppTheme.Dark)]
+    public void Resolves_the_setting(string appearance, int windows, AppTheme expected) =>
+        Assert.Equal(expected, ThemeResolver.Resolve(appearance, () => windows));
+
+    [Fact]
+    public void Missing_windows_value_means_dark() =>
+        Assert.Equal(AppTheme.Dark, ThemeResolver.Resolve(Settings.MatchWindows, () => null));
+
+    [Fact]
+    public void Wrong_value_type_means_dark() =>
+        Assert.Equal(AppTheme.Dark, ThemeResolver.Resolve(Settings.MatchWindows, () => "1"));
+
+    [Fact]
+    public void Unreadable_windows_value_means_dark() =>
+        Assert.Equal(AppTheme.Dark, ThemeResolver.Resolve(Settings.MatchWindows, () => throw new UnauthorizedAccessException()));
+
+    [Fact]
+    public void Explicit_choice_never_reads_windows()
+    {
+        var reads = 0;
+        ThemeResolver.Resolve(Settings.Light, () => { reads++; return 0; });
+        Assert.Equal(0, reads);
     }
 }
