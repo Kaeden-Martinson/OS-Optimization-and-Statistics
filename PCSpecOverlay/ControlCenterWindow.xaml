@@ -5,7 +5,7 @@
         xmlns:core="clr-namespace:PCSpecOverlay.Core"
         xmlns:controls="clr-namespace:PCSpecOverlay.Controls"
         Title="Optiframe" Width="1040" Height="760" MinWidth="900" MinHeight="520"
-        WindowStartupLocation="Manual" Background="{DynamicResource Window}" Foreground="{DynamicResource Text}"
+        WindowStartupLocation="Manual" Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}"
         FontFamily="Segoe UI" UseLayoutRounding="True" SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display">
 
@@ -45,22 +45,6 @@
             <Setter Property="Height" Value="6" />
             <Setter Property="Margin" Value="0,10,0,0" />
         </Style>
-        <Style x:Key="TileLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Foreground" Value="{DynamicResource Muted}" />
-        </Style>
-        <Style x:Key="Row" TargetType="Grid">
-            <Setter Property="Margin" Value="0,0,0,14" />
-        </Style>
-        <Style x:Key="ValueLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12.5" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource Text}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="MinWidth" Value="56" />
-            <Setter Property="TextAlignment" Value="Right" />
-        </Style>
     </Window.Resources>
 
     <Grid>
@@ -86,7 +70,7 @@
                 <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="16,6">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button x:Name="StopButton" Content="Stop optimizations" Style="{StaticResource Btn}" Tag="Danger"
+                            <Button x:Name="StopButton" Content="Stop optimizations" Style="{StaticResource Btn}"
                                     Click="OnStopOptimizations" Padding="10,2" Margin="8,0,0,0" />
                             <Button x:Name="ResumeButton" Content="Resume" Style="{StaticResource Btn}" Tag="Primary"
                                     Click="OnResume" Visibility="Collapsed" Padding="10,2" Margin="8,0,0,0" />
@@ -236,7 +220,7 @@
                             BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
                         <Border BorderBrush="{DynamicResource Signal}" BorderThickness="2,0,0,0" Padding="22,10,24,10">
                             <DockPanel>
-                                <Button x:Name="RestartButton" DockPanel.Dock="Right" Tag="Primary" Style="{StaticResource Btn}"
+                                <Button x:Name="RestartButton" AutomationProperties.Name="Restart browser" DockPanel.Dock="Right" Tag="Primary" Style="{StaticResource Btn}"
                                         VerticalAlignment="Center" Click="OnRestartBrowser" />
                                 <StackPanel Margin="0,0,16,0">
                                     <TextBlock x:Name="RestartTitle" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
@@ -755,7 +739,7 @@
                     <StackPanel Margin="24,18,24,14">
                         <TextBlock Text="Temperatures &amp; alerts" Style="{StaticResource PageTitle}" />
                         <TextBlock Style="{StaticResource Body}"
-                                   Text="Drag a handle, or focus it and use the arrow keys, to change a level. The white line is the current reading. Warning levels color the overlay amber; hot levels color it red." />
+                                   Text="Drag a handle, or focus it and use the arrow keys, to change a level. The vertical line is the current reading. Warning levels color the overlay amber; hot levels color it red." />
                     </StackPanel>
 
                     <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1" Padding="24,14,24,10">
@@ -969,7 +953,7 @@
                             <Button DockPanel.Dock="Right" Content="Restore defaults" Style="{StaticResource Btn}" Click="OnResetSettings" VerticalAlignment="Center" />
                             <StackPanel Margin="0,0,16,0">
                                 <TextBlock Text="Restore default settings" FontSize="13" />
-                                <TextBlock Style="{StaticResource Body}" Text="Resets preferences on every page. Your games list and lowered apps are kept, and Windows settings the app changed aren't touched (undo those on the Diagnostics page)." />
+                                <TextBlock Style="{StaticResource Body}" Text="Resets preferences on every page. Your games list and lowered apps are kept, and Windows settings the app changed aren't touched (undo those on the Optimizer or Diagnostics page)." />
                             </StackPanel>
                         </DockPanel>
                     </Border>

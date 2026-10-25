@@ -76,10 +76,6 @@
                             <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Text}" />
                             <Setter Property="Foreground" Value="{DynamicResource Bg}" />
                         </Trigger>
-                        <Trigger Property="Tag" Value="Danger">
-                            <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Hot}" />
-                            <Setter Property="Foreground" Value="{DynamicResource Hot}" />
-                        </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
                                 <Condition Property="Tag" Value="Primary" />

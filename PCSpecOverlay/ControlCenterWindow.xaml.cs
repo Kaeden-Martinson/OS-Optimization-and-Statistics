@@ -415,7 +415,7 @@ public partial class ControlCenterWindow : Window
 
     private Border Banner(string title, string text, string? button, RoutedEventHandler? click, bool warn)
     {
-        var accent = (Brush)FindResource(warn ? "Warn" : "Accent");
+        var accent = (Brush)FindResource(warn ? "Signal" : "Text");
         var c = ((SolidColorBrush)accent).Color;
         var dock = new DockPanel();
         if (button != null)
@@ -778,7 +778,7 @@ public partial class ControlCenterWindow : Window
     private void OnApplyHotkey(object sender, RoutedEventArgs e)
     {
         var error = _app.TryRegisterHotkey(HotkeyBox.Text);
-        HotkeyResult.Foreground = (Brush)FindResource(error is null ? "Good" : "Warn");
+        HotkeyResult.Foreground = (Brush)FindResource(error is null ? "Good" : "Signal");
         HotkeyResult.Text = error ?? $"Now using {_app.HotkeyInUse}.";
         RefreshSlow();
     }
@@ -857,7 +857,7 @@ public partial class ControlCenterWindow : Window
         MessageBox.Show(this, text, title, MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) == MessageBoxResult.OK;
 
     private Brush Temp(double? c, double warm, double hot) =>
-        (Brush)FindResource(c is null ? "Text" : c >= hot ? "Hot" : c >= warm ? "Warn" : "Text");
+        (Brush)FindResource(c is null ? "Text" : c >= hot ? "Hot" : c >= warm ? "Signal" : "Text");
 
     /// <summary>One row of the "What's using your PC" list.</summary>
     internal sealed class AppRow(ControlCenterWindow owner) : INotifyPropertyChanged

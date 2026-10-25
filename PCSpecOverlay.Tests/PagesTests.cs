@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using PCSpecOverlay.Core;
 using PCSpecOverlay.Optimizer;
 
@@ -271,5 +272,44 @@ public class DiagnosticsPageTests
         foreach (var call in new[] { "JournalRows.Build(", "Health.Summary(", "_engine.UndoChange(", "DiagnosticReport.ChangesCheck" })
             Assert.Contains(call, code);
         Assert.DoesNotContain("class LevelBrush", code);
+    }
+}
+
+public class PageSweepTests
+{
+    private static readonly string Xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+    private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
+
+    [Fact]
+    public void Every_input_has_a_screen_reader_name()
+    {
+        var unnamed = XDocument.Parse(Xaml).Descendants()
+            .Where(e => e.Name.LocalName is "Slider" or "ComboBox" or "TextBox" or "RadioButton" or "ToggleButton"
+                        || (e.Name.LocalName == "Button" && e.Attribute("Content") is null)
+                        || (e.Name.LocalName == "CheckBox" && e.Attribute("Content") is null && !e.Elements().Any()))
+            .Where(e => e.Attribute("AutomationProperties.Name") is null)
+            .Select(e => $"{e.Name.LocalName} {e.Attribute(X + "Name")?.Value}")
+            .ToList();
+        Assert.Empty(unnamed);
+    }
+
+    [Fact]
+    public void Pages_use_only_the_instrument_tokens()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        foreach (var key in new[] { "Window", "Sidebar", "Card", "CardBorder", "Input", "InputBorder", "Accent", "AccentHover", "AccentSoft", "Warn", "Info" })
+        {
+            Assert.DoesNotContain($"{{DynamicResource {key}}}", Xaml);
+            Assert.DoesNotContain($"FindResource(\"{key}\")", code);
+            Assert.DoesNotContain($"\"{key}\" :", code);
+            Assert.DoesNotContain($": \"{key}\"", code);
+        }
+    }
+
+    [Fact]
+    public void Red_is_only_for_hot_readings_and_errors()
+    {
+        Assert.DoesNotContain("Danger", Xaml);
+        Assert.DoesNotContain("Danger", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Theme.xaml")));
     }
 }
