@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Instrument tokens, light. Same keys as Colors.Dark.xaml; ThemeManager swaps the two. -->
+    <Color x:Key="C.Bg">#F3F2EE</Color>
+    <Color x:Key="C.Panel">#FBFAF7</Color>
+    <Color x:Key="C.Line">#D9D7D0</Color>
+    <Color x:Key="C.Line2">#E6E4DD</Color>
+    <Color x:Key="C.Text">#141414</Color>
+    <Color x:Key="C.TextHover">#000000</Color>
+    <Color x:Key="C.Muted">#66665F</Color>
+    <Color x:Key="C.Faint">#9C9A92</Color>
+    <Color x:Key="C.Signal">#955C00</Color>
+    <Color x:Key="C.Hot">#B8322B</Color>
+    <Color x:Key="C.Good">#47700F</Color>
+    <Color x:Key="C.Selection">#40141414</Color>
+
+    <SolidColorBrush x:Key="Bg" Color="{StaticResource C.Bg}" />
+    <SolidColorBrush x:Key="Panel" Color="{StaticResource C.Panel}" />
+    <SolidColorBrush x:Key="Line" Color="{StaticResource C.Line}" />
+    <SolidColorBrush x:Key="Line2" Color="{StaticResource C.Line2}" />
+    <SolidColorBrush x:Key="Text" Color="{StaticResource C.Text}" />
+    <SolidColorBrush x:Key="TextHover" Color="{StaticResource C.TextHover}" />
+    <SolidColorBrush x:Key="Muted" Color="{StaticResource C.Muted}" />
+    <SolidColorBrush x:Key="Faint" Color="{StaticResource C.Faint}" />
+    <SolidColorBrush x:Key="Signal" Color="{StaticResource C.Signal}" />
+    <SolidColorBrush x:Key="Hot" Color="{StaticResource C.Hot}" />
+    <SolidColorBrush x:Key="Good" Color="{StaticResource C.Good}" />
+    <SolidColorBrush x:Key="Selection" Color="{StaticResource C.Selection}" />
+
+    <!-- Names the current screens still use; later stages switch them to the tokens above -->
+    <SolidColorBrush x:Key="Window" Color="{StaticResource C.Bg}" />
+    <SolidColorBrush x:Key="Sidebar" Color="{StaticResource C.Panel}" />
+    <SolidColorBrush x:Key="Card" Color="{StaticResource C.Panel}" />
+    <SolidColorBrush x:Key="CardBorder" Color="{StaticResource C.Line}" />
+    <SolidColorBrush x:Key="Input" Color="{StaticResource C.Panel}" />
+    <SolidColorBrush x:Key="InputBorder" Color="{StaticResource C.Line}" />
+    <SolidColorBrush x:Key="Accent" Color="{StaticResource C.Text}" />
+    <SolidColorBrush x:Key="AccentHover" Color="{StaticResource C.TextHover}" />
+    <SolidColorBrush x:Key="AccentSoft" Color="{StaticResource C.Panel}" />
+    <SolidColorBrush x:Key="Warn" Color="{StaticResource C.Signal}" />
+    <SolidColorBrush x:Key="Info" Color="{StaticResource C.Muted}" />
+</ResourceDictionary>

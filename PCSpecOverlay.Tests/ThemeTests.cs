@@ -1,3 +1,5 @@
+using System.Windows;
+using System.Windows.Media;
 using System.Text.Json;
 using PCSpecOverlay.Core;
 
@@ -69,4 +71,59 @@ public class ThemeResolverTests : TempDataTest // logs a warning; keep it out of
         ThemeResolver.Resolve(Settings.Light, () => { reads++; return 0; });
         Assert.Equal(0, reads);
     }
+}
+
+public class ColorDictionaryTests
+{
+    private static readonly string[] Keys =
+    [
+        "Bg", "Panel", "Line", "Line2", "Text", "TextHover", "Muted", "Faint", "Signal", "Hot", "Good", "Selection",
+        "Window", "Sidebar", "Card", "CardBorder", "Input", "InputBorder", "Accent", "AccentHover", "AccentSoft", "Warn", "Info",
+    ];
+
+    private static Color C(ResourceDictionary d, string key) => ((SolidColorBrush)d[key]).Color;
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Themes/Colors.Dark.xaml")]
+    [InlineData("PCSpecOverlay/Themes/Colors.Light.xaml")]
+    public void Every_key_is_a_brush(string file) => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary(file);
+        foreach (var key in Keys) Assert.IsType<SolidColorBrush>(d[key]);
+    });
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Themes/Colors.Dark.xaml", "#0B0B0C", "#E9E9E6")]
+    [InlineData("PCSpecOverlay/Themes/Colors.Light.xaml", "#F3F2EE", "#141414")]
+    public void Uses_the_spec_values(string file, string bg, string text) => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary(file);
+        Assert.Equal((Color)ColorConverter.ConvertFromString(bg), C(d, "Bg"));
+        Assert.Equal((Color)ColorConverter.ConvertFromString(text), C(d, "Text"));
+    });
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Themes/Colors.Dark.xaml")]
+    [InlineData("PCSpecOverlay/Themes/Colors.Light.xaml")]
+    public void Readable_text_meets_four_and_a_half_to_one(string file) => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary(file);
+        foreach (var fg in new[] { "Text", "Muted", "Signal", "Hot", "Good" })
+            foreach (var bg in new[] { "Bg", "Panel" })
+                Assert.True(Contrast.Ratio(C(d, fg), C(d, bg)) >= 4.5, $"{fg} on {bg} is {Contrast.Ratio(C(d, fg), C(d, bg)):0.00}:1 in {file}");
+    });
+
+    [Theory]
+    [InlineData("PCSpecOverlay/Themes/Colors.Dark.xaml")]
+    [InlineData("PCSpecOverlay/Themes/Colors.Light.xaml")]
+    public void Old_names_alias_the_new_tokens(string file) => Sta.Run(() =>
+    {
+        var d = XamlFile.LoadDictionary(file);
+        Assert.Equal(C(d, "Bg"), C(d, "Window"));
+        Assert.Equal(C(d, "Panel"), C(d, "Card"));
+        Assert.Equal(C(d, "Line"), C(d, "CardBorder"));
+        Assert.Equal(C(d, "Text"), C(d, "Accent"));
+        Assert.Equal(C(d, "Signal"), C(d, "Warn"));
+        Assert.Equal(C(d, "Muted"), C(d, "Info"));
+    });
 }
