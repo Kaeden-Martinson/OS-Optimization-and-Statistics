@@ -29,4 +29,6 @@
     <StreamGeometry x:Key="Icon.Power">M12,3 V11 M6.5,7 A7.5,7.5 0 1 0 17.5,7</StreamGeometry>
     <StreamGeometry x:Key="Icon.Grip">M9,6 V6.01 M15,6 V6.01 M9,12 V12.01 M15,12 V12.01 M9,18 V18.01 M15,18 V18.01</StreamGeometry>
     <StreamGeometry x:Key="Icon.Window">M3,4 H21 V20 H3 Z M3,9 H21</StreamGeometry>
+    <!-- The overlay's Strip ⇄ Panel button: one bar (Strip) over two rows (Panel) -->
+    <StreamGeometry x:Key="Icon.Layout">M3.5,4 H20.5 V9.5 H3.5 Z M3.5,14.5 H20.5 M3.5,19.5 H20.5</StreamGeometry>
 </ResourceDictionary>

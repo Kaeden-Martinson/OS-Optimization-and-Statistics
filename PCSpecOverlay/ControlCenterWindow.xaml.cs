@@ -211,6 +211,20 @@ public partial class ControlCenterWindow : Window
         RefreshPreview();
     }
 
+    /// <summary>Makes a change made elsewhere (the overlay's layout button) without the controls it updates counting as an edit.</summary>
+    public void ChangeQuietly(Action change) => Quietly(change);
+
+    /// <summary>The overlay's layout button switched the layout: show it on the layout cards and the preview.</summary>
+    public void LayoutChanged()
+    {
+        Quietly(() =>
+        {
+            StripCard.IsChecked = _settings.Layout == Settings.Compact;
+            PanelCard.IsChecked = _settings.Layout == Settings.Expanded;
+        });
+        RefreshPreview();
+    }
+
     /// <summary>The tab-bar switch and the Appearance segments both land here; the switch picks Light or Dark outright.</summary>
     private void ChooseTheme(string appearance)
     {
