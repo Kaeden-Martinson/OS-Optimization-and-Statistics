@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:PCSpecOverlay"
         xmlns:core="clr-namespace:PCSpecOverlay.Core"
+        xmlns:controls="clr-namespace:PCSpecOverlay.Controls"
         Title="Optiframe" Width="1040" Height="760" MinWidth="900" MinHeight="520"
         WindowStartupLocation="Manual" Background="{DynamicResource Window}" Foreground="{DynamicResource Text}"
         FontFamily="Segoe UI" UseLayoutRounding="True" SnapsToDevicePixels="True"
@@ -750,68 +751,68 @@
         <!-- ===================== ALERTS ===================== -->
         <TabItem Header="Alerts" Tag="{StaticResource Icon.Temperature}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Temperatures &amp; alerts" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}"
-                               Text="Warning levels color the overlay amber; hot levels color it red. Two kinds of notification: confirmed slowdowns (the driver or Windows reports the hardware is slowing itself down) and temperature warnings (above your levels, which isn't a fault on its own)." />
+                <StackPanel>
+                    <StackPanel Margin="24,18,24,14">
+                        <TextBlock Text="Temperatures &amp; alerts" Style="{StaticResource PageTitle}" />
+                        <TextBlock Style="{StaticResource Body}"
+                                   Text="Drag a handle, or focus it and use the arrow keys, to change a level. The white line is the current reading. Warning levels color the overlay amber; hot levels color it red." />
+                    </StackPanel>
 
-                    <TextBlock Text="LEVELS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1" Padding="24,14,24,10">
                         <StackPanel>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="GPU warning" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="GpuWarn" Grid.Column="1" Minimum="50" Maximum="105" TickFrequency="1" Value="{Binding GpuTempWarn}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Warn}" Text="{Binding Value, ElementName=GpuWarn, StringFormat='{}{0:0} °C'}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="GPU hot" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="GpuHot" Grid.Column="1" Minimum="50" Maximum="110" TickFrequency="1" Value="{Binding GpuTempHot}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Hot}" Text="{Binding Value, ElementName=GpuHot, StringFormat='{}{0:0} °C'}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="CPU warning" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="CpuWarn" Grid.Column="1" Minimum="50" Maximum="105" TickFrequency="1" Value="{Binding CpuTempWarn}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Warn}" Text="{Binding Value, ElementName=CpuWarn, StringFormat='{}{0:0} °C'}" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBlock Text="CPU hot" FontSize="13" VerticalAlignment="Center" />
-                                <Slider x:Name="CpuHot" Grid.Column="1" Minimum="50" Maximum="110" TickFrequency="1" Value="{Binding CpuTempHot}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Hot}" Text="{Binding Value, ElementName=CpuHot, StringFormat='{}{0:0} °C'}" />
-                            </Grid>
-                            <TextBlock Style="{StaticResource Small}" Margin="0,10,0,0"
-                                       Text="CPU temperature comes from the hottest ACPI thermal zone, which tracks the CPU package closely on laptops but isn't a per-core sensor." />
+                            <DockPanel>
+                                <TextBlock x:Name="GpuNow" DockPanel.Dock="Right" Style="{StaticResource Mono}" FontSize="14" />
+                                <TextBlock Text="GPU" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock x:Name="GpuSource" Style="{StaticResource Small}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <controls:TempScaleControl x:Name="GpuScale" Sensor="GPU" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,14,24,10">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock x:Name="CpuNow" DockPanel.Dock="Right" Style="{StaticResource Mono}" FontSize="14" />
+                                <TextBlock Text="CPU" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock x:Name="CpuSource" Style="{StaticResource Small}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <controls:TempScaleControl x:Name="CpuScale" Sensor="CPU" Margin="0,10,0,0" />
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Text="NOTIFICATIONS" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Alerts}" Margin="0,0,0,14">
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                        <TextBlock Text="NOTIFICATIONS" Style="{StaticResource Key}" />
+                    </Border>
+                    <Border Style="{StaticResource LedgerRow}">
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Alerts}">
+                            <StackPanel>
                                 <TextBlock Text="Notify me about slowdowns and high temperatures" FontSize="13" />
-                            </CheckBox>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Only if it lasts" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="Brief spikes are ignored." />
-                                </StackPanel>
-                                <Slider x:Name="AfterSlider" Grid.Column="1" Minimum="5" Maximum="120" TickFrequency="5" Value="{Binding AlertAfterSeconds}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=AfterSlider, StringFormat='{}{0:0} s'}" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="220" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="At most once every" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="Per kind of alert. If the same problem keeps going, reminders slow to hourly after the third." />
-                                </StackPanel>
-                                <Slider x:Name="CooldownSlider" Grid.Column="1" Minimum="1" Maximum="120" TickFrequency="1" Value="{Binding AlertCooldownMinutes}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=CooldownSlider, StringFormat='{}{0:0} min'}" />
-                            </Grid>
-                        </StackPanel>
+                                <TextBlock Style="{StaticResource Body}" Text="Confirmed slowdowns (the driver or Windows reports the hardware slowing itself down) and temperatures above your hot levels, which isn't a fault on its own." />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
+                    <Border Style="{StaticResource LedgerRow}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="56" TextAlignment="Right"
+                                       Text="{Binding Value, ElementName=AfterSlider, StringFormat='{}{0:0} s'}" />
+                            <Slider x:Name="AfterSlider" DockPanel.Dock="Right" Width="220" Minimum="5" Maximum="120" TickFrequency="5"
+                                    Value="{Binding AlertAfterSeconds}" Margin="12,0,10,0" AutomationProperties.Name="Only notify if it lasts this many seconds" />
+                            <StackPanel>
+                                <TextBlock Text="Only if it lasts" FontSize="13" />
+                                <TextBlock Style="{StaticResource Small}" Text="Brief spikes are ignored." />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Style="{StaticResource LedgerRow}" Margin="0,0,0,24">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="56" TextAlignment="Right"
+                                       Text="{Binding Value, ElementName=CooldownSlider, StringFormat='{}{0:0} min'}" />
+                            <Slider x:Name="CooldownSlider" DockPanel.Dock="Right" Width="220" Minimum="1" Maximum="120" TickFrequency="1"
+                                    Value="{Binding AlertCooldownMinutes}" Margin="12,0,10,0" AutomationProperties.Name="Notify at most once every this many minutes" />
+                            <StackPanel>
+                                <TextBlock Text="At most once every" FontSize="13" />
+                                <TextBlock Style="{StaticResource Small}" Text="Per kind of alert. If the same problem keeps going, reminders slow to hourly after the third." />
+                            </StackPanel>
+                        </DockPanel>
                     </Border>
                 </StackPanel>
             </ScrollViewer>

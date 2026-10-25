@@ -65,6 +65,8 @@ public partial class ControlCenterWindow : Window
         CheckList.ItemsSource = _checks;
         AppList.ItemsSource = _appRows;
         RuleList.ItemsSource = _rules;
+        GpuScale.LevelsChanged += (warn, hot) => { _settings.GpuTempWarn = warn; _settings.GpuTempHot = hot; ScheduleSave(); };
+        CpuScale.LevelsChanged += (warn, hot) => { _settings.CpuTempWarn = warn; _settings.CpuTempHot = hot; ScheduleSave(); };
 
         // Any edit to a bound control schedules one save
         _saveSoon = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
@@ -93,6 +95,12 @@ public partial class ControlCenterWindow : Window
         if (e.OriginalSource == ShowOverlay || e.OriginalSource == StartupSwitch) return; // handled by their own clicks
         if (e.OriginalSource == LightButton || e.OriginalSource == DarkButton) return; // saved by ChooseTheme
         if (e.OriginalSource is RadioButton) return; // layout cards and appearance segments save through their own clicks
+        ScheduleSave();
+    }
+
+    private void ScheduleSave()
+    {
+        if (_loading) return;
         _saveSoon.Stop();
         _saveSoon.Start();
     }
@@ -239,6 +247,7 @@ public partial class ControlCenterWindow : Window
             case 1: if (_tick % 2 == 1) RefreshOptimizer(); break;
             case 2: RefreshGaming(); break;
             case 3: RefreshPreview(); break;
+            case 4: RefreshAlerts(); break;
             case 6: if (_tick % 3 == 1) RefreshDiagnostics(); break;
         }
     }
@@ -265,7 +274,25 @@ public partial class ControlCenterWindow : Window
         var sessions = HistoryRecorder.LoadSessions(10);
         SessionList.ItemsSource = sessions.Select(DescribeSession).ToList();
         SessionsEmpty.Visibility = sessions.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        GpuScale.SetLevels(_settings.GpuTempWarn, _settings.GpuTempHot);
+        CpuScale.SetLevels(_settings.CpuTempWarn, _settings.CpuTempHot);
+        GpuSource.Text = _engine.Gpu is { } gpu ? $"{gpu.Name.Replace("NVIDIA ", "").Replace("GeForce ", "")} · NVIDIA driver" : "No NVIDIA GPU found";
+        CpuSource.Text = _engine.System is { Ready: true, ThermalZones: 0 } ? "No thermal zones exposed by this PC" : "Hottest ACPI thermal zone (package, not per core)";
+        RefreshAlerts();
         if (Nav.SelectedIndex == 6) RefreshDiagnostics();
+    }
+
+    // ---- alerts ----
+
+    private void RefreshAlerts()
+    {
+        var t = _engine.Latest;
+        GpuScale.SetCurrent(t.Gpu.TempC);
+        CpuScale.SetCurrent(t.CpuTempC);
+        GpuNow.Text = t.Gpu.TempC is { } g ? $"{g:0} °C" : t.Gpu.Status == GpuStatus.Sleeping ? "Sleeping" : "—";
+        GpuNow.Foreground = Temp(t.Gpu.TempC, _settings.GpuTempWarn, _settings.GpuTempHot);
+        CpuNow.Text = t.CpuTempC is { } c ? $"{c:0} °C" : "—";
+        CpuNow.Foreground = Temp(t.CpuTempC, _settings.CpuTempWarn, _settings.CpuTempHot);
     }
 
     private static string DescribeSession(SessionSummary s)

@@ -219,3 +219,21 @@ public class OverlayPageTests
         Assert.Contains("OverlayPlacement.Place(", code);
     }
 }
+
+public class AlertsPageTests
+{
+    [Fact]
+    public void Alerts_has_a_scale_per_sensor_and_ledger_notifications()
+    {
+        var page = PageXaml.Tab("Alerts");
+        foreach (var part in new[] { "controls:TempScaleControl x:Name=\"GpuScale\"", "controls:TempScaleControl x:Name=\"CpuScale\"",
+                     "x:Name=\"GpuNow\"", "x:Name=\"CpuNow\"", "x:Name=\"GpuSource\"", "x:Name=\"CpuSource\"",
+                     "{Binding Alerts}", "x:Name=\"AfterSlider\"", "x:Name=\"CooldownSlider\"" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "x:Name=\"GpuWarn\"", "x:Name=\"GpuHot\"", "x:Name=\"CpuWarn\"", "x:Name=\"CpuHot\"", "CardBox" })
+            Assert.DoesNotContain(gone, page);
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("GpuScale.LevelsChanged +=", code);
+        Assert.Contains("CpuScale.SetCurrent(", code);
+    }
+}
