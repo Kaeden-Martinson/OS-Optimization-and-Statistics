@@ -151,3 +151,72 @@ public class IconTests
         Assert.Equal(Names.Length, d.Keys.Count);
     });
 }
+
+public class ThemeManagerTests : TempDataTest // logs theme changes; keep them out of the real log
+{
+    /// <summary>A stand-in color dictionary that records which theme it is.</summary>
+    private static ResourceDictionary Palette(AppTheme t) =>
+        new() { ["Bg"] = new SolidColorBrush(t == AppTheme.Dark ? Colors.Black : Colors.White), ["Theme"] = t };
+
+    private static (ResourceDictionary target, ThemeManager manager, List<AppTheme> events) Make(Func<object?>? windows = null, Func<AppTheme, ResourceDictionary>? load = null)
+    {
+        var target = new ResourceDictionary();
+        target.MergedDictionaries.Add(new ResourceDictionary()); // stands in for Icons.xaml / Theme.xaml
+        var m = new ThemeManager(target, load ?? Palette, windows ?? (() => 0), listenToWindows: false);
+        var events = new List<AppTheme>();
+        m.Changed += events.Add;
+        return (target, m, events);
+    }
+
+    [Fact]
+    public void Apply_light_swaps_in_the_light_colors() => Sta.Run(() =>
+    {
+        var (target, m, events) = Make();
+        m.Apply(Settings.Light);
+        Assert.Equal(AppTheme.Light, m.Current);
+        Assert.Equal(AppTheme.Light, target["Theme"]);
+        Assert.Equal([AppTheme.Light], events);
+        Assert.Equal(2, target.MergedDictionaries.Count); // replaced, not stacked
+    });
+
+    [Fact]
+    public void Applying_the_same_theme_again_does_nothing() => Sta.Run(() =>
+    {
+        var (_, m, events) = Make();
+        m.Apply(Settings.Light);
+        m.Apply(Settings.Light);
+        Assert.Single(events);
+    });
+
+    [Fact]
+    public void Match_windows_follows_a_windows_change() => Sta.Run(() =>
+    {
+        var windows = 0;
+        var (target, m, events) = Make(() => windows);
+        m.Apply(Settings.MatchWindows);
+        Assert.Equal(AppTheme.Dark, m.Current);
+        windows = 1;
+        m.OnWindowsThemeChanged();
+        Assert.Equal(AppTheme.Light, target["Theme"]);
+    });
+
+    [Fact]
+    public void A_windows_change_is_ignored_when_the_choice_is_explicit() => Sta.Run(() =>
+    {
+        var windows = 0;
+        var (_, m, _) = Make(() => windows);
+        m.Apply(Settings.Dark);
+        windows = 1;
+        m.OnWindowsThemeChanged();
+        Assert.Equal(AppTheme.Dark, m.Current);
+    });
+
+    [Fact]
+    public void A_theme_that_fails_to_load_falls_back_to_dark() => Sta.Run(() =>
+    {
+        var (target, m, _) = Make(load: t => t == AppTheme.Light ? throw new IOException("missing") : Palette(t));
+        m.Apply(Settings.Light);
+        Assert.Equal(AppTheme.Dark, m.Current);
+        Assert.Equal(AppTheme.Dark, target["Theme"]);
+    });
+}
