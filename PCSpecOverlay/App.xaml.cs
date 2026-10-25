@@ -219,7 +219,11 @@ public partial class App : Application
     {
         var (forGame, next) = LayoutToggle.Flip(Settings.Layout, _layoutOverride);
         var rule = forGame ? _engine.Game?.Rule : null;
-        if (forGame && rule is null) (_, next) = LayoutToggle.Flip(Settings.Layout, null); // the game just left
+        if (forGame && rule is null) // the game just left: its layout no longer applies, so switch the normal one
+        {
+            _layoutOverride = null;
+            (_, next) = LayoutToggle.Flip(Settings.Layout, null);
+        }
         void Change()
         {
             if (rule is null) Settings.Layout = next;

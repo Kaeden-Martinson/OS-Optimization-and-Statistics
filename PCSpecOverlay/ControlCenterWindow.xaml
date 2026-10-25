@@ -685,7 +685,7 @@
                                 <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowLayoutButton}">
                                     <StackPanel>
                                         <TextBlock Text="Layout button on the overlay" FontSize="13" />
-                                        <TextBlock Style="{StaticResource Body}" Text="A small button at the end of the overlay switches Strip and Panel. Clicks on it don't reach your game." />
+                                        <TextBlock Style="{StaticResource Body}" Text="A small button at the end of the overlay switches Strip and Panel. A click on it goes to the button, not your game." />
                                     </StackPanel>
                                 </CheckBox>
                             </Border>

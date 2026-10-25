@@ -104,7 +104,13 @@ public partial class OverlayWindow : Window
 
         ApplyTheme();
         ApplyWindowStyles();
-        if (keepEdges) Reposition();
+        if (keepEdges)
+        {
+            // Measure the new layout now, so the window takes its new size (keeping its edges) and the layout button's
+            // click target is placed over the new icon straight away rather than after the next layout pass
+            UpdateLayout();
+            Reposition();
+        }
         else PlaceFromSettings();
         DrawTrace();
     }

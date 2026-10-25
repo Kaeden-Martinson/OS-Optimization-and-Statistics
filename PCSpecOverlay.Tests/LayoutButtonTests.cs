@@ -99,7 +99,7 @@ public class LayoutButtonSourceTests
         var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
         Assert.Contains("IsChecked=\"{Binding ShowLayoutButton}\"", xaml);
         Assert.Contains("Text=\"Layout button on the overlay\"", xaml);
-        Assert.Contains("A small button at the end of the overlay switches Strip and Panel. Clicks on it don't reach your game.", xaml);
+        Assert.Contains("A small button at the end of the overlay switches Strip and Panel. A click on it goes to the button, not your game.", xaml);
     }
 
     [Fact]
@@ -168,5 +168,57 @@ public class LayoutButtonWidthTests
         var (_, w) = Lay(Settings.Compact, false);
         Assert.Equal(Visibility.Collapsed, ((FrameworkElement)w.FindName("CLayoutBox")).Visibility);
         Assert.Equal(Visibility.Collapsed, ((FrameworkElement)w.FindName("PLayoutIcon")).Visibility);
+    });
+}
+
+/// <summary>Clicks come from the hit window's own messages: one click, one toggle, and nothing for a stray up.</summary>
+public class LayoutButtonClickTests
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    private const uint Down = 0x201, Up = 0x202, DoubleClick = 0x203, Leave = 0x2A3;
+    private static readonly IntPtr In = (IntPtr)((3 << 16) | 3), Out = (IntPtr)((3000 << 16) | 3000);
+
+    private static int Clicks(params (uint Msg, IntPtr At)[] messages)
+    {
+        var count = 0;
+        Sta.Run(() =>
+        {
+            var w = new LayoutButtonWindow(IntPtr.Zero);
+            w.Clicked += () => count++;
+            foreach (var (msg, at) in messages) SendMessage(w.Handle, msg, msg == Up || msg == Leave ? IntPtr.Zero : (IntPtr)1, at);
+            w.Close();
+        });
+        return count;
+    }
+
+    [Fact]
+    public void A_click_toggles_once() => Assert.Equal(1, Clicks((Down, In), (Up, In)));
+
+    [Fact]
+    public void A_fast_second_click_counts_too() => Assert.Equal(2, Clicks((Down, In), (Up, In), (DoubleClick, In), (Up, In)));
+
+    [Fact]
+    public void An_up_without_a_down_does_nothing() => Assert.Equal(0, Clicks((Up, In)));
+
+    [Fact]
+    public void Releasing_outside_or_after_leaving_does_nothing()
+    {
+        Assert.Equal(0, Clicks((Down, In), (Up, Out)));
+        Assert.Equal(0, Clicks((Down, In), (Leave, IntPtr.Zero), (Up, In)));
+    }
+
+    [Fact]
+    public void Screen_reader_invoke_toggles_once() => Sta.Run(() =>
+    {
+        var count = 0;
+        var w = new LayoutButtonWindow(IntPtr.Zero);
+        w.Clicked += () => count++;
+        var peer = System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement((UIElement)w.Content);
+        ((System.Windows.Automation.Provider.IInvokeProvider)peer.GetPattern(System.Windows.Automation.Peers.PatternInterface.Invoke)).Invoke();
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        w.Close();
+        Assert.Equal(1, count);
     });
 }
