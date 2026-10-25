@@ -53,13 +53,13 @@ internal sealed class TrayIcon : IDisposable
         var pause = Item("Stop optimizations now", "Icon.Pause", () =>
         {
             if (_app.Engine.OptimizationsPaused) _app.ResumeOptimizations();
-            else Notify(string.Join(" ", _app.StopOptimizations()), "Optimizations stopped");
+            else foreach (var line in _app.StopOptimizations()) Log.Info("Gaming", line);
         });
         Forms.ToolStripMenuItem startup = null!;
         startup = Item("Start with Windows", "Icon.Monitor", () =>
         {
             var result = StartupTask.SetEnabled(!startup.Checked);
-            if (result != null) Notify(result, "Start with Windows");
+            if (result != null) Log.Warn("Startup", $"Start with Windows: {result}");
         });
         startup.ShortcutKeyDisplayString = CheckRoom;
         var exit = Item("Exit", "Icon.Power", () => _app.Shutdown());
@@ -88,7 +88,6 @@ internal sealed class TrayIcon : IDisposable
         {
             if (e.Button == Forms.MouseButtons.Left) _app.OpenControlCenter();
         };
-        _icon.BalloonTipClicked += (_, _) => _app.OpenControlCenter();
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
     }
 
@@ -114,13 +113,6 @@ internal sealed class TrayIcon : IDisposable
     private void OnAppThemeChanged(AppTheme theme)
     {
         if (!_disposed) ApplyTheme();
-    }
-
-    /// <param name="important">Warning icon for things that need attention; info icon otherwise.</param>
-    public void Notify(string message, string title = AppIdentity.ProductName, bool important = false)
-    {
-        if (string.IsNullOrWhiteSpace(message)) return;
-        _icon.ShowBalloonTip(6000, title, message, important ? Forms.ToolTipIcon.Warning : Forms.ToolTipIcon.Info);
     }
 
     /// <summary>The Optiframe mark at the tray size: dark on a light taskbar, light on a dark one.</summary>

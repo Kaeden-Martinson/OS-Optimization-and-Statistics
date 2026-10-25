@@ -73,11 +73,6 @@ public sealed class Settings
     public int CpuTempWarn { get; set; } = 80;
     public int CpuTempHot { get; set; } = 92;
 
-    // Alerts
-    public bool Alerts { get; set; } = true;
-    public int AlertAfterSeconds { get; set; } = 10;
-    public int AlertCooldownMinutes { get; set; } = 10;
-
     // Gaming
     public bool AutoGamingMode { get; set; }
     public List<GameRule> GameRules { get; set; } = new();
@@ -143,9 +138,6 @@ public sealed class Settings
         GpuTempHot = Math.Clamp(GpuTempHot, GpuTempWarn + 1, TempScale.Max);
         CpuTempWarn = Math.Clamp(CpuTempWarn, TempScale.Min, TempScale.Max - 1);
         CpuTempHot = Math.Clamp(CpuTempHot, CpuTempWarn + 1, TempScale.Max);
-
-        AlertAfterSeconds = Math.Clamp(AlertAfterSeconds, 5, 300);
-        AlertCooldownMinutes = Math.Clamp(AlertCooldownMinutes, 1, 240);
 
         GameRules = (GameRules ?? new())
             .Where(r => r is not null && !string.IsNullOrWhiteSpace(r.Match))

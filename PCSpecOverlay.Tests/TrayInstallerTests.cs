@@ -226,3 +226,41 @@ public class InstallerWindowTests
         Assert.Contains("TextBlock { Text.Length: > 0 }", name);
     }
 }
+
+public class NoPopupTests
+{
+    private static IEnumerable<string> AppSources() =>
+        Directory.EnumerateFiles(SourceFiles.Path("PCSpecOverlay"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") &&
+                        !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
+
+    [Fact]
+    public void The_app_shows_no_windows_notifications()
+    {
+        var sources = AppSources().ToList();
+        Assert.NotEmpty(sources);
+        foreach (var file in sources)
+        {
+            var code = File.ReadAllText(file);
+            Assert.False(code.Contains("ShowBalloonTip"), $"{file} shows a balloon notification");
+            Assert.False(code.Contains("BalloonTip"), $"{file} handles a balloon notification");
+            Assert.False(System.Text.RegularExpressions.Regex.IsMatch(code, @"\bNotify\s*\("), $"{file} defines or calls Notify(");
+        }
+    }
+
+    [Fact]
+    public void The_control_center_has_no_notification_settings()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        foreach (var gone in new[] { "AlertAfterSeconds", "AlertCooldownMinutes", "{Binding Alerts}" })
+            Assert.DoesNotContain(gone, xaml);
+    }
+
+    [Fact]
+    public void Slowdowns_and_high_temperatures_still_reach_the_log()
+    {
+        var engine = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Core/Engine.cs"));
+        Assert.Contains("Log.Warn(\"Alert\"", engine);
+        Assert.DoesNotContain("event Action<AlertMessage>", engine);
+    }
+}

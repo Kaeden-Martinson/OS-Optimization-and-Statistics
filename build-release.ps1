@@ -11,6 +11,7 @@
 
   Then create a GitHub release tagged v<version>, attach artifacts\release\Optiframe-Setup-<version>.exe,
   and paste artifacts\release\release-notes.md as the description.
+  If docs\releases\<version>.md exists, its "What's new" text is included above the install line.
 #>
 param(
     # GitHub "owner/name" the app should check for updates; empty uses the one in PCSpecOverlay.csproj
@@ -68,9 +69,13 @@ if ($CertificateThumbprint -or $PfxPath) {
 
 $hash = (Get-FileHash $setup -Algorithm SHA256).Hash
 $size = (Get-Item $setup).Length
+# What's new for this version, written by hand, goes above the install line and the checksum
+$whatsNewFile = "docs\releases\$version.md"
+$whatsNew = if (Test-Path $whatsNewFile) { (Get-Content $whatsNewFile -Raw -Encoding UTF8).Trim() + "`n`n" } else { "" }
 @"
 ## Optiframe $version
 
+$whatsNew
 Run ``Optiframe-Setup-$version.exe`` to install or update (per-user, no administrator rights).
 Requires Windows 10/11 64-bit and the .NET 8 Desktop Runtime.
 

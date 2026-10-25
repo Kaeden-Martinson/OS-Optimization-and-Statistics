@@ -20,8 +20,6 @@ public sealed record Telemetry
     public Limit Limits { get; init; }
 }
 
-public sealed record AlertMessage(string Key, string Title, string Message, bool DriverConfirmed);
-
 /// <summary>
 /// Owns the monitors, optimizers and app state, so the overlay and the control center read from one
 /// place. The WPF side drives it with timers on the UI thread; nothing here is thread-shared except
@@ -45,11 +43,9 @@ internal sealed class Engine : IDisposable
     public bool RecoveryMode { get; private set; }
     public List<string> StartupReport { get; } = new();
 
-    public event Action<AlertMessage>? Alert;
-
     private readonly LimitTracker _limits = new();
     private readonly SustainedThreshold _gpuHot = new(), _cpuHot = new();
-    private readonly AlertThrottle _throttle = new();
+    private readonly OncePerEpisode _heatLogged = new();
 
     public Engine()
     {
@@ -163,7 +159,7 @@ internal sealed class Engine : IDisposable
             Ram = System.Ram(),
             Limits = limits,
         };
-        if (Settings.Alerts) CheckAlerts();
+        LogHeat();
     }
 
     /// <summary>Set by the emergency stop; automatic optimizations stay off until resumed.</summary>
@@ -186,45 +182,42 @@ internal sealed class Engine : IDisposable
         Boost.Tick(_boostTarget.Update(game, TimeSpan.FromSeconds(Settings.GamingExitSeconds)), Settings.BoostTargets);
     }
 
-    // ---- alerts ----
+    // ---- heat ----
 
-    private void CheckAlerts()
+    /// <summary>How long a slowdown or high temperature must last before it is written to the log.</summary>
+    private static readonly TimeSpan HeatAfter = TimeSpan.FromSeconds(10);
+
+    /// <summary>Writes sustained slowdowns and high temperatures to the log (shown in the Overview's events), once per episode.</summary>
+    private void LogHeat()
     {
         var t = Latest;
-        var after = TimeSpan.FromSeconds(Settings.AlertAfterSeconds);
         const string fixes = "Try fans on Max in your laptop's control app, raise the back of the laptop for airflow, or pause heavy background work.";
 
         // Reported by the driver / Windows: the hardware is actually slowing down
-        var gpuThrottling = _limits.ActiveFor(Limit.GpuThermal) >= after;
-        var cpuThrottling = _limits.ActiveFor(Limit.CpuThermal) >= after;
+        var gpuThrottling = _limits.ActiveFor(Limit.GpuThermal) >= HeatAfter;
+        var cpuThrottling = _limits.ActiveFor(Limit.CpuThermal) >= HeatAfter;
         if (gpuThrottling)
-            Raise(new("gpu-throttle", "GPU is slowing down from heat",
-                $"The NVIDIA driver reports the GPU{Temp(t.Gpu.TempC)} is reducing its speed to cool off, so FPS will drop. {fixes}", true));
+            Report("gpu-throttle", "GPU is slowing down from heat",
+                $"The NVIDIA driver reports the GPU{Temp(t.Gpu.TempC)} is reducing its speed to cool off, so FPS will drop. {fixes}");
         if (cpuThrottling)
-            Raise(new("cpu-throttle", "CPU is slowing down from heat",
-                $"Windows reports the CPU{Temp(t.CpuTempC)} is capped below full speed while hot, which causes stutter. {fixes}", true));
+            Report("cpu-throttle", "CPU is slowing down from heat",
+                $"Windows reports the CPU{Temp(t.CpuTempC)} is capped below full speed while hot, which causes stutter. {fixes}");
 
         // Warnings based on your levels: hot, but not necessarily a problem. Skipped while the stronger,
-        // confirmed alert above covers the same part.
-        if (_gpuHot.Update(t.Gpu.TempC, Settings.GpuTempHot) >= after && !gpuThrottling)
-            Raise(new("gpu-hot", "GPU running hot",
-                $"GPU{Temp(t.Gpu.TempC)} has been above your {Settings.GpuTempHot} °C level for a while. This is a warning, not a fault; laptop GPUs are built to run warm.", false));
-        if (_cpuHot.Update(t.CpuTempC, Settings.CpuTempHot) >= after && !cpuThrottling)
-            Raise(new("cpu-hot", "CPU running hot",
-                $"CPU{Temp(t.CpuTempC)} has been above your {Settings.CpuTempHot} °C level for a while. This is a warning, not a fault.", false));
+        // confirmed entry above covers the same part.
+        if (_gpuHot.Update(t.Gpu.TempC, Settings.GpuTempHot) >= HeatAfter && !gpuThrottling)
+            Report("gpu-hot", "GPU running hot",
+                $"GPU{Temp(t.Gpu.TempC)} has been above your {Settings.GpuTempHot} °C level for a while. This is a warning, not a fault; laptop GPUs are built to run warm.");
+        if (_cpuHot.Update(t.CpuTempC, Settings.CpuTempHot) >= HeatAfter && !cpuThrottling)
+            Report("cpu-hot", "CPU running hot",
+                $"CPU{Temp(t.CpuTempC)} has been above your {Settings.CpuTempHot} °C level for a while. This is a warning, not a fault.");
     }
 
     private static string Temp(double? c) => c is { } v ? $" ({v:0} °C)" : "";
 
-    private void Raise(AlertMessage alert)
+    private void Report(string key, string title, string message)
     {
-        if (!_throttle.ShouldNotify(alert.Key, TimeSpan.FromMinutes(Settings.AlertCooldownMinutes), out var shown)) return;
-        if (shown == AlertThrottle.RepeatsBeforeBackoff)
-            alert = alert with { Message = alert.Message + " Since this keeps happening, further reminders will come at most hourly while it continues." };
-        else if (shown > AlertThrottle.RepeatsBeforeBackoff)
-            alert = alert with { Title = alert.Title + " (still)" };
-        Log.Warn("Alert", $"{alert.Title}. {alert.Message}");
-        Alert?.Invoke(alert);
+        if (_heatLogged.IsNew(key)) Log.Warn("Alert", $"{title}. {message}");
     }
 
     // ---- recovery actions ----
