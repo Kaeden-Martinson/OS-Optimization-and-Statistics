@@ -35,6 +35,7 @@ public sealed class GameRule
 public sealed class Settings
 {
     public const string Expanded = "Expanded", Compact = "Compact";
+    public const string Light = "Light", Dark = "Dark", MatchWindows = "MatchWindows";
     public static readonly string[] Corners = ["TopRight", "TopLeft", "BottomRight", "BottomLeft"];
 
     public int Version { get; set; } = 2;
@@ -95,6 +96,10 @@ public sealed class Settings
     public bool CheckForUpdates { get; set; } = true;
     public int HistoryRetentionDays { get; set; } = 14;
 
+    // Appearance
+    /// <summary>Control-center theme: Light, Dark, or MatchWindows (follows the Windows app setting).</summary>
+    public string Appearance { get; set; } = MatchWindows;
+
     // Legacy (version 1) fields, read once for migration and never written back
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public Dictionary<string, string?>? TweakBackups { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public Dictionary<string, DateTime>? BrowserGpuChanged { get; set; }
@@ -143,6 +148,7 @@ public sealed class Settings
         BoostTargets = (BoostTargets ?? new()).Where(t => !string.IsNullOrWhiteSpace(t))
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         HistoryRetentionDays = Math.Clamp(HistoryRetentionDays, 1, 365);
+        if (Appearance is not (Light or Dark or MatchWindows)) Appearance = MatchWindows;
 
         // Version 1 kept a plain list of window-title matches
         if (Games is { Count: > 0 })
