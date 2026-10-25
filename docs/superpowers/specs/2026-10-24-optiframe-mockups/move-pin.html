@@ -1,0 +1,90 @@
+<style>
+  .mp-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:900px){ .mp-grid { grid-template-columns:1fr; } }
+  .mp-scene { position:relative; height:250px; border:1px solid var(--border); border-radius:6px; overflow:hidden; background:#1d2a1f; cursor:default; }
+  .mp-scene .terrain { position:absolute; inset:0; background:
+      radial-gradient(circle at 18% 72%, #24382a 0 26px, transparent 27px), radial-gradient(circle at 80% 80%, #24382a 0 32px, transparent 33px),
+      radial-gradient(circle at 52% 58%, #c9a36b 0 8px, transparent 9px); }
+  .mp-cap { position:absolute; left:10px; bottom:8px; font:11px "Segoe UI",sans-serif; color:rgba(255,255,255,.75); }
+  .mp-title { font:600 13px "Segoe UI",sans-serif; margin:0 0 6px; }
+  .mp-sub { font-size:12.5px; color:var(--text-secondary); margin:0 0 10px; }
+
+  .ov { --bg:rgba(11,11,12,.86); --line:rgba(255,255,255,.18); --line2:rgba(255,255,255,.09); --tx:#ECECE8; --mu:#9A9A9C; --sig:#E8A33D;
+        position:absolute; font-family:"Segoe UI",sans-serif; color:var(--tx); }
+  .ov .mono { font-family:"Cascadia Mono",Consolas,monospace; }
+  .strip { background:var(--bg); border:1px solid var(--line); display:flex; font-size:11.5px; }
+  .strip .c { padding:5px 9px; border-right:1px solid var(--line2); display:flex; align-items:baseline; gap:5px; white-space:nowrap; }
+  .strip .c:last-child { border-right:0; }
+  .strip b { font-weight:400; font-size:17px; } .strip u { text-decoration:none; color:var(--mu); font-size:10px; } .strip .s { color:var(--sig); }
+  .unlocked { outline:1px dashed var(--tx); outline-offset:3px; cursor:move; }
+  .handle { position:absolute; left:-4px; right:-4px; top:-27px; height:22px; display:flex; align-items:center; justify-content:space-between;
+            background:var(--tx); color:#0B0B0C; font:600 10.5px "Segoe UI",sans-serif; padding:0 4px 0 8px; }
+  .handle .pin { display:flex; align-items:center; gap:4px; background:#0B0B0C; color:var(--tx); padding:2px 7px; }
+  .handle svg { width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ghost { position:absolute; border:1px dashed rgba(255,255,255,.35); }
+  .arrow { position:absolute; font:11px "Segoe UI",sans-serif; color:rgba(255,255,255,.8); }
+  .toast { position:absolute; right:10px; bottom:10px; background:rgba(11,11,12,.92); border:1px solid rgba(255,255,255,.18); color:#ECECE8;
+           font:11.5px "Segoe UI",sans-serif; padding:6px 10px; display:flex; gap:7px; align-items:center; }
+  .toast svg { width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3h6l-1 6 4 4H6l4-4z"/><path d="M12 13v8"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></symbol>
+</defs></svg>
+
+<h2>Moving and pinning the overlay</h2>
+<p class="subtitle">How it would work, step by step (Strip shown; Panel behaves the same). Tell me if any step should work differently.</p>
+
+<div class="mp-grid">
+  <div>
+    <p class="mp-title">1. Unlock</p>
+    <p class="mp-sub">Tray menu "Move overlay", or the button on the Overlay settings page. The overlay gets a dashed outline and a handle bar; clicks stop passing through to the game.</p>
+    <div class="mp-scene"><div class="terrain"></div><span class="mp-cap">Unlocked, top-right preset</span>
+      <div class="ov strip mono unlocked" style="top:40px; right:14px">
+        <div class="handle"><span style="display:flex;gap:5px;align-items:center"><svg><use href="#i-move"/></svg>Drag to move</span><span class="pin"><svg><use href="#i-pin"/></svg>Pin</span></div>
+        <div class="c"><b>144</b><u>FPS</u></div><div class="c">6.9<u>ms</u></div><div class="c"><u>GPU</u>71° 64%</div><div class="c"><u>CPU</u><span class="s">84°</span> 31%</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="mp-title">2. Drag anywhere</p>
+    <p class="mp-sub">Drag by the handle or the overlay itself, to any spot on any screen. No snapping: it stays exactly where you drop it, kept fully on screen.</p>
+    <div class="mp-scene"><div class="terrain"></div><span class="mp-cap">Dragging toward the middle</span>
+      <div class="ghost" style="top:40px; right:14px; width:250px; height:30px"></div>
+      <span class="arrow" style="top:80px; right:120px">← moved</span>
+      <div class="ov strip mono unlocked" style="top:120px; left:140px">
+        <div class="handle"><span style="display:flex;gap:5px;align-items:center"><svg><use href="#i-move"/></svg>Drag to move</span><span class="pin"><svg><use href="#i-pin"/></svg>Pin</span></div>
+        <div class="c"><b>144</b><u>FPS</u></div><div class="c">6.9<u>ms</u></div><div class="c"><u>GPU</u>71° 64%</div><div class="c"><u>CPU</u><span class="s">84°</span> 31%</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="mp-title">3. Pin</p>
+    <p class="mp-sub">Press Pin: the outline and handle disappear, clicks pass through to the game again, and the spot is saved (also per screen, so it comes back after a restart or a resolution change).</p>
+    <div class="mp-scene"><div class="terrain"></div><span class="mp-cap">Pinned in place</span>
+      <div class="ov strip mono" style="top:120px; left:140px">
+        <div class="c"><b>144</b><u>FPS</u></div><div class="c">6.9<u>ms</u></div><div class="c"><u>GPU</u>71° 64%</div><div class="c"><u>CPU</u><span class="s">84°</span> 31%</div>
+      </div>
+      <div class="toast"><svg><use href="#i-pin"/></svg>Overlay pinned</div>
+    </div>
+  </div>
+  <div>
+    <p class="mp-title">4. Corners stay as presets</p>
+    <p class="mp-sub">On the Overlay settings page, the four corners (and "Custom" for a pinned spot) are one click. Picking a corner moves it there and pins it.</p>
+    <div class="mp-scene" style="background:#0B0B0C; display:flex; align-items:center; justify-content:center">
+      <div style="font:12.5px 'Segoe UI',sans-serif; color:#E9E9E6; border:1px solid #262629; padding:14px 16px; width:80%">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px"><span>Position</span>
+          <span style="display:inline-flex; border:1px solid #262629">
+            <span style="padding:3px 9px; color:#87878A; border-right:1px solid #262629">Top left</span>
+            <span style="padding:3px 9px; color:#87878A; border-right:1px solid #262629">Top right</span>
+            <span style="padding:3px 9px; color:#87878A; border-right:1px solid #262629">Bottom left</span>
+            <span style="padding:3px 9px; color:#87878A; border-right:1px solid #262629">Bottom right</span>
+            <span style="padding:3px 9px; background:#E9E9E6; color:#0B0B0C">Custom</span>
+          </span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center"><span>Move the overlay by hand</span>
+          <span style="border:1px solid #262629; padding:4px 10px; display:flex; gap:6px; align-items:center"><svg width="12" height="12" style="fill:none;stroke:#E9E9E6;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#i-move"/></svg>Move overlay</span></div>
+      </div>
+    </div>
+  </div>
+</div>

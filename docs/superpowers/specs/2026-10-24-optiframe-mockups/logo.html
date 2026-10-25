@@ -1,0 +1,97 @@
+<style>
+  .lg-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .lg-seg { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .lg-seg button { all:unset; cursor:pointer; padding:.4rem .8rem; font-size:.8rem; color:var(--text-secondary); }
+  .lg-seg button[aria-pressed="true"] { background:var(--bg-tertiary); color:var(--text-primary); }
+  .lg-dir { margin-bottom:1.75rem; }
+  .lg-dir .option { display:block; padding:1rem; }
+  .lg-head { display:flex; align-items:baseline; gap:.75rem; margin-bottom:.25rem; }
+  .lg-head h3 { margin:0; }
+  .lg-note { color:var(--text-secondary); font-size:.85rem; margin:0 0 .9rem 2.75rem; max-width:72ch; }
+
+  .lg-row { --bg:#0B0B0C; --pan:#111113; --line:#262629; --tx:#E9E9E6; --mu:#87878A;
+            display:grid; grid-template-columns:auto auto auto 1fr; gap:28px; align-items:center;
+            background:var(--bg); color:var(--tx); border:1px solid var(--line); padding:20px 22px; cursor:default; }
+  .lg-row[data-theme="light"] { --bg:#F3F2EE; --pan:#FBFAF7; --line:#D9D7D0; --tx:#141414; --mu:#66665F; }
+  .lg-cap { font:10.5px "Segoe UI",sans-serif; color:var(--mu); letter-spacing:.08em; text-transform:uppercase; margin-top:8px; text-align:center; }
+  .lg-tile { width:96px; height:96px; background:var(--tx); color:var(--bg); display:flex; align-items:center; justify-content:center; }
+  .lg-tile svg { width:64px; height:64px; }
+  .lg-small { display:flex; gap:18px; align-items:flex-end; }
+  .lg-small svg { display:block; }
+  .lg-tray { display:flex; align-items:center; gap:10px; background:rgba(127,127,127,.12); padding:6px 10px; }
+  .lg-bar { display:flex; align-items:center; gap:18px; border:1px solid var(--line); padding:0 14px; height:40px; font:12px "Segoe UI",sans-serif; color:var(--mu); }
+  .lg-bar .brand { display:flex; align-items:center; gap:8px; color:var(--tx); font-weight:600; font-size:13px; letter-spacing:.01em; }
+  .lg-bar .tab.on { color:var(--tx); box-shadow:inset 0 -2px 0 var(--tx); height:40px; display:flex; align-items:center; }
+  .lg-word { font:600 22px "Segoe UI Variable Display","Segoe UI",sans-serif; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; margin-top:12px; }
+  .lg-row svg.m { fill:none; stroke:currentColor; stroke-linecap:round; stroke-linejoin:round; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <!-- A: viewfinder corners with a frame-time trace -->
+  <symbol id="m-a" viewBox="0 0 24 24"><path d="M3,8 V3 H8 M16,3 H21 V8 M21,16 V21 H16 M8,21 H3 V16"/><path d="M6,14 H9.5 L11.5,8.5 L13.5,15.5 L15,12 H18"/></symbol>
+  <!-- B: a frame holding three rising bars -->
+  <symbol id="m-b" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17"/><path d="M8,16.5 V13 M12,16.5 V9.5 M16,16.5 V7"/></symbol>
+  <!-- C: an O with a pulse running through it -->
+  <symbol id="m-c" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5,12 H8 L10,8 L12.5,16 L14.5,12 H20.5"/></symbol>
+</defs></svg>
+
+<h2>Optiframe logo</h2>
+<p class="subtitle">Three marks in the Instrument style: one line weight, no color, readable down to the 16 px tray icon. Each row shows the app icon, the small sizes, the tray, and the name in the tab bar. Click the one you like, or tell me what to change.</p>
+
+<div class="lg-toolbar">
+  <span class="label" style="margin:0">Theme</span>
+  <div class="lg-seg" role="group" aria-label="Theme"><button type="button" data-all="dark" aria-pressed="true">Dark</button><button type="button" data-all="light" aria-pressed="false">Light</button></div>
+</div>
+
+<template id="row">
+  <div class="lg-row" data-theme="dark">
+    <div><div class="lg-tile"><svg class="m" stroke-width="2"><use data-href/></svg></div><div class="lg-cap">App icon</div></div>
+    <div><div class="lg-small">
+      <svg class="m" width="32" height="32" stroke-width="2"><use data-href/></svg>
+      <svg class="m" width="24" height="24" stroke-width="2"><use data-href/></svg>
+      <svg class="m" width="16" height="16" stroke-width="2.4"><use data-href/></svg>
+    </div><div class="lg-cap">32 · 24 · 16</div></div>
+    <div><div class="lg-tray"><svg class="m" width="16" height="16" stroke-width="2.4"><use data-href/></svg><span style="font:11px 'Segoe UI'">9:52 PM</span></div><div class="lg-cap">Tray</div></div>
+    <div>
+      <div class="lg-bar"><span class="brand"><svg class="m" width="16" height="16" stroke-width="2"><use data-href/></svg>Optiframe</span><span class="tab on">Overview</span><span>Optimizer</span><span>Gaming</span></div>
+      <div class="lg-word"><svg class="m" width="28" height="28" stroke-width="1.8"><use data-href/></svg>Optiframe</div>
+    </div>
+  </div>
+</template>
+
+<div class="lg-dir"><div class="option" data-choice="logo-a-viewfinder" onclick="toggleSelect(this)">
+  <div class="lg-head"><div class="letter">A</div><h3>Viewfinder: frame corners around a frame-time line</h3></div>
+  <p class="lg-note">Four corner brackets make the "frame"; inside, the overlay's own frame-time trace with one spike. Says "watching your frames" and ties straight to the overlay.</p>
+  <div data-row="m-a"></div>
+</div></div>
+
+<div class="lg-dir"><div class="option" data-choice="logo-b-framed-bars" onclick="toggleSelect(this)">
+  <div class="lg-head"><div class="letter">B</div><h3>Framed bars: rising bars inside a square</h3></div>
+  <p class="lg-note">Today's three-bar mark, now inside a frame: "optimize" (bars going up) plus "frame". The most solid at 16 px; the least specific.</p>
+  <div data-row="m-b"></div>
+</div></div>
+
+<div class="lg-dir"><div class="option" data-choice="logo-c-pulse-o" onclick="toggleSelect(this)">
+  <div class="lg-head"><div class="letter">C</div><h3>Pulse O: the O of Optiframe with a pulse through it</h3></div>
+  <p class="lg-note">A circle for the "O" with the frame-time pulse running across it, like a monitor trace. Most like a logo; slightly busier at 16 px.</p>
+  <div data-row="m-c"></div>
+</div></div>
+
+<script>
+(function () {
+  var tpl = document.getElementById('row');
+  document.querySelectorAll('[data-row]').forEach(function (slot) {
+    var id = slot.getAttribute('data-row');
+    var frag = tpl.content.cloneNode(true);
+    frag.querySelectorAll('use[data-href]').forEach(function (u) { u.setAttribute('href', '#' + id); });
+    slot.replaceWith(frag);
+  });
+  document.querySelectorAll('[data-all]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.getAttribute('data-all');
+      document.querySelectorAll('[data-all]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      document.querySelectorAll('.lg-row').forEach(function (r) { r.setAttribute('data-theme', t); });
+    });
+  });
+})();
+</script>
