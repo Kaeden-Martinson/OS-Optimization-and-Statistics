@@ -220,67 +220,88 @@
         <!-- ===================== OPTIMIZER ===================== -->
         <TabItem Header="Optimizer" Tag="{StaticResource Icon.Optimizer}" Style="{StaticResource TopTab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Optimizer" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}"
-                               Text="Settings that affect performance, what each change does, and its drawbacks. Nothing changes until you press a button, and every change can be undone." />
-
-                    <DockPanel Margin="0,24,0,10">
-                        <Button x:Name="FixAllButton" DockPanel.Dock="Right" Content="Apply all recommendations" Tag="Primary"
-                                Style="{StaticResource Btn}" Click="OnFixAll" />
-                        <TextBlock Text="SYSTEM CHECKS" Style="{StaticResource Section}" Margin="0" VerticalAlignment="Center" />
+                <StackPanel>
+                    <DockPanel Margin="24,18,24,14">
+                        <Button x:Name="FixAllButton" DockPanel.Dock="Right" Tag="Primary" Style="{StaticResource Btn}"
+                                Click="OnFixAll" VerticalAlignment="Center" Content="Apply recommendations" />
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Optimizer" Style="{StaticResource PageTitle}" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="Nothing changes until you press a button. Every change is recorded and can be undone." />
+                        </StackPanel>
                     </DockPanel>
 
-                    <Border x:Name="RestartBanner" Visibility="Collapsed" Background="{DynamicResource AccentSoft}" BorderBrush="{DynamicResource Accent}"
-                            BorderThickness="1" Padding="16,12" Margin="0,0,0,10">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,16,0" VerticalAlignment="Center">
-                                <TextBlock x:Name="RestartTitle" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                <TextBlock x:Name="RestartDetail" Style="{StaticResource Body}" />
-                            </StackPanel>
-                            <Button x:Name="RestartButton" Grid.Column="1" Tag="Primary" Style="{StaticResource Btn}"
-                                    VerticalAlignment="Center" Click="OnRestartBrowser" />
-                        </Grid>
+                    <Border x:Name="RestartBanner" Visibility="Collapsed" Background="{DynamicResource Panel}"
+                            BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
+                        <Border BorderBrush="{DynamicResource Signal}" BorderThickness="2,0,0,0" Padding="22,10,24,10">
+                            <DockPanel>
+                                <Button x:Name="RestartButton" DockPanel.Dock="Right" Tag="Primary" Style="{StaticResource Btn}"
+                                        VerticalAlignment="Center" Click="OnRestartBrowser" />
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock x:Name="RestartTitle" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="RestartDetail" Style="{StaticResource Body}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
                     </Border>
 
+                    <!-- One ruled table: mark, setting, now, recommended, effect, action -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1" Padding="24,7">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="26" />
+                                <ColumnDefinition Width="1.3*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="2.4*" />
+                                <ColumnDefinition Width="110" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="SETTING" Style="{StaticResource Key}" />
+                            <TextBlock Grid.Column="2" Text="NOW" Style="{StaticResource Key}" />
+                            <TextBlock Grid.Column="3" Text="RECOMMENDED" Style="{StaticResource Key}" />
+                            <TextBlock Grid.Column="4" Text="EFFECT AND DRAWBACK" Style="{StaticResource Key}" />
+                        </Grid>
+                    </Border>
                     <ItemsControl x:Name="CheckList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Style="{StaticResource CardBox}">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="20" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <Ellipse x:Name="Dot" Width="8" Height="8" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                                 Margin="0,6,0,0" Fill="{DynamicResource Good}" />
-                                        <StackPanel Grid.Column="1" Margin="0,0,16,0">
-                                            <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" />
-                                            <TextBlock Text="{Binding Description}" Style="{StaticResource Body}" />
-                                            <TextBlock x:Name="DetailText" Text="{Binding Detail}" Style="{StaticResource Small}" Margin="0,4,0,0" Visibility="Collapsed" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock x:Name="StatusText" Text="{Binding Status}" FontSize="12.5" FontWeight="SemiBold"
-                                                       VerticalAlignment="Center" Margin="0,0,14,0" Foreground="{DynamicResource Good}" />
-                                            <Button x:Name="ActionButton" Content="{Binding ActionLabel}" Style="{StaticResource Btn}"
+                                <Border Style="{StaticResource LedgerRow}" Padding="0">
+                                    <Border x:Name="Edge" BorderThickness="2,0,0,0" BorderBrush="Transparent" Padding="22,9,24,9">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="26" />
+                                                <ColumnDefinition Width="1.3*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="2.4*" />
+                                                <ColumnDefinition Width="110" />
+                                            </Grid.ColumnDefinitions>
+                                            <core:Icon x:Name="Mark" Data="{StaticResource Icon.Check}" Foreground="{DynamicResource Good}"
+                                                       Width="14" Height="14" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                <TextBlock x:Name="DetailText" Text="{Binding Detail}" Style="{StaticResource Small}" Visibility="Collapsed" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="{Binding Status}" Style="{StaticResource Mono}" VerticalAlignment="Top" Margin="0,1,12,0" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Recommended}" Style="{StaticResource Mono}"
+                                                       Foreground="{DynamicResource Muted}" VerticalAlignment="Top" Margin="0,1,12,0" />
+                                            <TextBlock Grid.Column="4" Text="{Binding Description}" Style="{StaticResource Body}" Margin="0,0,12,0" />
+                                            <Button x:Name="ActionButton" Grid.Column="5" Content="{Binding ActionLabel}" Style="{StaticResource Btn}"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Top" MinWidth="0" Padding="10,3"
                                                     Click="OnCheckAction" Visibility="Collapsed"
                                                     AutomationProperties.Name="{Binding Title, StringFormat='{}{0} action'}" />
-                                        </StackPanel>
-                                    </Grid>
+                                        </Grid>
+                                    </Border>
                                 </Border>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding State}" Value="Warn">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource Warn}" />
-                                        <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource Warn}" />
+                                        <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Warning}" />
+                                        <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Signal}" />
+                                        <Setter TargetName="Edge" Property="BorderBrush" Value="{DynamicResource Signal}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding State}" Value="Info">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource Info}" />
-                                        <Setter TargetName="StatusText" Property="Foreground" Value="{DynamicResource Muted}" />
+                                        <Setter TargetName="Mark" Property="Data" Value="{StaticResource Icon.Info}" />
+                                        <Setter TargetName="Mark" Property="Foreground" Value="{DynamicResource Muted}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding HasAction}" Value="True">
                                         <Setter TargetName="ActionButton" Property="Visibility" Value="Visible" />
@@ -296,55 +317,54 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="WHAT'S USING YOUR PC" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}" Padding="16,10,16,6">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,6">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="64" />
-                                    <ColumnDefinition Width="64" />
-                                    <ColumnDefinition Width="84" />
-                                    <ColumnDefinition Width="170" />
-                                    <ColumnDefinition Width="70" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="APP" Style="{StaticResource TileLabel}" />
-                                <TextBlock Grid.Column="1" Text="CPU" Style="{StaticResource TileLabel}" TextAlignment="Right" />
-                                <TextBlock Grid.Column="2" Text="GPU" Style="{StaticResource TileLabel}" TextAlignment="Right" />
-                                <TextBlock Grid.Column="3" Text="MEMORY" Style="{StaticResource TileLabel}" TextAlignment="Right" />
-                                <TextBlock Grid.Column="4" Text="LOWER DURING GAMES" Style="{StaticResource TileLabel}" Margin="22,0,0,0" />
-                            </Grid>
-                            <ItemsControl x:Name="AppList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="0,7">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="64" />
-                                                    <ColumnDefinition Width="64" />
-                                                    <ColumnDefinition Width="84" />
-                                                    <ColumnDefinition Width="170" />
-                                                    <ColumnDefinition Width="70" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Grid.Column="1" Text="{Binding Cpu}" Style="{StaticResource ValueLabel}" />
-                                                <TextBlock Grid.Column="2" Text="{Binding Gpu}" Style="{StaticResource ValueLabel}" />
-                                                <TextBlock Grid.Column="3" Text="{Binding Ram}" Style="{StaticResource ValueLabel}" Foreground="{DynamicResource Muted}" />
-                                                <CheckBox Grid.Column="4" Style="{StaticResource Switch}" Margin="22,0,0,0" HorizontalAlignment="Left"
-                                                          IsChecked="{Binding IsBoostTarget, Mode=TwoWay}" IsEnabled="{Binding CanLower}"
-                                                          AutomationProperties.Name="{Binding Name, StringFormat='Lower {0} during games'}" />
-                                                <Button Grid.Column="5" Content="End" Style="{StaticResource Btn}" MinWidth="0" Padding="12,3"
-                                                        HorizontalAlignment="Right" Click="OnEndApp" IsEnabled="{Binding CanEnd}"
-                                                        AutomationProperties.Name="{Binding Name, StringFormat='End {0}'}" />
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                    <!-- What's using the PC -->
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1" Padding="24,7" Margin="0,22,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="84" />
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="70" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="WHAT'S USING YOUR PC" Style="{StaticResource Key}" />
+                            <TextBlock Grid.Column="1" Text="CPU" Style="{StaticResource Key}" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="2" Text="GPU" Style="{StaticResource Key}" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="3" Text="MEMORY" Style="{StaticResource Key}" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="4" Text="LOWER DURING GAMES" Style="{StaticResource Key}" Margin="22,0,0,0" />
+                        </Grid>
                     </Border>
-                    <TextBlock Style="{StaticResource Small}" Margin="2,2,0,0"
+                    <ItemsControl x:Name="AppList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource LedgerRow}" Padding="24,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="84" />
+                                            <ColumnDefinition Width="160" />
+                                            <ColumnDefinition Width="70" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Cpu}" Style="{StaticResource Mono}" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Gpu}" Style="{StaticResource Mono}" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Ram}" Style="{StaticResource Mono}" HorizontalAlignment="Right"
+                                                   Foreground="{DynamicResource Muted}" />
+                                        <CheckBox Grid.Column="4" Style="{StaticResource Switch}" Margin="22,0,0,0" HorizontalAlignment="Left"
+                                                  IsChecked="{Binding IsBoostTarget, Mode=TwoWay}" IsEnabled="{Binding CanLower}"
+                                                  AutomationProperties.Name="{Binding Name, StringFormat='Lower {0} during games'}" />
+                                        <Button Grid.Column="5" Content="End" Style="{StaticResource Btn}" MinWidth="0" Padding="12,3"
+                                                HorizontalAlignment="Right" Click="OnEndApp" IsEnabled="{Binding CanEnd}"
+                                                AutomationProperties.Name="{Binding Name, StringFormat='End {0}'}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Style="{StaticResource Small}" Margin="24,8,24,24"
                                Text="Apps are grouped by name (Edge's many processes count as one) and limited to your account. Windows system processes can't be ended or lowered. Ending an app asks first and closes it without saving." />
                 </StackPanel>
             </ScrollViewer>

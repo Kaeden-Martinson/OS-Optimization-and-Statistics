@@ -154,3 +154,32 @@ public class PageStyleTests
             Assert.Contains(call, code);
     }
 }
+
+public class OptimizerPageTests
+{
+    private static string Page => PageXaml.Tab("Optimizer");
+
+    [Fact]
+    public void The_optimizer_is_one_ledger_with_now_and_recommended_columns()
+    {
+        foreach (var part in new[] { "Text=\"SETTING\"", "Text=\"NOW\"", "Text=\"RECOMMENDED\"", "Text=\"EFFECT AND DRAWBACK\"",
+                     "{Binding Recommended}", "x:Name=\"Edge\"", "x:Name=\"Mark\"", "x:Name=\"FixAllButton\"", "x:Name=\"AppList\"",
+                     "StaticResource LedgerRow", "StaticResource PageTitle" })
+            Assert.Contains(part, Page);
+        foreach (var gone in new[] { "CardBox", "\"H1\"", "\"Lead\"", "AccentSoft", "Ellipse" })
+            Assert.DoesNotContain(gone, Page);
+    }
+}
+
+/// <summary>Reads one page (TabItem) out of the control center's XAML.</summary>
+internal static class PageXaml
+{
+    public static string Tab(string header)
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        var start = xaml.IndexOf($"<TabItem Header=\"{header}\"", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"No {header} page");
+        var end = xaml.IndexOf("</TabItem>", start, StringComparison.Ordinal);
+        return xaml[start..end];
+    }
+}

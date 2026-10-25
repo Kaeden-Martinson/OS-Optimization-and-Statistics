@@ -450,7 +450,14 @@ public partial class ControlCenterWindow : Window
     private void RefreshOptimizer()
     {
         foreach (var c in _checks) c.Refresh();
-        FixAllButton.IsEnabled = _checks.OfType<Tweak>().Any(t => t.NeedsFix);
+        var pending = _checks.OfType<Tweak>().Count(t => t.NeedsFix);
+        FixAllButton.IsEnabled = pending > 0;
+        FixAllButton.Content = pending switch
+        {
+            0 => "Nothing to apply",
+            1 => "Apply 1 recommendation",
+            _ => $"Apply {pending} recommendations",
+        };
         UpdateRestartBanner();
 
         var top = _sampler.Sample()
