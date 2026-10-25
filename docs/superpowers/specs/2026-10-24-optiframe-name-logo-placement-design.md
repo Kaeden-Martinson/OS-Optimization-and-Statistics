@@ -69,7 +69,7 @@ snapping); its display is the one containing the panel's center; the spot is sto
 panel is kept fully inside that display's work area.
 
 **Pinning:** Pin hides the outline and handle, restores click-through, saves, and shows a short tray notice
-("Overlay pinned"). While moving, the handle sits above the panel; the panel itself stays where it will be pinned.
+("Overlay pinned"). While moving, the handle sits above the panel (below it when there is no room above, so Pin is always on screen); the panel itself stays where it will be pinned.
 
 **Presets:** the Overlay page's position choice lists Top right, Top left, Bottom right, Bottom left and
 "Custom (pinned spot)". Choosing a corner moves the overlay there. The control center's choice updates when the
