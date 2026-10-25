@@ -154,3 +154,37 @@ public class LogoUseTests
         Assert.Contains("LogoPainter.Draw(", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/TrayIcon.cs")));
     }
 }
+
+public class NameTests
+{
+    private static IEnumerable<string> AppSources() =>
+        Directory.EnumerateFiles(SourceFiles.Path("PCSpecOverlay"), "*.*", SearchOption.AllDirectories)
+            .Where(f => (f.EndsWith(".cs") || f.EndsWith(".xaml") || f.EndsWith(".csproj"))
+                        && !f.Contains(@"\obj\") && !f.Contains(@"\bin\"));
+
+    [Fact]
+    public void The_old_name_only_remains_as_the_legacy_constant()
+    {
+        var hits = AppSources().Concat([SourceFiles.Path("build-release.ps1")])
+            .SelectMany(f => File.ReadAllLines(f).Select((line, i) => (f, i, line)))
+            .Where(x => x.line.Contains("PC Spec Overlay") || x.line.Contains("PC SPEC") || x.line.Contains("PCSpecOverlay-Setup"))
+            .Where(x => !x.line.Contains("LegacyProductName"))
+            .Select(x => $"{Path.GetFileName(x.f)}:{x.i + 1}: {x.line.Trim()}")
+            .ToList();
+        Assert.Empty(hits);
+    }
+
+    [Fact]
+    public void Visible_names_say_Optiframe()
+    {
+        Assert.Equal("Optiframe", AppIdentity.ProductName);
+        Assert.Contains("Title=\"Optiframe\"", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml")));
+        Assert.Contains("Title=\"Optiframe Setup\"", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/InstallerWindow.xaml")));
+        Assert.Contains("Text=\"OPTIFRAME\"", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/OverlayWindow.xaml")));
+        var csproj = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/PCSpecOverlay.csproj"));
+        Assert.Contains("<Product>Optiframe</Product>", csproj);
+        Assert.Contains("<AssemblyTitle>Optiframe</AssemblyTitle>", csproj);
+        Assert.Contains("Optiframe-Setup-", File.ReadAllText(SourceFiles.Path("build-release.ps1")));
+        Assert.Contains("DeleteLegacyShortcut()", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Installer.cs")));
+    }
+}

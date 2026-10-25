@@ -64,7 +64,7 @@ internal sealed class TrayIcon : IDisposable
         _icon = new Forms.NotifyIcon
         {
             Icon = _image,
-            Text = "PC Spec Overlay",
+            Text = AppIdentity.ProductName,
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -77,7 +77,7 @@ internal sealed class TrayIcon : IDisposable
     }
 
     /// <param name="important">Warning icon for things that need attention; info icon otherwise.</param>
-    public void Notify(string message, string title = "PC Spec Overlay", bool important = false)
+    public void Notify(string message, string title = AppIdentity.ProductName, bool important = false)
     {
         if (string.IsNullOrWhiteSpace(message)) return;
         _icon.ShowBalloonTip(6000, title, message, important ? Forms.ToolTipIcon.Warning : Forms.ToolTipIcon.Info);

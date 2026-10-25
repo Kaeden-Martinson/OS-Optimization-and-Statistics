@@ -136,7 +136,7 @@ internal static class StartupTask
         return $"""
             <?xml version="1.0" encoding="UTF-16"?>
             <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-              <RegistrationInfo><Description>PC Spec Overlay - performance overlay</Description></RegistrationInfo>
+              <RegistrationInfo><Description>{AppIdentity.ProductName} - performance overlay</Description></RegistrationInfo>
               <Triggers>
                 <LogonTrigger><Enabled>true</Enabled><UserId>{user}</UserId><Delay>PT3S</Delay></LogonTrigger>
               </Triggers>

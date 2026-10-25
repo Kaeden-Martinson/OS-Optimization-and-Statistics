@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:PCSpecOverlay"
         xmlns:core="clr-namespace:PCSpecOverlay.Core"
-        Title="PC Spec Overlay · Control Center" Width="1040" Height="760" MinWidth="900" MinHeight="520"
+        Title="Optiframe" Width="1040" Height="760" MinWidth="900" MinHeight="520"
         WindowStartupLocation="Manual" Background="{DynamicResource Window}" Foreground="{DynamicResource Text}"
         FontFamily="Segoe UI" UseLayoutRounding="True" SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display">
@@ -884,7 +884,7 @@
     <!-- App name over the left of the tab bar -->
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Height="40" Margin="16,0,0,0" IsHitTestVisible="False">
         <core:Icon Data="{StaticResource Icon.Mark}" Width="16" Height="16" VerticalAlignment="Center" />
-        <TextBlock Text="PC SPEC" FontSize="12" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center" />
+        <TextBlock Text="Optiframe" FontSize="13" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center" />
     </StackPanel>
     <!-- Version and the light/dark switch over the right of the tab bar -->
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Height="40" Margin="0,0,12,0">

@@ -103,7 +103,7 @@ public static class Updates
         var asset = release.Setup!;
         var dir = Path.Combine(Path.GetTempPath(), "PCSpecOverlay-update");
         Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, $"PCSpecOverlay-Setup-{release.Version}.exe");
+        var path = Path.Combine(dir, $"Optiframe-Setup-{release.Version}.exe");
 
         using (var response = await http.GetAsync(asset.Url, HttpCompletionOption.ResponseHeadersRead, ct))
         {

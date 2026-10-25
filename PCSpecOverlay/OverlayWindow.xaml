@@ -1,7 +1,7 @@
 <Window x:Class="PCSpecOverlay.OverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PC Spec Overlay"
+        Title="Optiframe overlay"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize"
         SizeToContent="WidthAndHeight" Focusable="False"
@@ -87,7 +87,7 @@
                     <TextBlock x:Name="FpsSource" DockPanel.Dock="Right" Style="{StaticResource Label}" Width="Auto"
                                FontFamily="Cascadia Mono, Consolas" FontWeight="Normal" Margin="8,0,0,0" />
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="PC SPEC" Style="{StaticResource Label}" Width="Auto" />
+                        <TextBlock Text="OPTIFRAME" Style="{StaticResource Label}" Width="Auto" />
                         <TextBlock x:Name="GpuName" Style="{StaticResource Label}" Width="Auto" FontWeight="Normal" Margin="8,0,0,0" />
                     </StackPanel>
                 </DockPanel>
