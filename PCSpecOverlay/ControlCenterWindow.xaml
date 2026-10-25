@@ -700,6 +700,22 @@
                         </StackPanel>
                     </Border>
 
+                    <TextBlock Text="APPEARANCE" Style="{StaticResource Section}" />
+                    <Border Style="{StaticResource CardBox}">
+                        <DockPanel>
+                            <ComboBox x:Name="AppearanceBox" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                      SelectedValuePath="Tag" SelectedValue="{Binding Appearance}" AutomationProperties.Name="Theme">
+                                <ComboBoxItem Tag="MatchWindows" Content="Match Windows" />
+                                <ComboBoxItem Tag="Light" Content="Light" />
+                                <ComboBoxItem Tag="Dark" Content="Dark" />
+                            </ComboBox>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="Theme" FontSize="13" />
+                                <TextBlock Style="{StaticResource Body}" Text="Light, dark, or follow the Windows app setting. The in-game overlay stays dark." />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
                     <TextBlock Text="UPDATES" Style="{StaticResource Section}" />
                     <Border Style="{StaticResource CardBox}">
                         <StackPanel>

@@ -16,6 +16,7 @@ public partial class App : Application
     private Mutex? _singleInstance;
     private EventWaitHandle? _openControlCenter, _exitRequest;
     private Engine _engine = null!;
+    private ThemeManager _theme = null!;
     private OverlayWindow _overlay = null!;
     private TrayIcon _tray = null!;
     private ControlCenterWindow? _controlCenter;
@@ -28,6 +29,7 @@ public partial class App : Application
     internal Engine Engine => _engine;
     internal HistoryRecorder History => _history;
     public Settings Settings => _engine.Settings;
+    public ThemeManager Theme => _theme;
     public bool OverlayVisible => _overlay.IsVisible;
     public string? HotkeyInUse => _registeredHotkey;
 
@@ -67,6 +69,8 @@ public partial class App : Application
 
         Log.Info("App", $"Starting {Installer.Version} from {Installer.Describe(Environment.ProcessPath)}");
         _engine = new Engine();
+        _theme = new ThemeManager(Resources);
+        _theme.Apply(Settings.Appearance);
 
         // By default the overlay draws on the CPU: GPU rendering loads the graphics driver into this process
         // (~100 MB more). Optional, because on some PCs it lowers CPU use. Must be set before any window exists.
@@ -210,6 +214,7 @@ public partial class App : Application
         if (_engine.Gpu != null) _engine.Gpu.LetSleep = Settings.LetGpuSleep;
         if (!_engine.OptimizationsPaused && !_engine.RecoveryMode && !_engine.Gaming.Active)
             _engine.Boost.SetEnabled(Settings.GameBoost);
+        _theme.Apply(Settings.Appearance);
     }
 
     /// <summary>Restores default preferences. Your games list and lowered-apps list are kept.</summary>
@@ -303,6 +308,7 @@ public partial class App : Application
     {
         foreach (var t in _timers) t.Stop();
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplaysChanged;
+        _theme?.Dispose();
         if (_engine != null)
         {
             _history?.Flush();

@@ -54,7 +54,8 @@ public partial class ControlCenterWindow : Window
         Width = Math.Min(Width, area.Width - 40);
         Left = area.Left + (area.Width - Width) / 2;
         Top = area.Top + (area.Height - Height) / 2;
-        SourceInitialized += (_, _) => DarkTitleBar.Apply(this);
+        SourceInitialized += (_, _) => TitleBar.Apply(this, app.Theme.Current == AppTheme.Dark);
+        app.Theme.Changed += OnThemeChanged;
 
         Fill(DisplayBox, Displays.All().Select(d => ((object)(d.Primary ? "" : d.DeviceName), d.Label)));
         Fill(FpsRefreshBox, new (object, string)[] { (250, "4 times a second"), (500, "Twice a second"), (1000, "Once a second") });
@@ -77,7 +78,7 @@ public partial class ControlCenterWindow : Window
         _refresh = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _refresh.Tick += (_, _) => Refresh();
         _refresh.Start();
-        Closed += (_, _) => { _refresh.Stop(); if (_saveSoon.IsEnabled) { _saveSoon.Stop(); Save(); } };
+        Closed += (_, _) => { _app.Theme.Changed -= OnThemeChanged; _refresh.Stop(); if (_saveSoon.IsEnabled) { _saveSoon.Stop(); Save(); } };
         Loaded += (_, _) => { _loading = false; RefreshAll(); };
     }
 
@@ -168,6 +169,13 @@ public partial class ControlCenterWindow : Window
     private void OnPageChanged(object sender, SelectionChangedEventArgs e)
     {
         if (e.OriginalSource == Nav && !_loading) RefreshAll();
+    }
+
+    /// <summary>Brushes made in code (banners, charts, temperature colors) are rebuilt by the next refresh.</summary>
+    private void OnThemeChanged(AppTheme theme)
+    {
+        TitleBar.Apply(this, theme == AppTheme.Dark);
+        RefreshAll();
     }
 
     private void RefreshAll()

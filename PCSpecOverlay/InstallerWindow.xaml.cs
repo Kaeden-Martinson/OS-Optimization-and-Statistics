@@ -15,7 +15,7 @@ public partial class InstallerWindow : Window
     {
         InitializeComponent();
         _mode = mode;
-        SourceInitialized += (_, _) => DarkTitleBar.Apply(this);
+        SourceInitialized += (_, _) => TitleBar.Apply(this, dark: true);
 
         if (mode == Mode.Install)
         {
