@@ -76,6 +76,13 @@ public class OverviewDataTests
     }
 
     [Fact]
+    public void Events_show_overlay_news_that_used_to_be_a_notification()
+    {
+        var log = new List<LogEntry> { E(1, LogLevel.Info, "Overlay", "Overlay pinned") };
+        Assert.Single(OverviewData.Events(log, 10));
+    }
+
+    [Fact]
     public void Events_are_capped()
     {
         var log = Enumerable.Range(0, 20).Select(i => E(i, LogLevel.Info, "Changes", $"change {i}")).ToList();

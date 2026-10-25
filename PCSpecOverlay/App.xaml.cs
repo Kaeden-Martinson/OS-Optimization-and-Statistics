@@ -77,7 +77,6 @@ public partial class App : Application
         Log.Info("App", $"Drawing with the {(StartedWithGpuRendering ? "graphics chip" : "CPU")}");
         _theme = new ThemeManager(Resources);
         _theme.Apply(Settings.Appearance);
-        _engine.Alert += a => _tray?.Notify(a.Message, a.Title, a.DriverConfirmed);
         _history = new HistoryRecorder(_engine.Settings);
 
         _overlay = new OverlayWindow();
@@ -88,10 +87,10 @@ public partial class App : Application
         _overlay.EnsureHandle();
         _overlay.Moved += SaveSettings;
         _overlay.Moved += () => _controlCenter?.OverlayMoved();
-        _overlay.Pinned += () => _tray?.Notify("It stays here and clicks pass through to your game. Use Move overlay in the tray to move it again.", "Overlay pinned");
+        _overlay.Pinned += () => Log.Info("Overlay", "Overlay pinned. It stays here and clicks pass through to your game. Use Move overlay in the tray to move it again.");
         HwndSource.FromHwnd(_overlay.Handle).AddHook(WndProc);
 
-        var hotkeyError = TryRegisterHotkey(Settings.Hotkey);
+        TryRegisterHotkey(Settings.Hotkey); // a problem is written to the log
         _tray = new TrayIcon(this);
         if (Settings.Visible) _overlay.Show();
 
@@ -110,13 +109,10 @@ public partial class App : Application
         UpdateFps();
 
         if (e.Args.Contains("--startup-on", StringComparer.OrdinalIgnoreCase) && StartupTask.SetEnabled(true) is { } startupError)
-            _tray.Notify(startupError, "Start with Windows", true);
+            Log.Warn("Startup", $"Start with Windows: {startupError}");
         StartupTask.RepairIfMoved();
-        if (hotkeyError != null) _tray.Notify(hotkeyError, "Hotkey not available");
-        if (_engine.RecoveryMode)
-            _tray.Notify("The app didn't start normally several times in a row, so automatic optimizations are off. Open the control center to turn them back on.", "Recovery mode", true);
-        else if (_engine.StartupReport.Count > 0)
-            _tray.Notify(string.Join(" ", _engine.StartupReport), "Restored settings from the last run");
+        // Recovery mode and settings restored from the last run are already in the log (Engine), and recovery
+        // mode also shows on the Overview banner.
     }
 
     private void OnDisplaysChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(_overlay.Reposition);
@@ -145,7 +141,7 @@ public partial class App : Application
     private void UpdateStats()
     {
         // Sensors are only read when something uses them, so a hidden overlay costs nothing
-        var needed = _overlay.IsVisible || Settings.Alerts || _controlCenter != null || _engine.Gaming.Active;
+        var needed = _overlay.IsVisible || _controlCenter != null || _engine.Gaming.Active;
         if (!needed) return;
         _engine.SampleStats();
         _history.Record(_engine.Latest, _engine.Game?.Label);
@@ -261,7 +257,7 @@ public partial class App : Application
         if (automatic && result is { State: UpdateState.Available, Release: { } r } && _engine.State.AnnouncedVersion != r.Version.ToString())
         {
             _engine.State.AnnouncedVersion = r.Version.ToString();
-            _tray.Notify($"{r.Title} is available. Open the control center (Settings › Updates) to install it.", "Update available");
+            Log.Info("Updates", $"{r.Title} is available. Open the control center (Settings › Updates) to install it.");
         }
         _engine.State.Save();
         Log.Info("Updates", result.Message);
@@ -285,7 +281,11 @@ public partial class App : Application
     public string? TryRegisterHotkey(string text)
     {
         if (!Hotkeys.TryParse(text, out var mods, out var key))
-            return $"\"{text}\" isn't a valid shortcut. Use something like Alt+Shift+O.";
+        {
+            var invalid = $"\"{text}\" isn't a valid shortcut. Use something like Alt+Shift+O.";
+            Log.Warn("Hotkey", invalid);
+            return invalid;
+        }
 
         var previous = _registeredHotkey;
         if (previous != null) Native.UnregisterHotKey(_overlay.Handle, HotkeyId);
@@ -298,11 +298,12 @@ public partial class App : Application
             return null;
         }
 
-        Log.Warn("Hotkey", $"{text} is already used by another app");
         if (previous != null && Hotkeys.TryParse(previous, out var pm, out var pk))
             Native.RegisterHotKey(_overlay.Handle, HotkeyId, pm | Native.MOD_NOREPEAT, (uint)KeyInterop.VirtualKeyFromKey(pk));
         else _registeredHotkey = null;
-        return $"{text} is already used by another app" + (previous != null ? $"; still using {previous}." : ". Choose another shortcut in the control center.");
+        var taken = $"{text} is already used by another app" + (previous != null ? $"; still using {previous}." : ". Choose another shortcut in the control center.");
+        Log.Warn("Hotkey", taken);
+        return taken;
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)

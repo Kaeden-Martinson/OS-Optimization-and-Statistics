@@ -221,6 +221,19 @@ public class SettingsTests : TempDataTest
     }
 
     [Fact]
+    public void Settings_from_before_notifications_were_removed_still_load()
+    {
+        File.WriteAllText(AppPaths.SettingsFile,
+            """{ "Alerts": true, "AlertAfterSeconds": 10, "AlertCooldownMinutes": 10, "GpuTempHot": 88, "AutoGamingMode": true }""");
+        var s = Settings.Load();
+        Assert.Empty(Directory.GetFiles(Dir, "settings.json.corrupt-*"));
+        Assert.Equal(88, s.GpuTempHot);
+        Assert.True(s.AutoGamingMode);
+        foreach (var gone in new[] { "Alerts", "AlertAfterSeconds", "AlertCooldownMinutes" })
+            Assert.Null(typeof(Settings).GetProperty(gone));
+    }
+
+    [Fact]
     public void Corrupt_file_is_kept_aside_and_defaults_used()
     {
         File.WriteAllText(AppPaths.SettingsFile, "{ not json");
@@ -285,74 +298,46 @@ public class LimitTrackerTests
     }
 }
 
-public class AlertThrottleTests
+public class OncePerEpisodeTests
 {
     private readonly FakeTimeProvider _time = new();
-    private readonly AlertThrottle _throttle;
-    private static readonly TimeSpan Cooldown = TimeSpan.FromMinutes(10);
+    private readonly OncePerEpisode _gate;
 
-    public AlertThrottleTests() => _throttle = new AlertThrottle(_time);
+    public OncePerEpisodeTests() => _gate = new OncePerEpisode(_time);
 
-    /// <summary>The condition stays active for this long, checked every second like the app does.</summary>
-    private int Notifications(TimeSpan duration)
+    [Fact]
+    public void A_continuing_problem_is_logged_once_not_every_sample()
     {
         var count = 0;
-        for (var t = TimeSpan.Zero; t < duration; t += TimeSpan.FromSeconds(1))
+        for (var t = TimeSpan.Zero; t < TimeSpan.FromHours(5); t += TimeSpan.FromSeconds(1))
         {
-            if (_throttle.ShouldNotify("gpu-throttle", Cooldown, out _)) count++;
+            if (_gate.IsNew("gpu-throttle")) count++;
             _time.Advance(TimeSpan.FromSeconds(1));
         }
-        return count;
+        Assert.Equal(1, count);
     }
 
     [Fact]
-    public void Five_hours_of_overheating_is_a_handful_of_notifications_not_thirty()
+    public void Short_breaks_stay_in_the_same_episode()
     {
-        // Old behavior: every 10 minutes = 30. New: 3 at the cooldown, then hourly.
-        var count = Notifications(TimeSpan.FromHours(5));
-        Assert.InRange(count, 6, 7);
+        Assert.True(_gate.IsNew("gpu-hot"));
+        _time.Advance(TimeSpan.FromMinutes(5));
+        Assert.False(_gate.IsNew("gpu-hot"));
     }
 
     [Fact]
-    public void First_three_use_the_normal_cooldown()
+    public void A_problem_that_comes_back_after_a_long_break_is_logged_again()
     {
-        Assert.Equal(3, Notifications(TimeSpan.FromMinutes(25)));
+        Assert.True(_gate.IsNew("gpu-hot"));
+        _time.Advance(OncePerEpisode.ResetAfter + TimeSpan.FromMinutes(1));
+        Assert.True(_gate.IsNew("gpu-hot"));
     }
 
     [Fact]
-    public void A_resolved_problem_notifies_normally_when_it_comes_back()
+    public void Different_problems_are_separate()
     {
-        Notifications(TimeSpan.FromHours(2)); // into the hourly phase
-        _time.Advance(TimeSpan.FromMinutes(31)); // condition gone long enough to count as resolved
-        Assert.True(_throttle.ShouldNotify("gpu-throttle", Cooldown, out var shown));
-        Assert.Equal(1, shown);
-    }
-
-    [Fact]
-    public void Short_breaks_dont_reset_the_backoff()
-    {
-        Notifications(TimeSpan.FromHours(2));
-        _time.Advance(TimeSpan.FromMinutes(5)); // GPU cooled briefly
-        Assert.False(_throttle.ShouldNotify("gpu-throttle", Cooldown, out _));
-    }
-
-    [Fact]
-    public void Different_problems_are_throttled_separately()
-    {
-        Assert.True(_throttle.ShouldNotify("gpu-throttle", Cooldown, out _));
-        Assert.True(_throttle.ShouldNotify("cpu-hot", Cooldown, out _));
-    }
-
-    [Fact]
-    public void A_longer_user_cooldown_is_respected_in_the_backoff_phase()
-    {
-        var count = 0;
-        for (var t = TimeSpan.Zero; t < TimeSpan.FromHours(10); t += TimeSpan.FromSeconds(10))
-        {
-            if (_throttle.ShouldNotify("x", TimeSpan.FromHours(2), out _)) count++;
-            _time.Advance(TimeSpan.FromSeconds(10));
-        }
-        Assert.Equal(5, count); // every 2 hours, never more often than the user asked
+        Assert.True(_gate.IsNew("gpu-throttle"));
+        Assert.True(_gate.IsNew("cpu-hot"));
     }
 }
 

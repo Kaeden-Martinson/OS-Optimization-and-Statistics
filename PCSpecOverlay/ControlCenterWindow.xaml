@@ -752,7 +752,7 @@
                             <controls:TempScaleControl x:Name="GpuScale" Sensor="GPU" Margin="0,10,0,0" />
                         </StackPanel>
                     </Border>
-                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,14,24,10">
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,14,24,10" Margin="0,0,0,24">
                         <StackPanel>
                             <DockPanel>
                                 <TextBlock x:Name="CpuNow" DockPanel.Dock="Right" Style="{StaticResource Mono}" FontSize="14" />
@@ -761,42 +761,6 @@
                             </DockPanel>
                             <controls:TempScaleControl x:Name="CpuScale" Sensor="CPU" Margin="0,10,0,0" />
                         </StackPanel>
-                    </Border>
-
-                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
-                        <TextBlock Text="NOTIFICATIONS" Style="{StaticResource Key}" />
-                    </Border>
-                    <Border Style="{StaticResource LedgerRow}">
-                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Alerts}">
-                            <StackPanel>
-                                <TextBlock Text="Notify me about slowdowns and high temperatures" FontSize="13" />
-                                <TextBlock Style="{StaticResource Body}" Text="Confirmed slowdowns (the driver or Windows reports the hardware slowing itself down) and temperatures above your hot levels, which isn't a fault on its own." />
-                            </StackPanel>
-                        </CheckBox>
-                    </Border>
-                    <Border Style="{StaticResource LedgerRow}">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="56" TextAlignment="Right"
-                                       Text="{Binding Value, ElementName=AfterSlider, StringFormat='{}{0:0} s'}" />
-                            <Slider x:Name="AfterSlider" DockPanel.Dock="Right" Width="220" Minimum="5" Maximum="120" TickFrequency="5"
-                                    Value="{Binding AlertAfterSeconds}" Margin="12,0,10,0" AutomationProperties.Name="Only notify if it lasts this many seconds" />
-                            <StackPanel>
-                                <TextBlock Text="Only if it lasts" FontSize="13" />
-                                <TextBlock Style="{StaticResource Small}" Text="Brief spikes are ignored." />
-                            </StackPanel>
-                        </DockPanel>
-                    </Border>
-                    <Border Style="{StaticResource LedgerRow}" Margin="0,0,0,24">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" MinWidth="56" TextAlignment="Right"
-                                       Text="{Binding Value, ElementName=CooldownSlider, StringFormat='{}{0:0} min'}" />
-                            <Slider x:Name="CooldownSlider" DockPanel.Dock="Right" Width="220" Minimum="1" Maximum="120" TickFrequency="1"
-                                    Value="{Binding AlertCooldownMinutes}" Margin="12,0,10,0" AutomationProperties.Name="Notify at most once every this many minutes" />
-                            <StackPanel>
-                                <TextBlock Text="At most once every" FontSize="13" />
-                                <TextBlock Style="{StaticResource Small}" Text="Per kind of alert. If the same problem keeps going, reminders slow to hourly after the third." />
-                            </StackPanel>
-                        </DockPanel>
                     </Border>
                 </StackPanel>
             </ScrollViewer>

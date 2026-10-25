@@ -42,7 +42,7 @@ public static class OverviewData
 
     /// <summary>Log areas whose entries describe something the app did (as opposed to start-up chatter).</summary>
     private static readonly HashSet<string> ActionAreas = new(StringComparer.OrdinalIgnoreCase)
-        { "Gaming", "GameBoost", "Changes", "Alert", "Optimizer", "Browser", "Updates", "Recovery", "Theme" };
+        { "Gaming", "GameBoost", "Changes", "Alert", "Optimizer", "Browser", "Updates", "Recovery", "Theme", "Overlay" };
 
     /// <summary>What the app did and why, newest first: actions from those areas plus every warning and error.</summary>
     public static List<LogEntry> Events(IReadOnlyList<LogEntry> log, int max) =>

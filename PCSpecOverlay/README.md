@@ -47,9 +47,9 @@ always removed.
   Alt+Tab grace period), your games list with per-game options, recently seen games.
 - **Overlay** — layout (expanded or one-line compact), display, position (a corner preset or your
   pinned spot) and *Move overlay*, opacity, text size, which metrics to show, refresh rates.
-- **Temperatures & alerts** — warning and hot levels for GPU and CPU, notification rules. A problem that keeps
-  going (e.g. a GPU throttling all night under an AI workload) notifies at your cooldown three times, then at most
-  hourly until it has been gone for 30 minutes.
+- **Temperatures & alerts** — warning and hot levels for GPU and CPU; the overlay turns amber and red at them.
+  The app shows no Windows notifications: a slowdown or high temperature that lasts 10 seconds is written once to
+  the Overview's events and the log, and again only after it has been gone for 30 minutes.
 - **General** — Start with Windows, the overlay shortcut, GPU sleep, history, restore defaults.
 - **Diagnostics** — what works on this PC and why, every Windows change the app currently owns,
   recent events, a copyable report (personal paths replaced), and *Undo every change the app made*.
@@ -88,7 +88,7 @@ the per-user power mode, and it only touches processes in your own Windows sessi
 | RAM | `GlobalMemoryStatusEx` | Same | Nothing | Exact | — |
 
 Missing readings are always shown as "—" or a word, never as a fake zero. Sensors are only read while
-the overlay is visible, the Control Center is open, alerts are on, or gaming mode is active.
+the overlay is visible, the Control Center is open, or gaming mode is active.
 
 **Laptop GPU sleep.** Asking the NVIDIA driver for sensors keeps an Optimus laptop's GPU powered. The
 app first checks the GPU's power state through Windows' device manager (which doesn't wake it) and
