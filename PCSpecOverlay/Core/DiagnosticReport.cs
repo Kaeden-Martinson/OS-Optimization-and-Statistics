@@ -50,7 +50,7 @@ internal static class DiagnosticReport
             }}", gpu.Status == GpuStatus.Unavailable ? DiagLevel.Warn : DiagLevel.Ok));
         if (engine.Gpu != null)
             list.Add(new("GPU sleep detection", engine.Gpu.CanDetectSleep
-                ? (engine.Settings.LetGpuSleep ? "Available; the GPU isn't woken just for readings" : "Available but turned off in General")
+                ? (engine.Settings.LetGpuSleep ? "Available; the GPU isn't woken just for readings" : "Available but turned off in Settings")
                 : "Unavailable on this PC; GPU readings may keep a laptop GPU awake", engine.Gpu.CanDetectSleep ? DiagLevel.Ok : DiagLevel.Warn));
 
         if (!engine.System.Ready)

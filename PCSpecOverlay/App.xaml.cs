@@ -252,7 +252,7 @@ public partial class App : Application
         if (automatic && result is { State: UpdateState.Available, Release: { } r } && _engine.State.AnnouncedVersion != r.Version.ToString())
         {
             _engine.State.AnnouncedVersion = r.Version.ToString();
-            _tray.Notify($"{r.Title} is available. Open the control center (General › Updates) to install it.", "Update available");
+            _tray.Notify($"{r.Title} is available. Open the control center (Settings › Updates) to install it.", "Update available");
         }
         _engine.State.Save();
         Log.Info("Updates", result.Message);

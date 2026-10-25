@@ -295,16 +295,27 @@
         </Setter>
     </Style>
 
+    <!-- Focus outline shown only for keyboard navigation, never after a mouse click -->
+    <Style x:Key="KeyboardFocus">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Stroke="{DynamicResource Text}" StrokeThickness="1" Margin="1" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Top tab: icon (from Tag) + label; the selected tab is underlined in the text color -->
     <Style x:Key="TopTab" TargetType="TabItem">
         <Setter Property="Foreground" Value="{DynamicResource Muted}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource KeyboardFocus}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Border x:Name="B" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2" Padding="9,0" Height="40">
+                    <Border x:Name="B" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2" Padding="9,0">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <core:Icon Data="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
                                        Foreground="{TemplateBinding Foreground}" Margin="0,0,7,0" VerticalAlignment="Center" />
@@ -319,9 +330,6 @@
                             <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Text}" />
                             <Setter Property="Foreground" Value="{DynamicResource Text}" />
                         </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="B" Property="Background" Value="{DynamicResource Panel}" />
-                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -332,7 +340,7 @@
     <Style x:Key="IconToggle" TargetType="ToggleButton">
         <Setter Property="Foreground" Value="{DynamicResource Muted}" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource KeyboardFocus}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
@@ -346,9 +354,6 @@
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Foreground" Value="{DynamicResource Text}" />
-                        </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="B" Property="Background" Value="{DynamicResource Line2}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

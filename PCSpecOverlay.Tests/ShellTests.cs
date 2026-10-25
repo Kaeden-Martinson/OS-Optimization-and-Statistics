@@ -135,4 +135,14 @@ public class OverviewSourceTests
         Assert.DoesNotContain("RefreshGamingCard", code);
         Assert.DoesNotContain("HotLine(", code);
     }
+
+    [Fact]
+    public void Every_reading_has_a_bar_and_old_page_names_are_gone()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        foreach (var bar in new[] { "FpsTicks", "GpuTicks", "CpuTicks", "RamTicks" }) Assert.Contains($"x:Name=\"{bar}\"", xaml);
+        Assert.DoesNotContain("General ›", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/App.xaml.cs")));
+        Assert.DoesNotContain("in General", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Core/DiagnosticReport.cs")));
+        Assert.Contains("FocusVisualStyle\" Value=\"{StaticResource KeyboardFocus}\"", File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Theme.xaml")));
+    }
 }

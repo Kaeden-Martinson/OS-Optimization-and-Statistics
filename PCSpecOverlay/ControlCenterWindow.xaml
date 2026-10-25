@@ -70,7 +70,7 @@
                 <DockPanel>
                     <!-- Tab bar; the app name (left) and version + theme switch (right) are drawn over it by the window -->
                     <Border DockPanel.Dock="Top" Height="40" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
-                        <StackPanel IsItemsHost="True" Orientation="Horizontal" Margin="124,0,170,0" />
+                        <StackPanel IsItemsHost="True" Orientation="Horizontal" Margin="104,0,156,0" />
                     </Border>
                     <!-- This name lets screen readers (UI Automation) reach the page content -->
                     <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent" />
@@ -90,11 +90,11 @@
                             <Button x:Name="ResumeButton" Content="Resume" Style="{StaticResource Btn}" Tag="Primary"
                                     Click="OnResume" Visibility="Collapsed" Padding="10,2" Margin="8,0,0,0" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Rectangle x:Name="StatusLed" Width="6" Height="6" Fill="{DynamicResource Good}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <DockPanel VerticalAlignment="Center">
+                            <Rectangle x:Name="StatusLed" DockPanel.Dock="Left" Width="6" Height="6" Fill="{DynamicResource Good}" Margin="0,0,8,0" VerticalAlignment="Center" />
                             <TextBlock x:Name="StatusLine" FontFamily="Cascadia Mono, Consolas" FontSize="11"
-                                       Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" />
-                        </StackPanel>
+                                       Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        </DockPanel>
                     </DockPanel>
                 </Border>
 
@@ -117,6 +117,7 @@
                                             <TextBlock Text="fps" Style="{StaticResource ReadingUnit}" />
                                         </StackPanel>
                                         <TextBlock x:Name="TFpsSub" Style="{StaticResource ReadingSub}" />
+                                        <UniformGrid x:Name="FpsTicks" Style="{StaticResource Ticks}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Style="{StaticResource ReadingCell}">
@@ -183,7 +184,7 @@
                                 <ItemsControl x:Name="EventList">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Grid Margin="0,0,0,7">
+                                            <Grid Margin="0,0,0,7" AutomationProperties.Name="{Binding Message}">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="46" />
                                                     <ColumnDefinition Width="*" />

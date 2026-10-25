@@ -180,7 +180,9 @@ public partial class ControlCenterWindow : Window
     {
         _settings.Appearance = appearance;
         _app.SaveSettings();
+        _loading = true; // the dropdown echoes the change; it was saved just above
         AppearanceBox.GetBindingExpression(Selector.SelectedValueProperty)?.UpdateTarget();
+        _loading = false;
         SyncThemeButtons();
     }
 
@@ -258,6 +260,8 @@ public partial class ControlCenterWindow : Window
         TFpsSource.Text = t.FpsSource ?? "";
         TFpsSub.Text = t.Fps is { } ff ? $"{ff.FrameTimeMs:0.0} ms · 1% low {ff.OnePercentLow:0}"
             : t.FpsUnavailable ?? "No game or app rendering in front";
+        var fpsTop = FpsTop(_app.History.Points.Where(p => p.Fps is > 0).Select(p => p.Fps!.Value));
+        SetTicks(FpsTicks, t.Fps is { } fx ? fx.Fps / fpsTop : null);
 
         var g = t.Gpu;
         TGpuName.Text = _engine.Gpu?.Name.Replace("NVIDIA ", "").Replace("GeForce ", "").Replace(" Laptop GPU", "") ?? "";
@@ -314,6 +318,8 @@ public partial class ControlCenterWindow : Window
         if (_engine.RecoveryMode) { state = "Recovery mode: automatic optimizations are off"; led = "Signal"; }
         else if (_engine.OptimizationsPaused) { state = "Optimizations paused"; led = "Signal"; }
         else if (gm.Active) { state = $"Gaming mode on for {string.Join(", ", gm.ActiveGames)}"; led = "Good"; }
+        else if (_engine.Boost.Active) { state = "Game Boost on"; led = "Good"; }
+        else if (_engine.Journal.Entries.Any(e => e.Owners.Contains(GamingMode.Owner))) { state = "Gaming mode changes still in effect"; led = "Signal"; }
         else if (_settings.AutoGamingMode) { state = "Gaming mode waiting for a game"; led = "Good"; }
         else { state = "Monitoring"; led = "Good"; }
         StatusLed.SetResourceReference(Shape.FillProperty, led);
@@ -322,6 +328,7 @@ public partial class ControlCenterWindow : Window
         var source = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Offline ? "On battery" : "Plugged in";
         var overlay = _app.OverlayVisible ? $"Overlay visible · {_app.HotkeyInUse ?? "no shortcut"}" : "Overlay hidden";
         StatusLine.Text = string.Join("  ·  ", state, source, power, overlay);
+        StatusLine.ToolTip = StatusLine.Text;
 
         var somethingActive = gm.Active || _engine.Boost.Active || _engine.Journal.Entries.Any(e => e.Owners.Contains(GamingMode.Owner));
         StopButton.Visibility = !_engine.OptimizationsPaused && somethingActive ? Visibility.Visible : Visibility.Collapsed;
@@ -367,13 +374,17 @@ public partial class ControlCenterWindow : Window
 
     // ---- charts ----
 
+    /// <summary>The chart's upper bound: 15% above the highest frame rate, in steps of 30, at least 60.</summary>
+    private static double FpsTop(IEnumerable<double> realFps) =>
+        Math.Max(60, Math.Ceiling(realFps.DefaultIfEmpty(0).Max() * 1.15 / 30) * 30);
+
     /// <summary>Frame rate over the history window on a light grid, with marked dips.</summary>
     private void DrawFpsChart()
     {
         var points = _app.History.Points.ToList();
         var fps = points.Select(p => p.Fps).ToList();
         var real = fps.Where(v => v is > 0).Select(v => v!.Value).ToList();
-        var top = Math.Max(60, Math.Ceiling((real.Count > 0 ? real.Max() : 0) * 1.15 / 30) * 30);
+        var top = FpsTop(real);
         FpsChartRange.Text = real.Count > 0 ? $"avg {real.Average():0}  low {real.Min():0}" : "";
 
         FpsChart.Children.Clear();
