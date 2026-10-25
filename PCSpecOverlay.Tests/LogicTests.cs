@@ -206,7 +206,7 @@ public class SettingsTests : TempDataTest
         Assert.Equal(250, s.FpsRefreshMs);
         Assert.True(s.GpuTempHot >= s.GpuTempWarn);
         Assert.Equal("TopRight", s.Position);
-        Assert.Equal(Settings.Expanded, s.Layout);
+        Assert.Equal(Settings.Compact, s.Layout); // an unknown layout falls back to the default, Strip
     }
 
     [Fact]

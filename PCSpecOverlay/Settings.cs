@@ -36,6 +36,7 @@ public sealed class Settings
 {
     public const string Expanded = "Expanded", Compact = "Compact";
     public const string Light = "Light", Dark = "Dark", MatchWindows = "MatchWindows";
+    public const string SameAsApp = "SameAsApp", AlwaysDark = "AlwaysDark", AlwaysLight = "AlwaysLight";
     public static readonly string[] Corners = ["TopRight", "TopLeft", "BottomRight", "BottomLeft"];
 
     public int Version { get; set; } = 2;
@@ -46,7 +47,8 @@ public sealed class Settings
     public string Position { get; set; } = "TopRight";
     /// <summary>Monitor device name (e.g. \\.\DISPLAY2); empty = primary monitor.</summary>
     public string Monitor { get; set; } = "";
-    public string Layout { get; set; } = Expanded;
+    /// <summary>Compact is shown as "Strip" (one line, the default); Expanded as "Panel".</summary>
+    public string Layout { get; set; } = Compact;
     public double Opacity { get; set; } = 1.0;
     public double Scale { get; set; } = 1.0;
     public bool ClickThrough { get; set; } = true;
@@ -100,6 +102,9 @@ public sealed class Settings
     /// <summary>Control-center theme: Light, Dark, or MatchWindows (follows the Windows app setting).</summary>
     public string Appearance { get; set; } = MatchWindows;
 
+    /// <summary>In-game overlay theme: SameAsApp, AlwaysDark (default; reads best over games) or AlwaysLight.</summary>
+    public string OverlayTheme { get; set; } = AlwaysDark;
+
     // Legacy (version 1) fields, read once for migration and never written back
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public Dictionary<string, string?>? TweakBackups { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public Dictionary<string, DateTime>? BrowserGpuChanged { get; set; }
@@ -123,7 +128,7 @@ public sealed class Settings
         if (string.IsNullOrWhiteSpace(Hotkey)) Hotkey = "Alt+Shift+O";
         if (!Corners.Contains(Position)) Position = "TopRight";
         Monitor ??= "";
-        if (Layout != Compact) Layout = Expanded;
+        if (Layout is not (Compact or Expanded)) Layout = Compact;
         Opacity = Clamp(Opacity, 0.3, 1.0, 1.0);
         Scale = Clamp(Scale, 0.75, 1.75, 1.0);
         FpsRefreshMs = Math.Clamp(FpsRefreshMs, 250, 2000);
@@ -149,6 +154,7 @@ public sealed class Settings
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         HistoryRetentionDays = Math.Clamp(HistoryRetentionDays, 1, 365);
         if (Appearance is not (Light or Dark or MatchWindows)) Appearance = MatchWindows;
+        if (OverlayTheme is not (SameAsApp or AlwaysDark or AlwaysLight)) OverlayTheme = AlwaysDark;
 
         // Version 1 kept a plain list of window-title matches
         if (Games is { Count: > 0 })

@@ -19,6 +19,14 @@ public static class ThemeResolver
         _ => WindowsTheme(readAppsUseLightTheme),
     };
 
+    /// <summary>The overlay's theme: its own choice, or the app's when set to "Same as app".</summary>
+    public static AppTheme ResolveOverlay(string overlayTheme, AppTheme appTheme) => overlayTheme switch
+    {
+        Settings.AlwaysLight => AppTheme.Light,
+        Settings.SameAsApp => appTheme,
+        _ => AppTheme.Dark,
+    };
+
     private static AppTheme WindowsTheme(Func<object?> read)
     {
         try { return read() is int v && v == 1 ? AppTheme.Light : AppTheme.Dark; }
