@@ -48,14 +48,14 @@ internal sealed class TrayMenuRenderer(Func<TrayPalette> palette, Func<Image?> c
         e.TextColor = isShortcut || !e.Item.Enabled ? p.Muted : p.Text;
         if (isShortcut) e.TextFont = ShortcutFont;
         base.OnRenderItemText(e);
-        if (!isShortcut && item is { Checked: true } && checkMark() is { } mark)
+        if (!isShortcut && item is { Checked: true } && e.Text == item.Text && checkMark() is { } mark)
             e.Graphics.DrawImage(mark, item.Width - mark.Width - 10, (item.Height - mark.Height) / 2, mark.Width, mark.Height);
     }
 
-    /// <summary>A switched-on item keeps its own icon (no framed box); its check is drawn at the right.</summary>
+    /// <summary>Draws nothing: the item's own icon comes from OnRenderItemImage and the check is drawn at the right in OnRenderItemText.</summary>
     protected override void OnRenderItemCheck(Forms.ToolStripItemImageRenderEventArgs e)
     {
-        if (e.Image != null) e.Graphics.DrawImage(e.Image, e.ImageRectangle);
+        // WinForms would paint its built-in black check here, under the item icon.
     }
 
     protected override void OnRenderSeparator(Forms.ToolStripSeparatorRenderEventArgs e)
