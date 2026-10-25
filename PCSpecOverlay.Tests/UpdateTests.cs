@@ -123,5 +123,6 @@ public class ReleaseNotesTests
         var script = File.ReadAllText(SourceFiles.Path("build-release.ps1"));
         Assert.Contains(@"docs\releases\$version.md", script);
         Assert.Contains("SHA256: $hash", script);
+        Assert.Contains("-Raw -Encoding UTF8", script); // the notes are UTF-8 without a BOM; 5.1 would read them as ANSI
     }
 }

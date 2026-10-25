@@ -71,7 +71,7 @@ $hash = (Get-FileHash $setup -Algorithm SHA256).Hash
 $size = (Get-Item $setup).Length
 # What's new for this version, written by hand, goes above the install line and the checksum
 $whatsNewFile = "docs\releases\$version.md"
-$whatsNew = if (Test-Path $whatsNewFile) { (Get-Content $whatsNewFile -Raw).Trim() + "`n`n" } else { "" }
+$whatsNew = if (Test-Path $whatsNewFile) { (Get-Content $whatsNewFile -Raw -Encoding UTF8).Trim() + "`n`n" } else { "" }
 @"
 ## Optiframe $version
 
