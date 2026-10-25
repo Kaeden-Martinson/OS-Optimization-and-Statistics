@@ -10,7 +10,14 @@ namespace PCSpecOverlay;
 /// </summary>
 internal sealed class TrayMenuRenderer(Func<TrayPalette> palette, Func<Image?> checkMark) : Forms.ToolStripRenderer
 {
-    private static readonly Font ShortcutFont = new("Cascadia Mono", 8f);
+    /// <summary>Cascadia Mono, or Consolas where it isn't installed (GDI+ would otherwise fall back to Microsoft Sans Serif).</summary>
+    private static readonly Font ShortcutFont = new(MonoFamily(), 8f);
+
+    private static string MonoFamily()
+    {
+        using var fonts = new System.Drawing.Text.InstalledFontCollection();
+        return fonts.Families.Any(f => f.Name == "Cascadia Mono") ? "Cascadia Mono" : "Consolas";
+    }
 
     protected override void OnRenderToolStripBackground(Forms.ToolStripRenderEventArgs e)
     {
@@ -32,7 +39,7 @@ internal sealed class TrayMenuRenderer(Func<TrayPalette> palette, Func<Image?> c
     {
         if (!e.Item.Selected || !e.Item.Enabled) return;
         var p = palette();
-        var r = new Rectangle(2, 0, e.Item.Width - 4, e.Item.Height);
+        var r = new Rectangle(0, 0, e.Item.Width, e.Item.Height);
         using var fill = new SolidBrush(p.Panel);
         e.Graphics.FillRectangle(fill, r);
         using var edge = new SolidBrush(p.Text);
@@ -45,7 +52,7 @@ internal sealed class TrayMenuRenderer(Func<TrayPalette> palette, Func<Image?> c
         var isShortcut = item is { ShortcutKeyDisplayString.Length: > 0 } && e.Text == item.ShortcutKeyDisplayString;
         if (isShortcut && string.IsNullOrWhiteSpace(e.Text)) return; // room reserved for the check, nothing to write
         var p = palette();
-        e.TextColor = isShortcut || !e.Item.Enabled ? p.Muted : p.Text;
+        e.TextColor = isShortcut ? p.Muted : p.Text;
         if (isShortcut) e.TextFont = ShortcutFont;
         base.OnRenderItemText(e);
         if (!isShortcut && item is { Checked: true } && e.Text == item.Text && checkMark() is { } mark)

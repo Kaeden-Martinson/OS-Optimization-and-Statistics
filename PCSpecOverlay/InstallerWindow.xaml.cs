@@ -16,8 +16,9 @@ public partial class InstallerWindow : Window
     {
         InitializeComponent();
         _mode = mode;
-        // Setup runs before the app has a theme, and can't read the installed copy's settings: follow Windows
-        _theme.Apply(Settings.MatchWindows);
+        // Setup can't read the installed copy's settings, so it follows Windows. Uninstall is run by the installed
+        // copy (Settings › Apps), whose data folder holds the user's settings: use their Appearance.
+        _theme.Apply(mode == Mode.Uninstall ? SavedAppearance() : Settings.MatchWindows);
         SourceInitialized += (_, _) => TitleBar.Apply(this, _theme.Current == AppTheme.Dark);
         _theme.Changed += theme => TitleBar.Apply(this, theme == AppTheme.Dark);
         Closed += (_, _) => _theme.Dispose();
@@ -44,6 +45,12 @@ public partial class InstallerWindow : Window
             Option2.Content = "Also delete my settings and gaming history";
             Primary.Content = "Uninstall";
         }
+    }
+
+    private static string SavedAppearance()
+    {
+        try { return Settings.Load().Appearance; }
+        catch { return Settings.MatchWindows; }
     }
 
     private void OnPrimary(object sender, RoutedEventArgs e)

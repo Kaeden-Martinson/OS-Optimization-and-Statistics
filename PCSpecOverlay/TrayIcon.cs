@@ -29,7 +29,7 @@ internal sealed class TrayIcon : IDisposable
         _imageLight = TaskbarIsLight();
         _image = DrawIcon(_imageLight);
 
-        _menu = new Forms.ContextMenuStrip { ShowImageMargin = true, ShowCheckMargin = false };
+        _menu = new Forms.ContextMenuStrip { ShowImageMargin = true, ShowCheckMargin = false, DropShadowEnabled = false };
         _menu.Renderer = new TrayMenuRenderer(() => _palette, () => _check);
 
         Forms.ToolStripMenuItem Item(string text, string icon, Action click)

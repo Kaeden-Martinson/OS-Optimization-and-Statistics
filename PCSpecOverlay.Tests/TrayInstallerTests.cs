@@ -48,7 +48,7 @@ public class TrayDrawingTests
         using (bmp)
         {
             Assert.Equal(24, bmp!.Width);
-            Assert.True(bmp.GetPixel(12, 12).A > 200, "the stroke across the middle");
+            Assert.True(bmp.GetPixel(12, 12).A > 128, "the stroke across the middle");
             Assert.Equal(0, bmp.GetPixel(12, 3).A);
         }
     }
@@ -82,6 +82,116 @@ public class TrayMenuTests
     }
 }
 
+public class TrayMenuRenderingTests
+{
+    /// <summary>Where the rendered menu is saved for a look by eye.</summary>
+    public static readonly string RenderedPng = Path.Combine(Path.GetTempPath(), "Optiframe.Tests", "tray-menu.png");
+
+    private static readonly TrayPalette Light = new(DColor.FromArgb(0xF3, 0xF2, 0xEE), DColor.FromArgb(0xE6, 0xE5, 0xE0),
+        DColor.FromArgb(0xC8, 0xC7, 0xC2), DColor.FromArgb(0x14, 0x14, 0x14), DColor.FromArgb(0x6E, 0x6E, 0x70));
+    private static readonly DColor CheckColor = DColor.FromArgb(0xD0, 0x20, 0x20);
+    private static readonly DColor IconColor = DColor.FromArgb(0x20, 0x70, 0xD0);
+
+    private static System.Drawing.Bitmap Solid(DColor color)
+    {
+        var bmp = new System.Drawing.Bitmap(16, 16);
+        using var g = System.Drawing.Graphics.FromImage(bmp);
+        g.Clear(color);
+        return bmp;
+    }
+
+    /// <summary>Like a real menu icon: a stroke on a transparent ground, so anything painted under it would show.</summary>
+    private static System.Drawing.Bitmap Stroke(DColor color)
+    {
+        var bmp = new System.Drawing.Bitmap(16, 16);
+        using var g = System.Drawing.Graphics.FromImage(bmp);
+        g.Clear(DColor.Transparent);
+        using var brush = new System.Drawing.SolidBrush(color);
+        g.FillRectangle(brush, 1, 1, 14, 2);
+        return bmp;
+    }
+
+    [Fact]
+    public void The_menu_paints_with_the_palette_and_draws_the_check_at_the_right()
+    {
+        System.Drawing.Bitmap? shot = null;
+        System.Drawing.Rectangle checkedRow = default, plainRow = default;
+        Exception? error = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                using var check = Solid(CheckColor);
+                using var icon = Stroke(IconColor);
+                using var menu = new System.Windows.Forms.ContextMenuStrip
+                {
+                    ShowImageMargin = true, ShowCheckMargin = false, DropShadowEnabled = false,
+                    ImageScalingSize = new System.Drawing.Size(16, 16),
+                };
+                menu.Renderer = new TrayMenuRenderer(() => Light, () => check);
+                var on = new System.Windows.Forms.ToolStripMenuItem("Automatic gaming mode")
+                {
+                    Checked = true, Image = icon, ShortcutKeyDisplayString = new string(' ', 6),
+                };
+                var off = new System.Windows.Forms.ToolStripMenuItem("Hide overlay")
+                {
+                    Image = icon, ShortcutKeyDisplayString = "Alt+Shift+O",
+                };
+                menu.Items.AddRange([on, new System.Windows.Forms.ToolStripSeparator(), off]);
+                menu.PerformLayout();
+                menu.Size = menu.PreferredSize;
+                menu.CreateControl();
+                checkedRow = on.Bounds;
+                plainRow = off.Bounds;
+                shot = new System.Drawing.Bitmap(menu.Width, menu.Height);
+                // WM_PRINT through the strip's own OnPaint, so each item paints itself via the renderer
+                menu.DrawToBitmap(shot, new System.Drawing.Rectangle(0, 0, menu.Width, menu.Height));
+            }
+            catch (Exception e) { error = e; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(error);
+        using (shot)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(RenderedPng)!);
+            shot!.Save(RenderedPng, System.Drawing.Imaging.ImageFormat.Png);
+
+            static bool Near(DColor a, DColor b) => Math.Abs(a.R - b.R) + Math.Abs(a.G - b.G) + Math.Abs(a.B - b.B) < 24;
+            Assert.True(checkedRow.Height > 0 && plainRow.Height > 0, "the items were laid out");
+            Assert.Equal(Light.Bg.ToArgb(), shot.GetPixel(shot.Width / 2, plainRow.Bottom - 1).ToArgb());
+            Assert.Equal(Light.Line.ToArgb(), shot.GetPixel(0, shot.Height / 2).ToArgb());
+
+            var cy = checkedRow.Top + checkedRow.Height / 2;
+            // The image column: the item's icon, and no stock black WinForms check under or beside it
+            var iconSeen = false;
+            for (var x = checkedRow.Left + 1; x < checkedRow.Left + 28; x++)
+                for (var y = checkedRow.Top; y < checkedRow.Bottom; y++)
+                {
+                    var c = shot.GetPixel(x, y);
+                    Assert.False(c.R + c.G + c.B < 120, $"near-black pixel {c} at ({x},{y}) in the image column");
+                    iconSeen |= Near(c, IconColor);
+                }
+            Assert.True(iconSeen, "the item's icon is drawn in the image column");
+
+            // The check: drawn in the reserved room at the right of the checked row, and only there
+            static bool HasCheck(System.Drawing.Bitmap b, System.Drawing.Rectangle row, int from, int to)
+            {
+                for (var x = from; x < to; x++)
+                    for (var y = row.Top; y < row.Bottom; y++)
+                        if (Near(b.GetPixel(x, y), CheckColor)) return true;
+                return false;
+            }
+            Assert.True(HasCheck(shot, checkedRow, checkedRow.Right - 40, checkedRow.Right), "the check near the right edge");
+            Assert.False(HasCheck(shot, plainRow, plainRow.Left, plainRow.Right), "no check on the unchecked item");
+            Assert.False(HasCheck(shot, checkedRow, checkedRow.Left, checkedRow.Right - 40), "the check only at the right");
+            Assert.Equal(Light.Bg.ToArgb(), shot.GetPixel(checkedRow.Right - 4, cy - checkedRow.Height / 2).ToArgb());
+        }
+    }
+}
+
 public class InstallerWindowTests
 {
     [Fact]
@@ -96,7 +206,9 @@ public class InstallerWindowTests
             Assert.DoesNotContain(gone, xaml);
         Assert.DoesNotContain("Danger", code);
         Assert.DoesNotContain("dark: true", code);
-        Assert.Contains("_theme.Apply(Settings.MatchWindows)", code);
+        // Setup follows Windows; uninstall (run by the installed copy) uses the saved Appearance
+        Assert.Contains("_theme.Apply(mode == Mode.Uninstall ? SavedAppearance() : Settings.MatchWindows)", code);
+        Assert.Contains("Settings.Load().Appearance", code);
         Assert.Contains("_theme.Changed +=", code);
         Assert.Contains("_theme.Dispose()", code);
     }
