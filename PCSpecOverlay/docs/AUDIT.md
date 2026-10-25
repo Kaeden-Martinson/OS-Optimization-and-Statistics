@@ -142,6 +142,14 @@ Top tab bar and the new Overview. 190 automated tests pass; these were checked o
 | Sun/moon switch | 🟡 | Tooltip "Light theme" shows on hover; the click itself wasn't exercised on screen. The switch logic was reviewed and the Settings dropdown sync was fixed in review |
 | Light theme of the new Overview | ⬜ | Not looked at on screen this time |
 
+## Optiframe name, logo and placement (2026-10-24, Release development build)
+
+| Check | Result | Notes |
+|---|---|---|
+| Overlay size on start | ✅ | Panel at top left, 242×222 px, same as main before the change |
+| Name, logo and move-and-pin | ✅ | The user ran the check on the PC (tray icon and name, Move overlay, drag, Pin, Custom position, corner presets, restart) and reported it looks right |
+| Note | — | An earlier 159×27 size came from the screenshot tool hiding and restoring the window (WPF drops SizeToContent after an outside resize), not from the app |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
