@@ -38,6 +38,7 @@ public sealed class Settings
     public const string Light = "Light", Dark = "Dark", MatchWindows = "MatchWindows";
     public const string SameAsApp = "SameAsApp", AlwaysDark = "AlwaysDark", AlwaysLight = "AlwaysLight";
     public static readonly string[] Corners = ["TopRight", "TopLeft", "BottomRight", "BottomLeft"];
+    public const string Custom = "Custom";
 
     public int Version { get; set; } = 2;
 
@@ -45,6 +46,9 @@ public sealed class Settings
     public bool Visible { get; set; } = true;
     public string Hotkey { get; set; } = "Alt+Shift+O";
     public string Position { get; set; } = "TopRight";
+    /// <summary>Pinned spot within the display's free space (0 = left/top edge, 1 = right/bottom); used when Position is Custom.</summary>
+    public double CustomX { get; set; } = 1;
+    public double CustomY { get; set; } = 0;
     /// <summary>Monitor device name (e.g. \\.\DISPLAY2); empty = primary monitor.</summary>
     public string Monitor { get; set; } = "";
     /// <summary>Compact is shown as "Strip" (one line, the default); Expanded as "Panel".</summary>
@@ -126,7 +130,9 @@ public sealed class Settings
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Hotkey)) Hotkey = "Alt+Shift+O";
-        if (!Corners.Contains(Position)) Position = "TopRight";
+        if (!Corners.Contains(Position) && Position != Custom) Position = "TopRight";
+        CustomX = Clamp(CustomX, 0, 1, 1);
+        CustomY = Clamp(CustomY, 0, 1, 0);
         Monitor ??= "";
         if (Layout is not (Compact or Expanded)) Layout = Compact;
         Opacity = Clamp(Opacity, 0.3, 1.0, 1.0);
