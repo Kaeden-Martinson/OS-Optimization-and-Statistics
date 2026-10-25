@@ -41,7 +41,7 @@
 
   <!-- Where releases are published ("owner/name" on GitHub). Empty = update checks report "not set up". -->
   <PropertyGroup>
-    <UpdateRepository Condition="'$(UpdateRepository)' == ''">Kaeden-Martinson/OS-Optimization-and-Statistics</UpdateRepository>
+    <UpdateRepository Condition="'$(UpdateRepository)' == ''">Kaeden-Martinson/Optiframe</UpdateRepository>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyMetadata Include="UpdateRepository" Value="$(UpdateRepository)" />
