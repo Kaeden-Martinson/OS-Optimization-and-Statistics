@@ -54,3 +54,34 @@ public class OverlaySettingTests
     public void Resolves_the_overlay_theme(string overlayTheme, AppTheme app, AppTheme expected) =>
         Assert.Equal(expected, ThemeResolver.ResolveOverlay(overlayTheme, app));
 }
+
+public class WorstFrameTests
+{
+    private static List<double> Steady(double fps, double seconds) =>
+        Enumerable.Range(0, (int)(fps * seconds)).Select(i => i * 1000.0 / fps).ToList();
+
+    [Fact]
+    public void Steady_frames_have_a_worst_frame_equal_to_the_frame_time()
+    {
+        var s = FrameStats.Compute(Steady(100, 3), new())!.Value;
+        Assert.Equal(10, s.WorstFrameMs, 1);
+    }
+
+    [Fact]
+    public void A_hitch_in_the_last_second_shows_as_the_worst_frame()
+    {
+        var p = Steady(100, 3);
+        for (var j = 250; j < p.Count; j++) p[j] += 40; // one 50 ms frame, 0.5 s before the end
+        var s = FrameStats.Compute(p, new())!.Value;
+        Assert.Equal(50, s.WorstFrameMs, 1);
+    }
+
+    [Fact]
+    public void A_hitch_older_than_one_second_is_not_the_worst_frame()
+    {
+        var p = Steady(100, 3);
+        for (var j = 50; j < p.Count; j++) p[j] += 40; // 2.5 s before the end
+        var s = FrameStats.Compute(p, new())!.Value;
+        Assert.Equal(10, s.WorstFrameMs, 1);
+    }
+}

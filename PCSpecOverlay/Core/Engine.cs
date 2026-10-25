@@ -10,6 +10,8 @@ public sealed record Telemetry
     public DateTime Time { get; init; }
     public FpsSample? Fps { get; init; }
     public string? FpsUnavailable { get; init; }
+    /// <summary>Where the frame rate comes from: "DXGI" (DirectX) or "KERNEL" (graphics kernel: Vulkan, OpenGL).</summary>
+    public string? FpsSource { get; init; }
     public GpuSample Gpu { get; init; } = GpuSample.Of(GpuStatus.NotPresent);
     public double? CpuLoad { get; init; }
     public double? CpuTempC { get; init; }
@@ -117,13 +119,19 @@ internal sealed class Engine : IDisposable
         if (!Fps.IsRunning)
         {
             Game = null;
-            Latest = Latest with { Fps = null, FpsUnavailable = "Needs admin or Performance Log Users" };
+            Latest = Latest with { Fps = null, FpsSource = null, FpsUnavailable = "Needs admin or Performance Log Users" };
             return;
         }
         var hwnd = Native.GetForegroundWindow();
         var pid = Native.ForegroundProcessId();
         var sample = pid == Environment.ProcessId ? null : Fps.Sample(pid, hwnd);
-        Latest = Latest with { Fps = sample, FpsUnavailable = null };
+        var source = sample is null ? null : Fps.LastSource switch
+        {
+            FpsMonitor.Source.DirectX => "DXGI",
+            FpsMonitor.Source.Kernel => "KERNEL",
+            _ => null,
+        };
+        Latest = Latest with { Fps = sample, FpsSource = source, FpsUnavailable = null };
 
         Game = ProcessName(pid) is { } name
             ? GameDetector.Detect(new ForegroundWindow(name, Native.WindowTitle(hwnd), Native.IsFullscreen(hwnd), sample?.Fps), Settings)
