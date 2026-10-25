@@ -185,6 +185,15 @@ Pages were switched and captured through UI Automation and PrintWindow, without 
 | Published build on this PC | ✅ | The user ran the published setup (Update). Installed exe SHA256 matches 5CB19C7B…; log "Exited cleanly", "Installed 2.1.0" and "Starting 2.1.0" at 15:12. Apps entry, startup task, `Optiframe.lnk` and the pinned spot (Custom 0.9975/0.066) are kept. The fallback is now the earlier 2.1.0 build. |
 | Layout switched to Strip | ✅ | Through the Overlay page's Strip card (UI Automation selection); settings.json `"Layout": "Compact"`. The overlay was hidden by the user's setting (`Visible: false`) and left that way. |
 
+## Release 2.1.1 (2026-10-25)
+
+| Check | Result | Notes |
+|---|---|---|
+| Strip spacing | ✅ | Even 10 DIP cell padding, label-to-value gap 6 (was 24–30), units attached, one baseline, its own cell for the slowdown chip; width steady (311/311). Before/after renders were shown to the user. |
+| Published | ✅ | Tag v2.1.1 (5a2dc8f); GitHub release Latest with `Optiframe-Setup-2.1.1.exe` 9,599,901 bytes; SHA256 796C4E35… matches, checked through the API. |
+| In-app update 2.1.0 → 2.1.1 | ✅ | First real in-app update on the 2.1 line. Settings › Check now found 2.1.1; Download and install logged "Downloaded and verified" (15:33:56), then the copy "Exited cleanly", "Installed 2.1.1" and "Starting 2.1.1" (15:34:00–01). Installed exe 2.1.1.0 (SHA256 matches), fallback 2.1.0. Apps entry "Optiframe 2.1.1", startup task, `Optiframe.lnk`, Strip layout and pinned spot all kept. |
+| Note | — | A first "Check now" right after publishing found nothing to install, most likely GitHub serving the previous latest for a short time; checking again found it. The app doesn't log successful checks. |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
