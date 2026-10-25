@@ -26,7 +26,8 @@ public sealed class TempScaleControl : Canvas
     private readonly TextBlock _warnLabel = Label("Signal"), _hotLabel = Label("Hot");
     private readonly List<(TextBlock Text, int Celsius)> _axis;
     private double? _currentC;
-    private double _dragX;
+    private double _grab;
+    private string _sensor = "";
 
     public TempScaleControl()
     {
@@ -43,21 +44,28 @@ public sealed class TempScaleControl : Canvas
         foreach (var (handle, warn) in new[] { (_warnHandle, true), (_hotHandle, false) })
         {
             handle.SetResourceReference(StyleProperty, "ScaleHandle");
-            handle.DragStarted += (_, _) => _dragX = GetLeft(handle) + HandleWidth / 2;
-            handle.DragDelta += (_, e) =>
+            handle.DragStarted += (_, _) =>
             {
-                _dragX += e.HorizontalChange;
-                Move(warn, TempScale.ValueAt(_dragX / Math.Max(1, ActualWidth)));
+                _grab = Mouse.GetPosition(this).X - (GetLeft(handle) + HandleWidth / 2);
+                Raise(handle);
             };
+            handle.DragDelta += (_, _) =>
+                Move(warn, TempScale.ValueAt((Mouse.GetPosition(this).X - _grab) / Math.Max(1, ActualWidth)));
+            handle.GotKeyboardFocus += (_, _) => Raise(handle);
             handle.PreviewKeyDown += (_, e) => OnKey(warn, e);
             AutomationProperties.SetHelpText(handle, "Drag, or use the arrow keys to change it by 1 °C (Page Up and Page Down by 5).");
             Children.Add(handle);
         }
         SizeChanged += (_, _) => Place();
+        UpdateNames();
     }
 
     /// <summary>Sensor name used in the handles' screen-reader names, e.g. "GPU".</summary>
-    public string Sensor { get; set; } = "";
+    public string Sensor
+    {
+        get => _sensor;
+        set { _sensor = value; UpdateNames(); }
+    }
 
     public int Warn { get; private set; } = 75;
     public int Hot { get; private set; } = 85;
@@ -69,6 +77,7 @@ public sealed class TempScaleControl : Canvas
     {
         (Warn, Hot) = (warn, hot);
         Place();
+        UpdateNames();
     }
 
     public void SetCurrent(double? celsius)
@@ -112,9 +121,18 @@ public sealed class TempScaleControl : Canvas
             SetLeft(text, Math.Clamp(X(celsius) - width / 2, 0, Math.Max(0, w - width)));
             SetTop(text, AxisTop);
         }
+    }
 
+    private void UpdateNames()
+    {
         AutomationProperties.SetName(_warnHandle, $"{Sensor} warning level, {Warn} °C");
         AutomationProperties.SetName(_hotHandle, $"{Sensor} hot level, {Hot} °C");
+    }
+
+    private void Raise(Thumb handle)
+    {
+        SetZIndex(_warnHandle, handle == _warnHandle ? 1 : 0);
+        SetZIndex(_hotHandle, handle == _hotHandle ? 1 : 0);
     }
 
     private void OnKey(bool warn, KeyEventArgs e)
@@ -138,6 +156,7 @@ public sealed class TempScaleControl : Canvas
         if (w == Warn && h == Hot) return;
         (Warn, Hot) = (w, h);
         Place();
+        UpdateNames();
         LevelsChanged?.Invoke(w, h);
     }
 
