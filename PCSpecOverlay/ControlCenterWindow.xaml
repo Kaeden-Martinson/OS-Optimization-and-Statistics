@@ -267,8 +267,8 @@
                                                 <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" />
                                                 <TextBlock x:Name="DetailText" Text="{Binding Detail}" Style="{StaticResource Small}" Visibility="Collapsed" />
                                             </StackPanel>
-                                            <TextBlock Grid.Column="2" Text="{Binding Status}" Style="{StaticResource Mono}" VerticalAlignment="Top" Margin="0,1,12,0" />
-                                            <TextBlock Grid.Column="3" Text="{Binding Recommended}" Style="{StaticResource Mono}"
+                                            <TextBlock Grid.Column="2" Text="{Binding Status}" Style="{StaticResource Mono}" TextWrapping="Wrap" TextTrimming="None" VerticalAlignment="Top" Margin="0,1,12,0" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Recommended}" Style="{StaticResource Mono}" TextWrapping="Wrap" TextTrimming="None"
                                                        Foreground="{DynamicResource Muted}" VerticalAlignment="Top" Margin="0,1,12,0" />
                                             <TextBlock Grid.Column="4" Text="{Binding Description}" Style="{StaticResource Body}" Margin="0,0,12,0" />
                                             <Button x:Name="ActionButton" Grid.Column="5" Content="{Binding ActionLabel}" Style="{StaticResource Btn}"
@@ -364,7 +364,7 @@
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                             <Button x:Name="GamingPause" Style="{StaticResource Btn}" MinWidth="0" Padding="10,2" Click="OnStopOptimizations"
-                                    AutomationProperties.Name="Pause gaming mode">
+                                    AutomationProperties.Name="Pause optimizations">
                                 <StackPanel Orientation="Horizontal">
                                     <core:Icon Data="{StaticResource Icon.Pause}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
                                     <TextBlock Text="Pause" />
@@ -621,14 +621,14 @@
                                    Text="Move overlay unlocks it so you can drag it anywhere on any screen; press Pin on the overlay to lock it there. Clicks pass through to your game whenever it's pinned." />
 
                         <UniformGrid Columns="2" Margin="0,16,0,0">
-                            <RadioButton x:Name="StripCard" GroupName="Layout" Style="{StaticResource LayoutCard}" Tag="Compact" Click="OnLayoutCard"
+                            <RadioButton x:Name="StripCard" GroupName="Layout" Style="{StaticResource LayoutCard}" Tag="Compact" Checked="OnLayoutCard"
                                          Margin="0,0,6,0" AutomationProperties.Name="Strip layout">
                                 <StackPanel>
                                     <TextBlock Text="Strip" FontSize="13" FontWeight="SemiBold" />
                                     <TextBlock Style="{StaticResource Small}" Text="One ruled line. The default." />
                                 </StackPanel>
                             </RadioButton>
-                            <RadioButton x:Name="PanelCard" GroupName="Layout" Style="{StaticResource LayoutCard}" Tag="Expanded" Click="OnLayoutCard"
+                            <RadioButton x:Name="PanelCard" GroupName="Layout" Style="{StaticResource LayoutCard}" Tag="Expanded" Checked="OnLayoutCard"
                                          Margin="6,0,0,0" AutomationProperties.Name="Panel layout">
                                 <StackPanel>
                                     <TextBlock Text="Panel" FontSize="13" FontWeight="SemiBold" />
@@ -851,16 +851,19 @@
                                     <Border BorderBrush="{DynamicResource Line}" BorderThickness="1,1,0,1" HorizontalAlignment="Left" Margin="0,10,0,0">
                                         <StackPanel Orientation="Horizontal">
                                             <RadioButton x:Name="AppearanceLight" GroupName="Appearance" Style="{StaticResource Seg}" Tag="Light"
-                                                         Click="OnAppearance" AutomationProperties.Name="Light" ToolTip="Light">
-                                                <core:Icon Data="{StaticResource Icon.Sun}" Width="14" Height="14" />
+                                                         Checked="OnAppearance" AutomationProperties.Name="Light" ToolTip="Light">
+                                                <core:Icon Data="{StaticResource Icon.Sun}" Width="14" Height="14"
+                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
                                             </RadioButton>
                                             <RadioButton x:Name="AppearanceDark" GroupName="Appearance" Style="{StaticResource Seg}" Tag="Dark"
-                                                         Click="OnAppearance" AutomationProperties.Name="Dark" ToolTip="Dark">
-                                                <core:Icon Data="{StaticResource Icon.Moon}" Width="14" Height="14" />
+                                                         Checked="OnAppearance" AutomationProperties.Name="Dark" ToolTip="Dark">
+                                                <core:Icon Data="{StaticResource Icon.Moon}" Width="14" Height="14"
+                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
                                             </RadioButton>
                                             <RadioButton x:Name="AppearanceMatch" GroupName="Appearance" Style="{StaticResource Seg}" Tag="MatchWindows"
-                                                         Click="OnAppearance" AutomationProperties.Name="Match Windows" ToolTip="Match Windows">
-                                                <core:Icon Data="{StaticResource Icon.Monitor}" Width="14" Height="14" />
+                                                         Checked="OnAppearance" AutomationProperties.Name="Match Windows" ToolTip="Match Windows">
+                                                <core:Icon Data="{StaticResource Icon.Monitor}" Width="14" Height="14"
+                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
                                             </RadioButton>
                                         </StackPanel>
                                     </Border>
@@ -1009,8 +1012,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,1" Padding="16,12,16,14" ToolTip="{Binding Detail}"
-                                            AutomationProperties.Name="{Binding Name}" AutomationProperties.HelpText="{Binding Detail}">
+                                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,1" Padding="16,12,16,14" ToolTip="{Binding Detail}">
                                         <StackPanel>
                                             <TextBlock Text="{Binding Name}" Style="{StaticResource Key}" TextTrimming="CharacterEllipsis" />
                                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">

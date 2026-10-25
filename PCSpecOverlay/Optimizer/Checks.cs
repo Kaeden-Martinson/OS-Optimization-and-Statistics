@@ -14,7 +14,7 @@ public abstract class Check : INotifyPropertyChanged
     public string Description { get; }
     public CheckState State { get; private set; }
     public string Status { get; private set; } = "";
-    /// <summary>Extra line under the description, e.g. "Recommended: Best performance".</summary>
+    /// <summary>Why the setting can't be checked or changed on this PC (empty when it's available); shown under the title.</summary>
     public string Detail { get; protected set; } = "";
 
     /// <summary>The value the app suggests, shown beside the current one ("—" when not applicable).</summary>

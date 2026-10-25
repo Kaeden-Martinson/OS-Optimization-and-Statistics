@@ -420,8 +420,11 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="B" Background="Transparent" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="10,4">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <!-- The focus ring's 1 px is always reserved (transparent), so focus changes color only, never layout -->
+                    <Border x:Name="B" Background="Transparent" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0">
+                        <Border x:Name="F" BorderBrush="Transparent" BorderThickness="1" Padding="9,3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -432,9 +435,15 @@
                             <Setter Property="Foreground" Value="{DynamicResource Bg}" />
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Text}" />
-                            <Setter TargetName="B" Property="BorderThickness" Value="1" />
+                            <Setter TargetName="F" Property="BorderBrush" Value="{DynamicResource Text}" />
                         </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsKeyboardFocused" Value="True" />
+                                <Condition Property="IsChecked" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="F" Property="BorderBrush" Value="{DynamicResource Bg}" />
+                        </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

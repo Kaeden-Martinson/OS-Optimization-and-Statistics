@@ -94,7 +94,7 @@ public partial class ControlCenterWindow : Window
         if (_loading || e.OriginalSource is TabControl) return;
         if (e.OriginalSource == ShowOverlay || e.OriginalSource == StartupSwitch) return; // handled by their own clicks
         if (e.OriginalSource == LightButton || e.OriginalSource == DarkButton) return; // saved by ChooseTheme
-        if (e.OriginalSource is RadioButton) return; // layout cards and appearance segments save through their own clicks
+        if (e.OriginalSource is RadioButton) return; // layout cards and appearance segments save in their own Checked handlers
         ScheduleSave();
     }
 
@@ -193,7 +193,12 @@ public partial class ControlCenterWindow : Window
 
     private void OnLightTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Light);
 
-    private void OnAppearance(object sender, RoutedEventArgs e) => ChooseTheme((string)((FrameworkElement)sender).Tag);
+    /// <summary>Checked (not Click), so a screen reader selecting a segment saves too; code-driven checks run Quietly and are skipped.</summary>
+    private void OnAppearance(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        ChooseTheme((string)((FrameworkElement)sender).Tag);
+    }
 
     private void OnDarkTheme(object sender, RoutedEventArgs e) => ChooseTheme(Settings.Dark);
 
@@ -719,8 +724,10 @@ public partial class ControlCenterWindow : Window
         Save();
     }
 
+    /// <summary>Checked (not Click), so a screen reader selecting a card saves too; code-driven checks run Quietly and are skipped.</summary>
     private void OnLayoutCard(object sender, RoutedEventArgs e)
     {
+        if (_loading) return;
         _settings.Layout = (string)((FrameworkElement)sender).Tag;
         Save();
     }
@@ -741,7 +748,11 @@ public partial class ControlCenterWindow : Window
         Canvas.SetLeft(PreviewOverlay, x);
         Canvas.SetTop(PreviewOverlay, y);
         foreach (var target in new[] { CornerTopLeft, CornerTopRight, CornerBottomLeft, CornerBottomRight })
-            target.Tag = (string)target.CommandParameter == _settings.Position ? "On" : null;
+        {
+            var on = (string)target.CommandParameter == _settings.Position;
+            target.Tag = on ? "On" : null;
+            System.Windows.Automation.AutomationProperties.SetItemStatus(target, on ? "Current position" : "");
+        }
 
         var display = Displays.Find(_settings.Monitor);
         PreviewCaption.Text = (_settings.Position == Settings.Custom ? "Pinned spot. Use Move overlay to drag it" : "Click a corner to move it there") +
@@ -821,7 +832,8 @@ public partial class ControlCenterWindow : Window
         var row = (JournalRow)((FrameworkElement)sender).DataContext;
         if (!Confirm($"Undo {row.Setting} ({row.Change})?\n\nIt goes back only if it's still what the app set. If you changed it yourself since, your choice is kept.", "Undo change"))
             return;
-        ActionResult.Text = string.Join("\n", _engine.UndoChange(row.Id));
+        // With several owners each release reports a step ("still needed by …"); only the final outcome matters here
+        ActionResult.Text = _engine.UndoChange(row.Id).LastOrDefault() ?? "This change was already undone.";
         foreach (var c in _checks) c.Refresh();
         RefreshDiagnostics();
     }

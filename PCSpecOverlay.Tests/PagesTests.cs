@@ -170,6 +170,30 @@ public class OptimizerPageTests
         foreach (var gone in new[] { "CardBox", "\"H1\"", "\"Lead\"", "AccentSoft", "Ellipse" })
             Assert.DoesNotContain(gone, Page);
     }
+
+    [Fact]
+    public void Now_and_recommended_values_wrap_instead_of_trimming()
+    {
+        foreach (var binding in new[] { "{Binding Status}", "{Binding Recommended}" })
+        {
+            var cell = Element.Containing(Page, $"Text=\"{binding}\"");
+            Assert.Contains("TextWrapping=\"Wrap\"", cell);
+            Assert.Contains("TextTrimming=\"None\"", cell);
+        }
+    }
+}
+
+/// <summary>The opening tag of the one XAML element that carries a given attribute.</summary>
+internal static class Element
+{
+    public static string Containing(string xaml, string attribute)
+    {
+        var at = xaml.IndexOf(attribute, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"No element with {attribute}");
+        Assert.Equal(at, xaml.LastIndexOf(attribute, StringComparison.Ordinal));
+        var start = xaml.LastIndexOf('<', at);
+        return xaml[start..(xaml.IndexOf('>', at) + 1)];
+    }
 }
 
 /// <summary>Reads one page (TabItem) out of the control center's XAML.</summary>
@@ -199,6 +223,7 @@ public class GamingPageTests
             Assert.Contains(part, page);
         foreach (var gone in new[] { "CardBox", "GamingStatusLine", "\"H1\"" })
             Assert.DoesNotContain(gone, page);
+        Assert.Contains("AutomationProperties.Name=\"Pause optimizations\"", Element.Containing(page, "x:Name=\"GamingPause\""));
     }
 }
 
@@ -210,7 +235,7 @@ public class OverlayPageTests
         var page = PageXaml.Tab("Overlay");
         foreach (var part in new[] { "x:Name=\"PreviewScreen\"", "x:Name=\"PreviewOverlay\"", "x:Name=\"PreviewText\"", "x:Name=\"PreviewCaption\"",
                      "x:Name=\"CornerTopLeft\"", "x:Name=\"CornerTopRight\"", "x:Name=\"CornerBottomLeft\"", "x:Name=\"CornerBottomRight\"",
-                     "Click=\"OnCornerTarget\"", "x:Name=\"StripCard\"", "x:Name=\"PanelCard\"", "Click=\"OnLayoutCard\"", "Click=\"OnMoveOverlay\"",
+                     "Click=\"OnCornerTarget\"", "x:Name=\"StripCard\"", "x:Name=\"PanelCard\"", "Checked=\"OnLayoutCard\"", "Click=\"OnMoveOverlay\"",
                      "x:Name=\"DisplayBox\"", "x:Name=\"ShowOverlay\"", "{Binding OverlayTheme}", "{Binding GpuRendering}" })
             Assert.Contains(part, page);
         foreach (var gone in new[] { "PositionBox", "CardBox", "\"H1\"" })
@@ -218,6 +243,13 @@ public class OverlayPageTests
         var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
         Assert.Contains("OverlayPreview.Strip(", code);
         Assert.Contains("OverlayPlacement.Place(", code);
+    }
+
+    [Fact]
+    public void Corner_targets_tell_screen_readers_which_is_in_use()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("AutomationProperties.SetItemStatus(target, on ? \"Current position\" : \"\")", code);
     }
 }
 
@@ -248,11 +280,49 @@ public class SettingsPageTests
         foreach (var part in new[] { "Text=\"VERSION\"", "Text=\"STARTUP\"", "Text=\"APPEARANCE\"", "x:Name=\"VersionValue\"", "x:Name=\"UpdateStatus\"",
                      "x:Name=\"CheckUpdatesButton\"", "x:Name=\"InstallUpdateButton\"", "x:Name=\"StartupSwitch\"", "x:Name=\"StartupValue\"",
                      "x:Name=\"AppearanceLight\"", "x:Name=\"AppearanceDark\"", "x:Name=\"AppearanceMatch\"", "x:Name=\"AppearanceValue\"",
-                     "Click=\"OnAppearance\"", "x:Name=\"HotkeyBox\"", "{Binding CheckForUpdates}", "x:Name=\"SleepSwitch\"",
+                     "Checked=\"OnAppearance\"", "x:Name=\"HotkeyBox\"", "{Binding CheckForUpdates}", "x:Name=\"SleepSwitch\"",
                      "x:Name=\"RetentionSlider\"", "x:Name=\"SessionList\"", "Click=\"OnResetSettings\"" })
             Assert.Contains(part, page);
         foreach (var gone in new[] { "AppearanceBox", "UpdateVersion", "CardBox", "\"H1\"" })
             Assert.DoesNotContain(gone, page);
+    }
+
+    [Fact]
+    public void Appearance_icons_take_the_segment_color()
+    {
+        var page = PageXaml.Tab("Settings");
+        foreach (var icon in new[] { "Icon.Sun", "Icon.Moon", "Icon.Monitor" })
+            Assert.Contains("Foreground=\"{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}\"",
+                Element.Containing(page, $"{{StaticResource {icon}}}"));
+    }
+
+    [Fact]
+    public void Segment_focus_changes_color_not_size()
+    {
+        var theme = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Theme.xaml"));
+        var start = theme.IndexOf("x:Key=\"Seg\"", StringComparison.Ordinal);
+        var seg = theme[start..theme.IndexOf("</Style>", start, StringComparison.Ordinal)];
+        Assert.DoesNotContain("Property=\"BorderThickness\"", seg);
+    }
+}
+
+public class RadioGroupSaveTests
+{
+    private static readonly string Code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+
+    [Fact]
+    public void Layout_and_appearance_save_on_checked_so_screen_readers_can_change_them()
+    {
+        var xaml = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml"));
+        Assert.DoesNotContain("Click=\"OnLayoutCard\"", xaml);
+        Assert.DoesNotContain("Click=\"OnAppearance\"", xaml);
+        foreach (var handler in new[] { "OnLayoutCard", "OnAppearance" })
+        {
+            var start = Code.IndexOf($"private void {handler}(", StringComparison.Ordinal);
+            Assert.True(start >= 0, handler);
+            var body = Code[start..Code.IndexOf('}', start)];
+            Assert.Contains("if (_loading) return;", body);
+        }
     }
 }
 
@@ -272,6 +342,20 @@ public class DiagnosticsPageTests
         foreach (var call in new[] { "JournalRows.Build(", "Health.Summary(", "_engine.UndoChange(", "DiagnosticReport.ChangesCheck" })
             Assert.Contains(call, code);
         Assert.DoesNotContain("class LevelBrush", code);
+    }
+
+    [Fact]
+    public void Undoing_one_change_shows_only_its_outcome()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/ControlCenterWindow.xaml.cs"));
+        Assert.Contains("_engine.UndoChange(row.Id).LastOrDefault() ?? \"This change was already undone.\"", code);
+    }
+
+    [Fact]
+    public void Health_cells_leave_names_to_their_text()
+    {
+        var cell = Element.Containing(PageXaml.Tab("Diagnostics"), "ToolTip=\"{Binding Detail}\"");
+        Assert.DoesNotContain("AutomationProperties", cell);
     }
 }
 
