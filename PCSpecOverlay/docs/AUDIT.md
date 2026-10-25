@@ -163,6 +163,15 @@ Pages were switched and captured through UI Automation and PrintWindow, without 
 | Dragging a scale handle, corner clicks, Pause | ⬜ | Not exercised on screen (no mouse input); left to the user |
 | Note | — | The screenshot tool hides other apps' windows. It minimized the control center and resized the overlay, so the dev copy was restarted and captured with PrintWindow instead |
 
+## Instrument stage 5 (2026-10-24, Release development build beside the installed 2.0.13)
+
+| Check | Result | Notes |
+|---|---|---|
+| Installer, update mode | ✅ | `--install` from the dev build, captured with PrintWindow, closed without pressing Update. One card in dark: logo and heading, explanation, Start with Windows row, Cancel and a filled Update. |
+| Installer, uninstall mode | ✅ | `--uninstall`: both switch rows and a filled Uninstall (no red). The long "Undo Windows changes…" label was clipped on one line; fixed so it wraps (bd74184), then recaptured. |
+| Tray menu | ✅ | The user right-clicked the dev copy's tray icon and reported that it looks right. |
+| Menu drawing test | ✅ | A rendering test paints a real menu: palette background and border, check at the right, no stock Windows check under the icon. |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
