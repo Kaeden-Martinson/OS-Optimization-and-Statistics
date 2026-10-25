@@ -172,6 +172,16 @@ Pages were switched and captured through UI Automation and PrintWindow, without 
 | Tray menu | ✅ | The user right-clicked the dev copy's tray icon and reported that it looks right. |
 | Menu drawing test | ✅ | A rendering test paints a real menu: palette background and border, check at the right, no stock Windows check under the icon. |
 
+## Release 2.1.0 (2026-10-25)
+
+| Check | Result | Notes |
+|---|---|---|
+| Release build | ✅ | `build-release.ps1`: 275/275 tests. `Optiframe-Setup-2.1.0.exe` 9,599,901 bytes, SHA-256 3ECE2C8D…04022FB, unsigned, update source Kaeden-Martinson/OS-Optimization-and-Statistics. Notes: What's new (°C and dashes intact) plus exactly one SHA256 line. |
+| Setup over 2.0.13 | ✅ | The new setup read "Update Optiframe: Version 2.0.13 is installed; this will replace it with 2.1.0". The user pressed Update (planned as a cancel-only smoke test). Log: "Installed 2.1.0" and "Starting 2.1.0" at 00:03:52. |
+| After the update | ✅ | Installed exe 2.1.0.0, with the 2.0.13 fallback kept (`PCSpecOverlay.exe.previous`). Start menu has only `Optiframe.lnk` (the old "PC Spec Overlay.lnk" is gone). Apps entry "Optiframe 2.1.0" by Optiframe. Startup task `\PCSpecOverlay` points at the installed exe. Settings carried over (Appearance MatchWindows, pinned position kept). |
+| In-app update from 2.0.13 | ⬜ | Not exercised: the copy was updated with the setup directly. 2.0.13's asset match and checksum path are unchanged. |
+| Note | — | The user applied the Optimizer's Power mode fix (Best performance) right after the update; it's undoable on the Optimizer or Diagnostics page. |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
