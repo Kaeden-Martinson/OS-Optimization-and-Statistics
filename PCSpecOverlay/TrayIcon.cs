@@ -12,11 +12,14 @@ internal sealed class TrayIcon : IDisposable
     private readonly App _app;
     private readonly Forms.NotifyIcon _icon;
     private Icon _image;
+    private bool _imageLight;
+    private bool _disposed;
 
     public TrayIcon(App app)
     {
         _app = app;
-        _image = DrawIcon();
+        _imageLight = TaskbarIsLight();
+        _image = DrawIcon(_imageLight);
 
         var menu = new Forms.ContextMenuStrip { ShowImageMargin = false, ShowCheckMargin = true };
 
@@ -87,21 +90,36 @@ internal sealed class TrayIcon : IDisposable
     }
 
     /// <summary>The Optiframe mark at the tray size: dark on a light taskbar, light on a dark one.</summary>
-    private static Icon DrawIcon()
+    private static Icon DrawIcon(bool light)
     {
         var size = Forms.SystemInformation.SmallIconSize.Width;
-        var light = ThemeResolver.TaskbarIsLight(ThemeResolver.ReadSystemUsesLightTheme);
         using var bmp = LogoPainter.Draw(size, light ? Color.FromArgb(0x14, 0x14, 0x14) : Color.FromArgb(0xE9, 0xE9, 0xE6));
-        return Icon.FromHandle(bmp.GetHicon());
+        var handle = bmp.GetHicon();
+        try
+        {
+            using var borrowed = Icon.FromHandle(handle); // doesn't own the handle
+            return (Icon)borrowed.Clone();
+        }
+        finally
+        {
+            Native.DestroyIcon(handle);
+        }
     }
 
+    private static bool TaskbarIsLight() => ThemeResolver.TaskbarIsLight(ThemeResolver.ReadSystemUsesLightTheme);
+
+    /// <summary>General fires for many unrelated changes; redraw only when the taskbar's light/dark flips.</summary>
     private void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
     {
         if (e.Category != UserPreferenceCategory.General) return;
         _app.Dispatcher.BeginInvoke(() =>
         {
+            if (_disposed) return;
+            var light = TaskbarIsLight();
+            if (light == _imageLight) return;
             var old = _image;
-            _image = DrawIcon();
+            _image = DrawIcon(light);
+            _imageLight = light;
             _icon.Icon = _image;
             old.Dispose();
         });
@@ -109,6 +127,7 @@ internal sealed class TrayIcon : IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         _icon.Visible = false;
         _icon.Dispose();
