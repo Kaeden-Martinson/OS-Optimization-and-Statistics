@@ -591,9 +591,14 @@ public partial class ControlCenterWindow : Window
     private void RefreshGaming()
     {
         var gm = _engine.Gaming;
-        GamingStatusLine.Text = _engine.OptimizationsPaused ? "Paused — resume from the Overview page or the tray."
-            : gm.Active ? $"Active now for {string.Join(", ", gm.ActiveGames)}: {string.Join("; ", gm.Optimizations)}"
-            : _settings.AutoGamingMode ? "Waiting for a game." : "Off.";
+        var paused = _engine.OptimizationsPaused;
+        GamingBar.Visibility = gm.Active || paused ? Visibility.Visible : Visibility.Collapsed;
+        GamingBarText.Text = paused ? "Optimizations are paused. Gaming mode won't change anything until you resume."
+            : gm.Active ? $"Gaming mode is on for {string.Join(", ", gm.ActiveGames)}: {string.Join("; ", gm.Optimizations)}"
+            : "";
+        GamingLed.SetResourceReference(Shape.FillProperty, paused ? "Signal" : "Good");
+        GamingPause.Visibility = paused ? Visibility.Collapsed : Visibility.Visible;
+        GamingResume.Visibility = paused ? Visibility.Visible : Visibility.Collapsed;
 
         var recent = _engine.RecentGames.Select(g => new RecentGame(g,
             !_rules.Any(r => GameDetector.Matches(r, new ForegroundWindow(g.Process, g.Label, false, null))))).ToList();
@@ -639,6 +644,7 @@ public partial class ControlCenterWindow : Window
         var report = _app.StopOptimizations();
         MessageBox.Show(this, string.Join("\n", report), "Optimizations stopped", MessageBoxButton.OK, MessageBoxImage.Information);
         RefreshOverview();
+        RefreshGaming();
     }
 
     private void OnResume(object sender, RoutedEventArgs e)
@@ -646,6 +652,7 @@ public partial class ControlCenterWindow : Window
         if (_engine.RecoveryMode) _engine.LeaveRecoveryMode();
         _app.ResumeOptimizations();
         RefreshOverview();
+        RefreshGaming();
     }
 
     // ---- overlay / general ----

@@ -183,3 +183,20 @@ internal static class PageXaml
         return xaml[start..end];
     }
 }
+
+public class GamingPageTests
+{
+    [Fact]
+    public void Gaming_shows_the_four_steps_and_a_status_bar()
+    {
+        var page = PageXaml.Tab("Gaming");
+        foreach (var part in new[] { "Text=\"01\"", "Text=\"Detect\"", "Text=\"02\"", "Text=\"Power\"", "Text=\"03\"", "Text=\"Boost\"",
+                     "Text=\"04\"", "Text=\"Restore\"", "x:Name=\"GamingBar\"", "x:Name=\"GamingBarText\"", "x:Name=\"GamingPause\"",
+                     "x:Name=\"GamingResume\"", "x:Name=\"RuleList\"", "x:Name=\"RecentList\"", "x:Name=\"EnterSlider\"", "x:Name=\"ExitSlider\"",
+                     "{Binding AutoGamingMode}", "{Binding GamingPowerMode}", "{Binding GamingProcessPriority}", "{Binding GameBoost}",
+                     "{Binding DetectFullscreenGames}", "{Binding OptimizeFullscreenGames}" })
+            Assert.Contains(part, page);
+        foreach (var gone in new[] { "CardBox", "GamingStatusLine", "\"H1\"" })
+            Assert.DoesNotContain(gone, page);
+    }
+}

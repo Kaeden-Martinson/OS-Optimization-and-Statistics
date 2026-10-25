@@ -372,79 +372,125 @@
 
         <!-- ===================== GAMING ===================== -->
         <TabItem Header="Gaming" Tag="{StaticResource Icon.Gaming}" Style="{StaticResource TopTab}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="32,26,32,32">
-                    <TextBlock Text="Gaming" Style="{StaticResource H1}" />
-                    <TextBlock Style="{StaticResource Lead}"
-                               Text="Automatic gaming mode applies the optimizations you choose while a game is in front, and puts everything back afterwards. If you change a setting yourself during a game, your choice is kept." />
-
-                    <TextBlock Text="AUTOMATIC GAMING MODE" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoGamingMode}">
-                                <StackPanel>
-                                    <TextBlock Text="Turn on automatically while I play" Style="{StaticResource CardTitle}" />
-                                    <TextBlock x:Name="GamingStatusLine" Style="{StaticResource Body}" />
+            <DockPanel>
+                <!-- Shown while gaming mode is on or paused -->
+                <Border x:Name="GamingBar" DockPanel.Dock="Top" Visibility="Collapsed" Background="{DynamicResource Panel}"
+                        BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button x:Name="GamingPause" Style="{StaticResource Btn}" MinWidth="0" Padding="10,2" Click="OnStopOptimizations"
+                                    AutomationProperties.Name="Pause gaming mode">
+                                <StackPanel Orientation="Horizontal">
+                                    <core:Icon Data="{StaticResource Icon.Pause}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Pause" />
                                 </StackPanel>
-                            </CheckBox>
-                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GamingPowerMode}" Margin="0,0,0,12">
-                                <StackPanel>
-                                    <TextBlock Text="Switch power mode to Best performance" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Higher CPU boost while playing. Your previous power mode is restored afterwards." />
-                                </StackPanel>
-                            </CheckBox>
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GamingProcessPriority}">
-                                <StackPanel>
-                                    <TextBlock Text="Prioritize the game (Game Boost)" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Body}" Text="Raises the game one step (Above normal) and lowers apps you choose one step (Below normal). Never touches Windows system processes; shares CPU time only, not the GPU." />
-                                </StackPanel>
-                            </CheckBox>
-                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="220" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Switch on after" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="How long a game must be in front first." />
-                                </StackPanel>
-                                <Slider x:Name="EnterSlider" Grid.Column="1" Minimum="2" Maximum="30" TickFrequency="1" Value="{Binding GamingEnterSeconds}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=EnterSlider, StringFormat='{}{0:0} s'}" />
-                            </Grid>
-                            <Grid Margin="0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="220" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="Switch back after (Alt+Tab grace)" FontSize="13" />
-                                    <TextBlock Style="{StaticResource Small}" Text="How long no game may be in front before everything is put back." />
-                                </StackPanel>
-                                <Slider x:Name="ExitSlider" Grid.Column="1" Minimum="5" Maximum="120" TickFrequency="5" Value="{Binding GamingExitSeconds}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource ValueLabel}" Text="{Binding Value, ElementName=ExitSlider, StringFormat='{}{0:0} s'}" />
-                            </Grid>
+                            </Button>
+                            <Button x:Name="GamingResume" Content="Resume" Style="{StaticResource Btn}" Tag="Primary" Padding="10,2"
+                                    Click="OnResume" Visibility="Collapsed" />
                         </StackPanel>
-                    </Border>
+                        <Rectangle x:Name="GamingLed" Width="6" Height="6" Fill="{DynamicResource Good}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock x:Name="GamingBarText" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </Border>
 
-                    <TextBlock Text="GAMES" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource Body}" Margin="0,0,0,10"
-                                       Text="A window counts as a game when it renders at 30+ FPS and matches a rule below. Match browser games by part of the window title (e.g. Starve.io) and other games by app name. Turn off Optimize to detect a game without changing anything." />
-                            <ItemsControl x:Name="RuleList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,0,0,8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <StackPanel Margin="24,18,24,14">
+                            <TextBlock Text="Gaming" Style="{StaticResource PageTitle}" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="While a game is in front, gaming mode takes these steps and puts everything back afterwards. If you change a setting yourself during a game, your choice is kept." />
+                        </StackPanel>
+
+                        <!-- The four steps, left to right -->
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1">
+                            <UniformGrid Columns="4">
+                                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="16,12,16,14">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding AutoGamingMode}"
+                                                      AutomationProperties.Name="Turn gaming mode on automatically" />
+                                            <TextBlock Text="01" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0" />
+                                            <TextBlock Text="Detect" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0" Text="A game from your list renders at 30+ FPS in front." />
+                                        <DockPanel Margin="0,10,0,0">
+                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" Margin="8,0,0,0"
+                                                       Text="{Binding Value, ElementName=EnterSlider, StringFormat='after {0:0} s'}" />
+                                            <Slider x:Name="EnterSlider" Minimum="2" Maximum="30" TickFrequency="1" Value="{Binding GamingEnterSeconds}"
+                                                    AutomationProperties.Name="Switch on after this many seconds" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="16,12,16,14">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding GamingPowerMode}"
+                                                      AutomationProperties.Name="Switch power mode to Best performance" />
+                                            <TextBlock Text="02" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0" />
+                                            <TextBlock Text="Power" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
+                                                   Text="Switch to Best performance for a higher CPU boost. Your power mode is remembered and put back." />
+                                    </StackPanel>
+                                </Border>
+                                <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="16,12,16,14">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding GamingProcessPriority}"
+                                                      AutomationProperties.Name="Prioritize the game (Game Boost)" />
+                                            <TextBlock Text="03" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0" />
+                                            <TextBlock Text="Boost" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
+                                                   Text="The game one step up (Above normal), apps you choose one step down. Never touches Windows system processes." />
+                                        <TextBlock x:Name="BoostTargetsText" Style="{StaticResource Small}" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Padding="16,12,16,14">
+                                    <StackPanel>
+                                        <DockPanel>
+                                            <TextBlock Text="04" Style="{StaticResource Mono}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0" />
+                                            <TextBlock Text="Restore" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0" Text="Everything is put back once no game is in front (Alt+Tab grace)." />
+                                        <DockPanel Margin="0,10,0,0">
+                                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Mono}" Margin="8,0,0,0"
+                                                       Text="{Binding Value, ElementName=ExitSlider, StringFormat='after {0:0} s'}" />
+                                            <Slider x:Name="ExitSlider" Minimum="5" Maximum="120" TickFrequency="5" Value="{Binding GamingExitSeconds}"
+                                                    AutomationProperties.Name="Switch back after this many seconds" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </UniformGrid>
+                        </Border>
+
+                        <!-- Games -->
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="148" />
+                                    <ColumnDefinition Width="132" />
+                                    <ColumnDefinition Width="96" />
+                                    <ColumnDefinition Width="40" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="GAME" Style="{StaticResource Key}" />
+                                <TextBlock Grid.Column="1" Text="MATCH BY" Style="{StaticResource Key}" />
+                                <TextBlock Grid.Column="2" Text="OVERLAY" Style="{StaticResource Key}" />
+                                <TextBlock Grid.Column="3" Text="OPTIMIZE" Style="{StaticResource Key}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl x:Name="RuleList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource LedgerRow}" Padding="24,6">
+                                        <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="140" />
-                                                <ColumnDefinition Width="120" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="148" />
+                                                <ColumnDefinition Width="132" />
+                                                <ColumnDefinition Width="96" />
+                                                <ColumnDefinition Width="40" />
                                             </Grid.ColumnDefinitions>
                                             <TextBox Text="{Binding Match, UpdateSourceTrigger=LostFocus}" Margin="0,0,8,0" VerticalContentAlignment="Center"
                                                      AutomationProperties.Name="Game match" />
@@ -453,71 +499,86 @@
                                                 <ComboBoxItem Content="Window title" Tag="{x:Static local:GameMatchKind.WindowTitle}" />
                                                 <ComboBoxItem Content="App name" Tag="{x:Static local:GameMatchKind.ProcessName}" />
                                             </ComboBox>
-                                            <ComboBox Grid.Column="2" Margin="0,0,12,0" MinWidth="0" SelectedValuePath="Tag"
+                                            <ComboBox Grid.Column="2" Margin="0,0,8,0" MinWidth="0" SelectedValuePath="Tag"
                                                       SelectedValue="{Binding LayoutChoice}" AutomationProperties.Name="Overlay layout for this game">
                                                 <ComboBoxItem Content="Default" Tag="Default" />
                                                 <ComboBoxItem Content="Strip" Tag="Compact" />
                                                 <ComboBoxItem Content="Panel" Tag="Expanded" />
                                             </ComboBox>
-                                            <CheckBox Grid.Column="3" Style="{StaticResource Switch}" IsChecked="{Binding Optimize}" Margin="0,0,12,0">
-                                                <TextBlock Text="Optimize" FontSize="12" Foreground="{DynamicResource Muted}" />
-                                            </CheckBox>
-                                            <Button Grid.Column="4" Content="Remove" Style="{StaticResource Btn}" MinWidth="0" Padding="10,3" Click="OnRemoveRule" />
+                                            <CheckBox Grid.Column="3" Style="{StaticResource Switch}" IsChecked="{Binding Optimize}" HorizontalAlignment="Left"
+                                                      AutomationProperties.Name="{Binding Match, StringFormat='Optimize while {0} is in front'}" />
+                                            <Button Grid.Column="4" Style="{StaticResource Btn}" MinWidth="0" Padding="6,4" HorizontalAlignment="Right"
+                                                    Click="OnRemoveRule" AutomationProperties.Name="{Binding Match, StringFormat='Remove {0}'}">
+                                                <core:Icon Data="{StaticResource Icon.Close}" Width="12" Height="12" />
+                                            </Button>
                                         </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <Grid Margin="0,4,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border Style="{StaticResource LedgerRow}" Padding="24,8">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Btn}" Click="OnAddRule" AutomationProperties.Name="Add game">
+                                    <StackPanel Orientation="Horizontal">
+                                        <core:Icon Data="{StaticResource Icon.Plus}" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="Add game" />
+                                    </StackPanel>
+                                </Button>
                                 <TextBox x:Name="NewRule" Margin="0,0,8,0" AutomationProperties.Name="New game window title" KeyDown="OnNewRuleKey" />
-                                <Button Grid.Column="1" Content="Add game" Style="{StaticResource Btn}" Click="OnAddRule" />
-                            </Grid>
-                            <TextBlock Text="Recently seen" FontSize="12.5" FontWeight="SemiBold" Margin="0,16,0,6" />
-                            <ItemsControl x:Name="RecentList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <DockPanel Margin="0,0,0,6">
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Style="{StaticResource Small}" Margin="24,6,24,0"
+                                   Text="A window counts as a game when it renders at 30+ FPS and matches a rule. Match browser games by part of the window title (e.g. Starve.io) and other games by app name. Turn off Optimize to detect a game without changing anything." />
+
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                            <TextBlock Text="RECENTLY SEEN" Style="{StaticResource Key}" />
+                        </Border>
+                        <ItemsControl x:Name="RecentList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource LedgerRow}" Padding="24,6">
+                                        <DockPanel>
                                             <Button DockPanel.Dock="Right" Content="Add" Style="{StaticResource Btn}" MinWidth="0" Padding="10,2"
                                                     Click="OnAddRecent" IsEnabled="{Binding CanAdd}" />
-                                            <TextBlock Text="{Binding Text}" Style="{StaticResource Body}" VerticalAlignment="Center" Margin="0" />
+                                            <TextBlock Text="{Binding Text}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                         </DockPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock x:Name="RecentEmpty" Style="{StaticResource Small}" Text="Nothing yet — games appear here while they render in front." />
-                            <Border Height="1" Background="{DynamicResource CardBorder}" Margin="0,14" />
-                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding DetectFullscreenGames}" Margin="0,0,0,12">
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock x:Name="RecentEmpty" Style="{StaticResource Small}" Margin="24,8,24,0"
+                                   Text="Nothing yet. Games appear here while they render in front." />
+
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="24,7" Margin="0,22,0,0">
+                            <TextBlock Text="OPTIONS" Style="{StaticResource Key}" />
+                        </Border>
+                        <Border Style="{StaticResource LedgerRow}">
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding DetectFullscreenGames}">
                                 <StackPanel>
                                     <TextBlock Text="Detect fullscreen games" FontSize="13" />
                                     <TextBlock Style="{StaticResource Body}" Text="Shows fullscreen apps that render steadily as games, even if they aren't listed." />
                                 </StackPanel>
                             </CheckBox>
+                        </Border>
+                        <Border Style="{StaticResource LedgerRow}">
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding OptimizeFullscreenGames}">
                                 <StackPanel>
                                     <TextBlock Text="Also optimize unlisted fullscreen apps" FontSize="13" />
                                     <TextBlock Style="{StaticResource Body}" Text="Off by default: a fullscreen video would also count. Adding the game to the list is the safer choice." />
                                 </StackPanel>
                             </CheckBox>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Text="GAME BOOST" Style="{StaticResource Section}" />
-                    <Border Style="{StaticResource CardBox}">
-                        <StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource LedgerRow}" Margin="0,0,0,24">
                             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GameBoost}">
                                 <StackPanel>
                                     <TextBlock Text="Always prioritize games (even without gaming mode)" FontSize="13" />
                                     <TextBlock Style="{StaticResource Body}" Text="Applies the same one-step priority changes whenever a listed game is in front." />
                                 </StackPanel>
                             </CheckBox>
-                            <TextBlock x:Name="BoostTargetsText" Style="{StaticResource Body}" Margin="0,10,0,0" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
         </TabItem>
 
         <!-- ===================== OVERLAY ===================== -->
