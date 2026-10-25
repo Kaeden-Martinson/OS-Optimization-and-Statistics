@@ -132,3 +132,25 @@ public class RecommendedValueTests : TempDataTest
         Assert.Equal(("Slow", "Fast", ""), (t.Status, t.Recommended, t.Detail));
     }
 }
+
+public class PageStyleTests
+{
+    private static readonly string Theme = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Theme.xaml"));
+
+    [Fact]
+    public void The_page_styles_exist_and_use_tokens_only()
+    {
+        foreach (var key in new[] { "PageTitle", "Key", "Mono", "LedgerRow", "Seg", "LayoutCard", "CornerTarget", "ScaleHandle" })
+            Assert.Contains($"x:Key=\"{key}\"", Theme);
+        var added = Theme[Theme.IndexOf("Page parts (stage 4)", StringComparison.Ordinal)..];
+        Assert.DoesNotMatch("#[0-9A-Fa-f]{6}", added);
+    }
+
+    [Fact]
+    public void The_scale_control_drags_and_steps_through_the_tested_math()
+    {
+        var code = File.ReadAllText(SourceFiles.Path("PCSpecOverlay/Controls/TempScaleControl.cs"));
+        foreach (var call in new[] { "TempScale.MoveWarn(", "TempScale.MoveHot(", "TempScale.ValueAt(", "TempScale.Fraction(", "Key.PageUp", "AutomationProperties.SetName(" })
+            Assert.Contains(call, code);
+    }
+}

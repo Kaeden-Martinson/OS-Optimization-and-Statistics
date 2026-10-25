@@ -381,4 +381,145 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!-- ===== Page parts (stage 4) ===== -->
+
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+
+    <!-- Uppercase column or section label -->
+    <Style x:Key="Key" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- A number or value in a ledger cell -->
+    <Style x:Key="Mono" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <!-- One ruled row of a ledger table -->
+    <Style x:Key="LedgerRow" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource Line2}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="24,9" />
+    </Style>
+
+    <!-- One segment of a segmented control (wrap the group in a Border with BorderThickness="1,1,0,1") -->
+    <Style x:Key="Seg" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource Muted}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="B" Background="Transparent" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,1,0" Padding="10,4">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="{DynamicResource Line2}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="{DynamicResource Text}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Bg}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Text}" />
+                            <Setter TargetName="B" Property="BorderThickness" Value="1" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A choice card (Strip / Panel on the Overlay page) -->
+    <Style x:Key="LayoutCard" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="B" BorderBrush="{DynamicResource Line}" BorderThickness="1" Background="Transparent" Padding="14,10">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="B" Property="Background" Value="{DynamicResource Panel}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Text}" />
+                            <Setter TargetName="B" Property="Background" Value="{DynamicResource Panel}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="B" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A dashed corner on the Overlay preview; Tag="On" marks the corner in use -->
+    <Style x:Key="CornerTarget" TargetType="Button">
+        <Setter Property="Width" Value="64" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Rectangle x:Name="R" Fill="Transparent" Stroke="{DynamicResource Muted}" StrokeThickness="1" StrokeDashArray="3 2" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="R" Property="Stroke" Value="{DynamicResource Text}" />
+                        </Trigger>
+                        <Trigger Property="Tag" Value="On">
+                            <Setter TargetName="R" Property="Stroke" Value="{DynamicResource Text}" />
+                            <Setter TargetName="R" Property="StrokeDashArray" Value="{x:Null}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="R" Property="Stroke" Value="{DynamicResource Text}" />
+                            <Setter TargetName="R" Property="StrokeThickness" Value="2" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A handle on an Alerts temperature scale -->
+    <Style x:Key="ScaleHandle" TargetType="Thumb">
+        <Setter Property="Width" Value="10" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Cursor" Value="SizeWE" />
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border x:Name="B" Background="{DynamicResource Text}" BorderBrush="{DynamicResource Bg}" BorderThickness="1" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Muted}" />
+                            <Setter TargetName="B" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>
