@@ -194,6 +194,15 @@ Pages were switched and captured through UI Automation and PrintWindow, without 
 | In-app update 2.1.0 → 2.1.1 | ✅ | First real in-app update on the 2.1 line. Settings › Check now found 2.1.1; Download and install logged "Downloaded and verified" (15:33:56), then the copy "Exited cleanly", "Installed 2.1.1" and "Starting 2.1.1" (15:34:00–01). Installed exe 2.1.1.0 (SHA256 matches), fallback 2.1.0. Apps entry "Optiframe 2.1.1", startup task, `Optiframe.lnk`, Strip layout and pinned spot all kept. |
 | Note | — | A first "Check now" right after publishing found nothing to install, most likely GitHub serving the previous latest for a short time; checking again found it. The app doesn't log successful checks. |
 
+## Release 2.1.2 (2026-10-25)
+
+| Check | Result | Notes |
+|---|---|---|
+| Layout button | ✅ | A Strip/Panel icon on the overlay with a tiny no-activate hit window over it (the rest stays click-through); setting "Layout button on the overlay" (default on). Two reviews; the user's real-mouse test switched layouts and the game kept focus. 336 tests. |
+| Published | ✅ | Tag v2.1.2 (21a6aca); GitHub release Latest at Kaeden-Martinson/Optiframe with `Optiframe-Setup-2.1.2.exe` 9,612,189 bytes; SHA256 98592CCA… matches; the old repository name redirects to it. |
+| In-app update 2.1.1 → 2.1.2 | ✅ | "Downloaded and verified" (19:05:00), "Exited cleanly", "Installed 2.1.2" and "Starting 2.1.2" (19:05:04). Installed exe 2.1.2.0 (SHA256 matches), fallback 2.1.1. Apps entry, startup task, `Optiframe.lnk`, Strip layout and pinned spot kept; the button shows at the Strip's right end ("Switch to Panel" hit window). |
+| Note | — | Twice the update didn't start from the user's first attempt: the Settings page showed a stale "latest" result until Check now was pressed. The second time, the user's click on Download and install did nothing; Claude invoked the button through UI Automation and the user confirmed in the app's dialog. Consider re-checking when the Settings page opens. |
+
 ## Priorities from this audit
 
 1. Version control + tests before larger changes.
